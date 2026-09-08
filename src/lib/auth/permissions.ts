@@ -52,7 +52,10 @@ const ROLE_PERMISSIONS: Record<CompanyRole, PermissionKey[]> = {
   ],
   kitchen: [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_UPDATE_STATUS, PERMISSIONS.KITCHEN_VIEW, PERMISSIONS.PRODUCTS_VIEW],
   cashier: [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_UPDATE_STATUS, PERMISSIONS.PRODUCTS_VIEW, PERMISSIONS.CUSTOMERS_VIEW],
-  driver: [PERMISSIONS.ORDERS_VIEW],
+  // El conductor no ve el dashboard de ventas ni el listado general de
+  // pedidos — solo sus propias entregas, en /company/driver, que se
+  // muestra por rol y no por permiso (ver layout de /company).
+  driver: [],
   staff: [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.PRODUCTS_VIEW, PERMISSIONS.KITCHEN_VIEW],
 }
 

@@ -16,6 +16,7 @@ import {
   Tag,
   Gift,
   Bike,
+  Truck,
   Settings,
   Menu,
   X,
@@ -38,6 +39,7 @@ const IMPLEMENTED_ROUTES = new Set([
   '/company/promotions',
   '/company/rewards',
   '/company/drivers',
+  '/company/driver',
   '/company/analytics',
   '/company/settings',
 ])
@@ -52,6 +54,7 @@ const ICONS: Record<string, LucideIcon> = {
   '/company/promotions': Tag,
   '/company/rewards': Gift,
   '/company/drivers': Bike,
+  '/company/driver': Truck,
   '/company/analytics': BarChart3,
   '/company/settings': Settings,
 }
@@ -80,6 +83,12 @@ function CompanyChrome({ children }: { children: ReactNode }) {
     ...navItems,
     ...(can('inventory.manage')
       ? [{ href: '/company/inventory', label: 'Inventory', permission: 'inventory.manage' as const }]
+      : []),
+    // "Mis entregas" es específico del rol de conductor, no de un permiso
+    // compartido con otros roles — no tendría sentido que lo vea cocina o
+    // administración, así que se filtra por company_role directamente.
+    ...(profile?.company_role === 'driver'
+      ? [{ href: '/company/driver', label: 'Mis entregas', permission: 'orders.view' as const }]
       : []),
   ]
 

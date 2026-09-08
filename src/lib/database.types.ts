@@ -1318,6 +1318,31 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      driver_update_assignment: {
+        Args: {
+          p_assignment_id: string
+          p_new_status: Database["public"]["Enums"]["delivery_assignment_status"]
+          p_notes?: string
+        }
+        Returns: {
+          assigned_at: string
+          delivered_at: string | null
+          driver_id: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          picked_up_at: string | null
+          proof_photo_url: string | null
+          signature_url: string | null
+          status: Database["public"]["Enums"]["delivery_assignment_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_assignments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_permission: { Args: { perm: string }; Returns: boolean }
       is_company_staff: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
