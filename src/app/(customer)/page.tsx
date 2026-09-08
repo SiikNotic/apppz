@@ -1,126 +1,130 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Sparkles } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { Search, Truck, Store, MapPin } from 'lucide-react'
 import { useMenuData } from '@/hooks/useMenuData'
-import { useCart } from '@/contexts/CartContext'
-import { ItemThumb } from '@/components/ui/item-thumb'
-import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/lib/format'
-import { PizzaBuilderModal } from '@/components/customer/pizza-builder-modal'
-import type { MenuItem } from '@/lib/types'
+import { MenuGrid } from '@/components/customer/menu-grid'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { BRAND_TAGLINE } from '@/lib/config'
 
-export default function MenuPage() {
-  const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } =
-    useMenuData()
-  const { addLine } = useCart()
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [builderItem, setBuilderItem] = useState<MenuItem | null>(null)
+export default function HomePage() {
+  const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
+  const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery')
+  const [search, setSearch] = useState('')
 
-  const currentCategory = activeCategory ?? categories[0]?.id ?? null
+  const allItems = useMemo(() => Array.from(itemsByCategory.values()).flat(), [itemsByCategory])
 
-  if (loading) {
-    return <p className="py-16 text-center text-sm text-ink-400">Cargando el menú…</p>
-  }
-
-  if (error) {
-    return (
-      <p className="py-16 text-center text-sm text-danger-500">
-        No pudimos cargar el menú: {error}
-      </p>
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return null
+    return allItems.filter(
+      (item) => item.name.toLowerCase().includes(q) || item.description?.toLowerCase().includes(q)
     )
-  }
+  }, [search, allItems])
+
+  const popular = useMemo(() => allItems.slice(0, 4), [allItems])
+
+  if (loading) return <p className="py-16 text-center text-sm text-ink-400">Cargando…</p>
+  if (error) return <p className="py-16 text-center text-sm text-danger-500">No pudimos cargar el menú: {error}</p>
 
   return (
-    <div>
-      <div className="no-scrollbar mb-5 flex gap-2 overflow-x-auto pb-1">
-        {categories.map((cat) => (
+    <div className="space-y-8">
+      {/* Hero */}
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-white sm:p-10">
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+          <MapPin size={12} aria-hidden="true" /> Entregando en tu zona
+        </div>
+        <h1 className="max-w-md text-3xl font-extrabold leading-tight sm:text-4xl">
+          Pizza recién horneada, directo a tu puerta
+        </h1>
+        <p className="mt-2 max-w-sm text-sm text-white/85">{BRAND_TAGLINE}</p>
+        <Link
+          href="/menu"
+          className="mt-5 inline-flex items-center rounded-full bg-ink-900 px-6 py-3 text-sm font-bold text-white shadow-pop hover:bg-ink-800"
+        >
+          Order Now
+        </Link>
+      </section>
+
+      {/* Delivery/Pickup + búsqueda */}
+      <section className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex rounded-full bg-white p-1 shadow-card">
           <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
+            onClick={() => setOrderType('delivery')}
+            aria-pressed={orderType === 'delivery'}
             className={cn(
-              'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition',
-              currentCategory === cat.id
-                ? 'bg-brand-500 text-white shadow-card'
-                : 'bg-white text-ink-600 hover:bg-brand-50'
+              'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition',
+              orderType === 'delivery' ? 'bg-brand-500 text-white' : 'text-ink-600'
             )}
           >
-            {cat.name}
+            <Truck size={15} aria-hidden="true" /> Delivery
           </button>
-        ))}
-      </div>
+          <button
+            onClick={() => setOrderType('pickup')}
+            aria-pressed={orderType === 'pickup'}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition',
+              orderType === 'pickup' ? 'bg-brand-500 text-white' : 'text-ink-600'
+            )}
+          >
+            <Store size={15} aria-hidden="true" /> Pickup
+          </button>
+        </div>
+        <div className="relative flex-1">
+          <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden="true" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar pizzas, bebidas, postres…"
+            aria-label="Buscar productos"
+            className="pl-10"
+          />
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {(itemsByCategory.get(currentCategory ?? '') ?? []).map((item) => {
-          const isBuilder = item.is_customizable_pizza
-          const sizes = sizesByItem.get(item.id) ?? []
-          const displayPrice = isBuilder ? (sizes[0]?.price ?? item.base_price) : item.base_price
-
-          return (
-            <div
-              key={item.id}
-              className={cn(
-                'flex items-center gap-3 rounded-3xl border p-3.5 transition',
-                isBuilder
-                  ? 'border-brand-300 bg-brand-50/60'
-                  : 'border-ink-100/60 bg-white shadow-card'
-              )}
-            >
-              <ItemThumb name={item.name} imageUrl={item.image_url} size="md" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  {isBuilder && <Sparkles size={14} className="shrink-0 text-brand-500" />}
-                  <h3 className="truncate text-sm font-bold text-ink-900">{item.name}</h3>
-                </div>
-                {item.description && (
-                  <p className="mt-0.5 line-clamp-2 text-xs text-ink-400">{item.description}</p>
-                )}
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-sm font-extrabold text-brand-500">
-                    {isBuilder ? 'Desde ' : ''}
-                    {formatCurrency(displayPrice)}
-                  </span>
-                  {isBuilder ? (
-                    <Button size="sm" onClick={() => setBuilderItem(item)}>
-                      Crear ahora
-                    </Button>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        addLine({
-                          menuItemId: item.id,
-                          name: item.name,
-                          imageUrl: item.image_url,
-                          quantity: 1,
-                          unitPrice: item.base_price,
-                          toppings: [],
-                        })
-                      }
-                      className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-white hover:bg-brand-600"
-                      aria-label={`Agregar ${item.name}`}
-                    >
-                      <Plus size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
+      {search.trim() ? (
+        <section>
+          <h2 className="mb-4 text-lg font-extrabold text-ink-900">Resultados para &quot;{search}&quot;</h2>
+          <MenuGrid
+            items={searchResults ?? []}
+            sizesByItem={sizesByItem}
+            crusts={crusts}
+            sauces={sauces}
+            toppings={toppings}
+            emptyMessage="No encontramos productos con ese nombre."
+          />
+        </section>
+      ) : (
+        <>
+          {/* Categorías */}
+          <section>
+            <h2 className="mb-4 text-lg font-extrabold text-ink-900">Categorías</h2>
+            <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/menu/${cat.id}`}
+                  className="shrink-0 rounded-2xl bg-white px-5 py-4 text-center shadow-card transition hover:shadow-pop"
+                >
+                  <span className="text-sm font-bold text-ink-900">{cat.name}</span>
+                </Link>
+              ))}
             </div>
-          )
-        })}
-      </div>
+          </section>
 
-      {builderItem && (
-        <PizzaBuilderModal
-          open={!!builderItem}
-          onClose={() => setBuilderItem(null)}
-          item={builderItem}
-          sizes={sizesByItem.get(builderItem.id) ?? []}
-          crusts={crusts}
-          sauces={sauces}
-          toppings={toppings}
-          onAdd={addLine}
-        />
+          {/* Populares */}
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-extrabold text-ink-900">Populares</h2>
+              <Link href="/menu" className="text-sm font-semibold text-brand-500 hover:underline">
+                Ver todo
+              </Link>
+            </div>
+            <MenuGrid items={popular} sizesByItem={sizesByItem} crusts={crusts} sauces={sauces} toppings={toppings} />
+          </section>
+        </>
       )}
     </div>
   )
