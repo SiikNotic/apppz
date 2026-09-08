@@ -22,6 +22,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
+  // Next.js NO combina este export con su meta viewport por defecto: si se
+  // omite width/initialScale, el navegador cae al viewport de escritorio
+  // (~980px) y la app se ve "encogida" y hay que hacer zoom para leerla.
+  width: 'device-width',
+  initialScale: 1,
   themeColor: '#f2601c',
 }
 
