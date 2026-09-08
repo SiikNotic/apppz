@@ -1,0 +1,89 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatDate } from '@/lib/format'
+import type { Profile, RewardsAccount } from '@/lib/types'
+
+export default function CustomersPage() {
+  const [customers, setCustomers] = useState<Profile[]>([])
+  const [rewardsByUser, setRewardsByUser] = useState<Record<string, RewardsAccount>>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_company_staff', false)
+        .order('created_at', { ascending: false })
+
+      const list = profiles ?? []
+      setCustomers(list)
+
+      if (list.length > 0) {
+        const { data: rewards } = await supabase
+          .from('rewards_accounts')
+          .select('*')
+          .in('user_id', list.map((c) => c.id))
+        const map: Record<string, RewardsAccount> = {}
+        for (const r of rewards ?? []) map[r.user_id] = r
+        setRewardsByUser(map)
+      }
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-extrabold text-ink-900">Clientes</h1>
+        <p className="text-sm text-ink-400">Todas las cuentas de clientes registradas.</p>
+      </div>
+
+      <Card className="overflow-x-auto p-0">
+        <Table className="min-w-[600px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Teléfono</TableHead>
+              <TableHead>Puntos</TableHead>
+              <TableHead>Nivel</TableHead>
+              <TableHead>Registrado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-ink-400">Cargando…</TableCell>
+              </TableRow>
+            )}
+            {!loading && customers.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-ink-400">Sin clientes todavía.</TableCell>
+              </TableRow>
+            )}
+            {customers.map((customer) => {
+              const account = rewardsByUser[customer.id]
+              return (
+                <TableRow key={customer.id}>
+                  <TableCell className="font-semibold text-ink-900">{customer.full_name || '—'}</TableCell>
+                  <TableCell className="text-ink-600">{customer.phone || '—'}</TableCell>
+                  <TableCell className="text-ink-600">{account?.points_balance ?? 0}</TableCell>
+                  <TableCell>
+                    <Badge variant="brand">{account?.tier ?? 'Bronze'}</Badge>
+                  </TableCell>
+                  <TableCell className="text-ink-400">{formatDate(customer.created_at)}</TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  )
+}

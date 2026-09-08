@@ -11,6 +11,12 @@ import {
   BarChart3,
   LogOut,
   ChefHat,
+  Flame,
+  Users,
+  Tag,
+  Gift,
+  Bike,
+  Settings,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -18,21 +24,31 @@ import { useAuth } from '@/contexts/AuthContext'
 import { BRAND_NAME } from '@/lib/config'
 import { NAV_ITEMS_BY_PERMISSION } from '@/lib/auth/permissions'
 
-// Rutas que ya tienen página implementada. Cuando se agregue kitchen/
-// customers/promotions/rewards/drivers/settings, basta con agregarlas
-// aquí y automáticamente aparecen en el nav para quien tenga el permiso.
+// Rutas que ya tienen página implementada — controla qué aparece en el nav.
 const IMPLEMENTED_ROUTES = new Set([
   '/company/dashboard',
   '/company/orders',
+  '/company/kitchen',
   '/company/menu',
+  '/company/customers',
+  '/company/promotions',
+  '/company/rewards',
+  '/company/drivers',
   '/company/analytics',
+  '/company/settings',
 ])
 
 const ICONS: Record<string, LucideIcon> = {
   '/company/dashboard': LayoutDashboard,
   '/company/orders': ClipboardList,
+  '/company/kitchen': Flame,
   '/company/menu': UtensilsCrossed,
+  '/company/customers': Users,
+  '/company/promotions': Tag,
+  '/company/rewards': Gift,
+  '/company/drivers': Bike,
   '/company/analytics': BarChart3,
+  '/company/settings': Settings,
 }
 
 const ROLE_LABELS: Record<string, string> = {
