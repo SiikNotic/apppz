@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS } from '@/lib/types'
+import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES } from '@/lib/types'
 import type { Order, OrderItem, OrderStatus } from '@/lib/types'
 
 function OrderStatusContent() {
@@ -59,13 +59,13 @@ function OrderStatusContent() {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-center">
         <p className="text-sm font-semibold text-ink-600">No encontramos ese pedido.</p>
-        <Button onClick={() => router.push('/')}>Volver al menú</Button>
+        <Button onClick={() => router.push('/menu')}>Volver al menú</Button>
       </div>
     )
   }
 
   const status = order.status as OrderStatus
-  const cancelled = status === 'cancelled'
+  const isOffPath = ORDER_TERMINAL_STATUSES.includes(status)
   const currentIndex = ORDER_STATUS_FLOW.indexOf(status)
 
   return (
@@ -75,12 +75,12 @@ function OrderStatusContent() {
           Pedido #{order.order_number}
         </p>
         <h1 className="mt-1 text-2xl font-extrabold text-ink-900">
-          {cancelled ? 'Pedido cancelado' : ORDER_STATUS_LABELS[status]}
+          {ORDER_STATUS_LABELS[status]}
         </h1>
         <p className="mt-1 text-xs text-ink-400">Creado {formatDate(order.created_at)}</p>
       </div>
 
-      {!cancelled && (
+      {!isOffPath && (
         <Card className="p-5">
           <ol className="space-y-4">
             {ORDER_STATUS_FLOW.map((step, i) => {
@@ -131,7 +131,7 @@ function OrderStatusContent() {
         </div>
       </Card>
 
-      <Button fullWidth variant="secondary" onClick={() => router.push('/')}>
+      <Button fullWidth variant="secondary" onClick={() => router.push('/menu')}>
         Volver al menú
       </Button>
     </div>
