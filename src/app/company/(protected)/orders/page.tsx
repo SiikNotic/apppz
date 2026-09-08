@@ -5,13 +5,14 @@ import { ArrowRight, Ban, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { deductInventoryForOrder } from '@/lib/inventoryDeduction'
+import { useAuth } from '@/contexts/AuthContext'
+import { nextHappyPathStatus } from '@/lib/business-logic/order-state-machine'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency, formatDate } from '@/lib/format'
 import {
-  ORDER_STATUS_FLOW,
   ORDER_STATUS_LABELS,
   type Order,
   type OrderItem,
@@ -24,9 +25,11 @@ const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'dan
   confirmed: 'brand',
   preparing: 'brand',
   ready: 'success',
-  on_the_way: 'success',
+  out_for_delivery: 'success',
   delivered: 'neutral',
   cancelled: 'danger',
+  refunded: 'danger',
+  failed: 'danger',
 }
 
 const FILTERS: { key: 'active' | 'all' | OrderStatus; label: string }[] = [
@@ -37,6 +40,9 @@ const FILTERS: { key: 'active' | 'all' | OrderStatus; label: string }[] = [
 ]
 
 export default function OrdersPage() {
+  const { can } = useAuth()
+  const canUpdateStatus = can('orders.update_status')
+  const canCancel = can('orders.cancel')
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('active')
@@ -65,13 +71,12 @@ export default function OrdersPage() {
   const filteredOrders = orders.filter((o) => {
     if (filter === 'all') return true
     if (filter === 'active')
-      return ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way'].includes(o.status)
+      return ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)
     return o.status === filter
   })
 
   async function advanceStatus(order: Order) {
-    const currentIndex = ORDER_STATUS_FLOW.indexOf(order.status as OrderStatus)
-    const next = ORDER_STATUS_FLOW[currentIndex + 1]
+    const next = nextHappyPathStatus(order.status as OrderStatus)
     if (!next) return
     setBusyId(order.id)
 
@@ -79,8 +84,13 @@ export default function OrdersPage() {
       await deductInventoryForOrder(order.id)
     }
 
-    await supabase.from('orders').update({ status: next }).eq('id', order.id)
+    const { error } = await supabase.from('orders').update({ status: next }).eq('id', order.id)
     setBusyId(null)
+    if (error) {
+      // El trigger de la base de datos rechaza transiciones inválidas —
+      // si esto dispara, es que dos personas cambiaron el estado a la vez.
+      alert('No se pudo actualizar el estado (puede que ya haya cambiado). Se recargó la lista.')
+    }
     load()
   }
 
@@ -154,7 +164,7 @@ export default function OrdersPage() {
             )}
             {filteredOrders.map((order) => {
               const status = order.status as OrderStatus
-              const canAdvance = status !== 'delivered' && status !== 'cancelled'
+              const notTerminal = !['delivered', 'cancelled', 'refunded', 'failed'].includes(status)
               return (
                 <TableRow key={order.id}>
                   <TableCell>
@@ -178,26 +188,29 @@ export default function OrdersPage() {
                         className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
                         title="Ver detalle"
                       >
-                        <Eye size={14} />
+                        <Eye size={14} aria-hidden="true" />
+                        <span className="sr-only">Ver detalle</span>
                       </button>
-                      {canAdvance && (
+                      {notTerminal && canUpdateStatus && (
                         <button
                           onClick={() => advanceStatus(order)}
                           disabled={busyId === order.id}
                           className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-600 hover:brightness-95 disabled:opacity-50"
                           title="Avanzar estado"
                         >
-                          <ArrowRight size={14} />
+                          <ArrowRight size={14} aria-hidden="true" />
+                          <span className="sr-only">Avanzar estado</span>
                         </button>
                       )}
-                      {canAdvance && (
+                      {notTerminal && canCancel && (
                         <button
                           onClick={() => cancelOrder(order)}
                           disabled={busyId === order.id}
                           className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
                           title="Cancelar"
                         >
-                          <Ban size={14} />
+                          <Ban size={14} aria-hidden="true" />
+                          <span className="sr-only">Cancelar</span>
                         </button>
                       )}
                     </div>

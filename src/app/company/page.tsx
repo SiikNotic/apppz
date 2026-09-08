@@ -3,11 +3,11 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function AdminIndexPage() {
+export default function CompanyIndexPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/admin/dashboard')
+    router.replace('/company/dashboard')
   }, [router])
 
   return (

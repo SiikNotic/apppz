@@ -21,9 +21,11 @@ const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'dan
   confirmed: 'brand',
   preparing: 'brand',
   ready: 'success',
-  on_the_way: 'success',
+  out_for_delivery: 'success',
   delivered: 'neutral',
   cancelled: 'danger',
+  refunded: 'danger',
+  failed: 'danger',
 }
 
 export default function DashboardPage() {
@@ -54,7 +56,7 @@ export default function DashboardPage() {
 
   const revenueToday = todayOrders.reduce((sum, o) => sum + o.total, 0)
   const activeOrders = todayOrders.filter((o) =>
-    ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way'].includes(o.status)
+    ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)
   ).length
   const avgTicket = todayOrders.length > 0 ? revenueToday / todayOrders.length : 0
 
@@ -99,7 +101,7 @@ export default function DashboardPage() {
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-extrabold text-ink-900">Pedidos recientes</h2>
-            <Link href="/admin/pedidos" className="text-xs font-bold text-brand-500">
+            <Link href="/company/orders" className="text-xs font-bold text-brand-500">
               Ver todos
             </Link>
           </div>
@@ -129,7 +131,7 @@ export default function DashboardPage() {
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-extrabold text-ink-900">Alertas de stock</h2>
-            <Link href="/admin/inventario" className="text-xs font-bold text-brand-500">
+            <Link href="/company/inventory" className="text-xs font-bold text-brand-500">
               Ver inventario
             </Link>
           </div>

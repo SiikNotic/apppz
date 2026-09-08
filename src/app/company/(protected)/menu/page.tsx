@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { ProductsTab } from '@/components/admin/menu/products-tab'
-import { CategoriesTab } from '@/components/admin/menu/categories-tab'
-import { ToppingsTab } from '@/components/admin/menu/toppings-tab'
-import { SimpleOptionsManager } from '@/components/admin/menu/simple-options-manager'
+import { ProductsTab } from '@/components/company/menu/products-tab'
+import { CategoriesTab } from '@/components/company/menu/categories-tab'
+import { ToppingsTab } from '@/components/company/menu/toppings-tab'
+import { SimpleOptionsManager } from '@/components/company/menu/simple-options-manager'
 
 export default function MenuManagementPage() {
   const [tab, setTab] = useState('productos')

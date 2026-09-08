@@ -1,18 +1,29 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile } from '@/lib/types'
+import { roleHasPermission, type PermissionKey } from '@/lib/auth/permissions'
 
 interface AuthContextValue {
   session: Session | null
   user: User | null
   profile: Profile | null
   loading: boolean
+  isCompanyStaff: boolean
+  /** Chequeo de UI únicamente — el servidor decide de verdad vía RLS. */
+  can: (permission: PermissionKey) => boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string
+  ) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ error: string | null }>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -45,23 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  async function loadProfile(userId: string) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    setProfile(data ?? null)
+    setLoading(false)
+  }
+
   useEffect(() => {
     if (!session?.user) return
-    let active = true
     setLoading(true)
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active) return
-        setProfile(data ?? null)
-        setLoading(false)
-      })
-    return () => {
-      active = false
-    }
+    loadProfile(session.user.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
 
   async function signIn(email: string, password: string) {
@@ -69,11 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }
 
-  async function signUp(email: string, password: string, fullName: string) {
+  async function signUp(email: string, password: string, fullName: string, phone?: string) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: { full_name: fullName, phone } },
     })
     return { error: error?.message ?? null }
   }
@@ -82,6 +87,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  async function resetPassword(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/account/profile` : undefined,
+    })
+    return { error: error?.message ?? null }
+  }
+
+  async function refreshProfile() {
+    if (session?.user) await loadProfile(session.user.id)
+  }
+
+  const can = useMemo(() => {
+    return (permission: PermissionKey) => roleHasPermission(profile?.company_role ?? null, permission)
+  }, [profile?.company_role])
+
   return (
     <AuthContext.Provider
       value={{
@@ -89,9 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: session?.user ?? null,
         profile,
         loading,
+        isCompanyStaff: profile?.is_company_staff ?? false,
+        can,
         signIn,
         signUp,
         signOut,
+        resetPassword,
+        refreshProfile,
       }}
     >
       {children}
