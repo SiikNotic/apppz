@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -17,6 +17,8 @@ import {
   Gift,
   Bike,
   Settings,
+  Menu,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -65,6 +67,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
   const { profile, user, can, signOut } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const navItems = NAV_ITEMS_BY_PERMISSION.filter(
     (item) => IMPLEMENTED_ROUTES.has(item.href) && can(item.permission)
@@ -142,29 +145,88 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Nav inferior para móvil */}
-      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-ink-100 bg-white px-1 py-2 lg:hidden">
-        {items.map(({ href, label }) => {
-          const isActive = pathname === href
-          const Icon = ICONS[href] ?? Package
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px] font-semibold',
-                isActive ? 'text-brand-500' : 'text-ink-400'
-              )}
-            >
-              <Icon size={18} aria-hidden="true" />
-              {label}
-            </Link>
-          )
-        })}
-      </nav>
+      {/* Barra superior para móvil: con 10+ secciones no cabían como iconos
+          en una barra inferior, así que en móvil se navega desde un menú
+          de pantalla completa (mismas secciones que el sidebar de escritorio). */}
+      <header className="sticky top-0 z-30 flex items-center justify-between bg-ink-900 px-4 py-3 text-white lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500">
+            <ChefHat size={18} />
+          </span>
+          <div>
+            <p className="text-sm font-extrabold leading-tight">{BRAND_NAME}</p>
+            <p className="text-[10px] text-white/50">Company dashboard</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Abrir menú"
+          aria-expanded={mobileNavOpen}
+          className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 hover:bg-white/20"
+        >
+          <Menu size={20} aria-hidden="true" />
+        </button>
+      </header>
 
-      <main id="company-main" className="min-w-0 flex-1 p-4 pb-24 sm:p-6 lg:pb-6">
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-40 flex flex-col bg-ink-900 text-white lg:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500">
+                <ChefHat size={18} />
+              </span>
+              <p className="text-sm font-extrabold">{BRAND_NAME}</p>
+            </div>
+            <button
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Cerrar menú"
+              className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 hover:bg-white/20"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          </div>
+
+          <nav aria-label="Navegación principal" className="flex-1 space-y-1 overflow-y-auto px-4 py-2">
+            {items.map(({ href, label }) => {
+              const isActive = pathname === href
+              const Icon = ICONS[href] ?? Package
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setMobileNavOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition',
+                    isActive ? 'bg-brand-500 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  )}
+                >
+                  <Icon size={20} aria-hidden="true" />
+                  {label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="space-y-3 border-t border-white/10 px-4 py-4">
+            <div className="px-1">
+              <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
+              <p className="text-[11px] uppercase tracking-wide text-white/40">
+                {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
+              </p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <LogOut size={20} aria-hidden="true" />
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+
+      <main id="company-main" className="min-w-0 flex-1 p-4 pb-6 sm:p-6">
         {children}
       </main>
     </div>
