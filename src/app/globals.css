@@ -155,3 +155,21 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Foco visible consistente para navegación por teclado (WCAG 2.4.7). */
+:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+/* Respeta la preferencia de movimiento reducido del sistema operativo. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

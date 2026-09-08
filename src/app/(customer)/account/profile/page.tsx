@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function ProfilePage() {
   const { user, profile, refreshProfile, signOut } = useAuth()
@@ -92,6 +93,14 @@ export default function ProfilePage() {
             Cerrar sesión
           </Button>
         </div>
+      </Card>
+
+      <Card className="flex max-w-lg items-center justify-between p-6">
+        <div>
+          <h2 className="text-sm font-bold text-ink-900">Apariencia</h2>
+          <p className="text-xs text-ink-400">Elige cómo se ve la app en este dispositivo.</p>
+        </div>
+        <ThemeToggle />
       </Card>
 
       <Card className="max-w-lg space-y-3 p-6">
