@@ -10,11 +10,35 @@ El estilo visual está inspirado en el [Figma de referencia](https://www.figma.c
 
 ## Stack
 
-- **Framework:** Next.js 16 (App Router) + React 19 + TypeScript
+- **Framework:** Next.js 16 (App Router) + React 19 + TypeScript, exportado
+  como sitio 100% estático (`output: 'export'`)
 - **UI:** Tailwind CSS v4 + [shadcn/ui](https://ui.shadcn.com) (Radix primitives: Dialog, Select, Tabs, Checkbox, Label) + Lucide Icons
 - **Backend:** Supabase (Postgres + Auth + Realtime), acceso directo desde el
   cliente con Row Level Security
 - **Gráficas:** Recharts (solo se cargan en el panel de reportes)
+- **Hosting:** GitHub Pages, desplegado automáticamente con GitHub Actions
+
+## Deploy en GitHub Pages
+
+El repo ya trae el workflow `.github/workflows/deploy-pages.yml`: en cada
+push a `main` (o a la rama de este proyecto) construye el sitio con
+`next build` (modo `output: export`) y lo publica en GitHub Pages con las
+acciones oficiales `upload-pages-artifact` + `deploy-pages`.
+
+**Paso manual único** (GitHub no deja activarlo por API): en el repo, ve a
+`Settings → Pages → Build and deployment → Source` y selecciona
+**GitHub Actions**. Después de eso, cada push dispara el deploy solo y el
+sitio queda publicado en `https://<tu-usuario>.github.io/apppz/`.
+
+Como GitHub Pages es hosting puramente estático, la app corre 100% en el
+navegador contra Supabase (no hay servidor Next.js ni rutas API) — por eso
+`next.config.ts` fija `output: 'export'`, `images.unoptimized: true` y un
+`basePath`/`assetPrefix` de `/apppz` que solo se activa cuando el build corre
+dentro de GitHub Actions (variable `GITHUB_ACTIONS=true`); en local
+(`npm run dev` / `npm run build`) la app sigue sirviéndose desde la raíz sin
+ningún prefijo.
+
+Si cambias el nombre del repo, actualiza el valor en `src/lib/base-path.ts`.
 
 ## Estructura
 
@@ -135,11 +159,13 @@ npx shadcn@latest add <componente>
 ## Build de producción
 
 ```bash
-npm run build
-npm start
+npm run build   # genera el sitio estático en out/
+npm run serve   # sirve out/ localmente para previsualizar el build
 ```
 
-Listo para desplegar en Vercel (soporte nativo de Next.js) o cualquier
-hosting compatible con Node.js. Recuerda configurar las variables de entorno
-`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en el hosting
-también.
+Como el proyecto usa `output: 'export'`, `next start` no aplica (no hay
+servidor Next.js corriendo). `out/` es una carpeta 100% estática: además de
+GitHub Pages, puedes subirla tal cual a Netlify, Cloudflare Pages o cualquier
+hosting estático. Recuerda que `NEXT_PUBLIC_SUPABASE_URL` y
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` se inyectan en **build time**, no en
+runtime — si cambias de proyecto de Supabase hay que volver a compilar.

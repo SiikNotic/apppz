@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next'
 import { Providers } from './providers'
+import { BASE_PATH } from '@/lib/base-path'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Nero Pizza Co.',
   description: 'Dark kitchen de pizzas: pedidos para clientes y panel administrativo.',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: `${BASE_PATH}/favicon.svg` },
 }
 
 export const viewport: Viewport = {

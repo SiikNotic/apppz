@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { CheckCircle2, Circle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
@@ -10,16 +10,19 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS } from '@/lib/types'
 import type { Order, OrderItem, OrderStatus } from '@/lib/types'
 
-export default function OrderStatusPage() {
-  const params = useParams()
-  const orderId = typeof params.orderId === 'string' ? params.orderId : undefined
+function OrderStatusContent() {
+  const searchParams = useSearchParams()
+  const orderId = searchParams.get('id') ?? undefined
   const router = useRouter()
   const [order, setOrder] = useState<Order | null>(null)
   const [items, setItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!orderId) return
+    if (!orderId) {
+      setLoading(false)
+      return
+    }
     const id = orderId
     let active = true
 
@@ -132,5 +135,15 @@ export default function OrderStatusPage() {
         Volver al menú
       </Button>
     </div>
+  )
+}
+
+export default function OrderStatusPage() {
+  return (
+    <Suspense
+      fallback={<p className="py-16 text-center text-sm text-ink-400">Cargando pedido…</p>}
+    >
+      <OrderStatusContent />
+    </Suspense>
   )
 }

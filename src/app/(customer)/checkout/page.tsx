@@ -102,7 +102,7 @@ export default function CheckoutPage() {
       }
 
       clear()
-      router.push(`/pedido/${order.id}`)
+      router.push(`/pedido?id=${order.id}`)
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
     } finally {
