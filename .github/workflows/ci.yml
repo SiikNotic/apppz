@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - claude/pizza-dark-kitchen-app-hcg1g1
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # El anon/publishable key de Supabase está protegido por Row Level Security
+  # y está pensado para ser público (termina en el bundle del navegador de
+  # cualquier forma), así que no hace falta guardarlo como secret.
+  NEXT_PUBLIC_SUPABASE_URL: https://zfegecwnyhtihqugyljs.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_CRXjUaIKjKN-KHgHw08mmQ__sXaHD5u
+
+jobs:
+  quality:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      - name: Build static export
+        run: npm run build
+
+  e2e:
+    name: E2E smoke tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke tests
+        run: npm run test:e2e

@@ -7,7 +7,11 @@
     "dev": "next dev",
     "build": "next build",
     "serve": "npx serve@latest out",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.11",
@@ -30,6 +34,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
@@ -39,6 +44,7 @@
     "eslint-config-next": "^16.3.4",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.0"
   }
 }

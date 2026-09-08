@@ -23,6 +23,12 @@ next-env.d.ts
 # Vercel
 .vercel
 
+# Testing
+/test-results/
+/playwright-report/
+/blob-report/
+/coverage/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
