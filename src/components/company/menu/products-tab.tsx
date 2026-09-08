@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Plus, Pencil, Trash2, X, Upload, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,6 +48,9 @@ export function ProductsTab() {
   const [sizes, setSizes] = useState<{ id?: string; name: string; price: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     setLoading(true)
@@ -72,6 +75,7 @@ export function ProductsTab() {
     setForm({ ...EMPTY_FORM, category_id: categories[0]?.id ?? '' })
     setSizes([])
     setError(null)
+    setUploadError(null)
     setFormOpen(true)
   }
 
@@ -87,6 +91,7 @@ export function ProductsTab() {
       active: item.active,
     })
     setError(null)
+    setUploadError(null)
     if (item.is_customizable_pizza) {
       const { data } = await supabase
         .from('item_sizes')
@@ -110,6 +115,28 @@ export function ProductsTab() {
 
   function removeSizeRow(index: number) {
     setSizes((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite volver a elegir el mismo archivo si falla
+    if (!file) return
+
+    setUploadError(null)
+    setUploading(true)
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `${crypto.randomUUID()}.${ext}`
+    const { error: uploadErr } = await supabase.storage.from('menu-images').upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    })
+    setUploading(false)
+    if (uploadErr) {
+      setUploadError('No se pudo subir la imagen. Verifica que sea JPG/PNG/WebP y pese menos de 5MB.')
+      return
+    }
+    const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
+    setForm((prev) => ({ ...prev, image_url: data.publicUrl }))
   }
 
   async function handleSave() {
@@ -269,12 +296,42 @@ export function ProductsTab() {
                 </div>
               </div>
               <div>
-                <Label>URL de imagen (opcional)</Label>
-                <Input
-                  value={form.image_url}
-                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                  placeholder="https://…"
-                />
+                <Label>Foto del producto</Label>
+                <div className="flex items-center gap-3">
+                  <ItemThumb name={form.name || 'Producto'} imageUrl={form.image_url} size="md" />
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleImageSelected}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" /> Subiendo…
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={14} /> {form.image_url ? 'Cambiar foto' : 'Subir foto'}
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-[11px] text-ink-400">JPG, PNG, WebP o GIF · máx. 5MB.</p>
+                    {uploadError && (
+                      <p role="alert" className="text-xs font-semibold text-danger-500">
+                        {uploadError}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
