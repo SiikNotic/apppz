@@ -1,0 +1,350 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ItemThumb } from '@/components/ui/item-thumb'
+import { formatCurrency } from '@/lib/format'
+import type { Category, MenuItem, ItemSize } from '@/lib/types'
+
+const NONE = '__none__'
+
+interface ProductFormState {
+  id?: string
+  name: string
+  description: string
+  category_id: string
+  base_price: string
+  image_url: string
+  is_customizable_pizza: boolean
+  active: boolean
+}
+
+const EMPTY_FORM: ProductFormState = {
+  name: '',
+  description: '',
+  category_id: '',
+  base_price: '0',
+  image_url: '',
+  is_customizable_pizza: false,
+  active: true,
+}
+
+export function ProductsTab() {
+  const [items, setItems] = useState<MenuItem[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [formOpen, setFormOpen] = useState(false)
+  const [form, setForm] = useState<ProductFormState>(EMPTY_FORM)
+  const [sizes, setSizes] = useState<{ id?: string; name: string; price: string }[]>([])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function load() {
+    setLoading(true)
+    const [itemsRes, categoriesRes] = await Promise.all([
+      supabase.from('menu_items').select('*').order('name'),
+      supabase.from('categories').select('*').order('sort_order'),
+    ])
+    setItems(itemsRes.data ?? [])
+    setCategories(categoriesRes.data ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  function categoryName(id: string | null) {
+    return categories.find((c) => c.id === id)?.name ?? 'Sin categoría'
+  }
+
+  function openCreate() {
+    setForm({ ...EMPTY_FORM, category_id: categories[0]?.id ?? '' })
+    setSizes([])
+    setError(null)
+    setFormOpen(true)
+  }
+
+  async function openEdit(item: MenuItem) {
+    setForm({
+      id: item.id,
+      name: item.name,
+      description: item.description ?? '',
+      category_id: item.category_id ?? '',
+      base_price: String(item.base_price),
+      image_url: item.image_url ?? '',
+      is_customizable_pizza: item.is_customizable_pizza,
+      active: item.active,
+    })
+    setError(null)
+    if (item.is_customizable_pizza) {
+      const { data } = await supabase
+        .from('item_sizes')
+        .select('*')
+        .eq('menu_item_id', item.id)
+        .order('sort_order')
+      setSizes((data ?? []).map((s: ItemSize) => ({ id: s.id, name: s.name, price: String(s.price) })))
+    } else {
+      setSizes([])
+    }
+    setFormOpen(true)
+  }
+
+  function addSizeRow() {
+    setSizes((prev) => [...prev, { name: '', price: '0' }])
+  }
+
+  function updateSizeRow(index: number, patch: Partial<{ name: string; price: string }>) {
+    setSizes((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
+  }
+
+  function removeSizeRow(index: number) {
+    setSizes((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleSave() {
+    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    setSaving(true)
+    setError(null)
+
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      category_id: form.category_id || null,
+      base_price: Number(form.base_price) || 0,
+      image_url: form.image_url.trim() || null,
+      is_customizable_pizza: form.is_customizable_pizza,
+      active: form.active,
+    }
+
+    const { data: saved, error } = form.id
+      ? await supabase.from('menu_items').update(payload).eq('id', form.id).select().single()
+      : await supabase.from('menu_items').insert(payload).select().single()
+
+    if (error || !saved) {
+      setSaving(false)
+      return setError(error?.message ?? 'No se pudo guardar el producto')
+    }
+
+    if (form.is_customizable_pizza) {
+      // Estrategia simple: reemplazar los tamaños existentes con los del formulario
+      await supabase.from('item_sizes').delete().eq('menu_item_id', saved.id)
+      const validSizes = sizes.filter((s) => s.name.trim())
+      if (validSizes.length > 0) {
+        await supabase.from('item_sizes').insert(
+          validSizes.map((s, i) => ({
+            menu_item_id: saved.id,
+            name: s.name.trim(),
+            price: Number(s.price) || 0,
+            sort_order: i,
+          }))
+        )
+      }
+    }
+
+    setSaving(false)
+    setFormOpen(false)
+    load()
+  }
+
+  async function toggleActive(item: MenuItem) {
+    await supabase.from('menu_items').update({ active: !item.active }).eq('id', item.id)
+    load()
+  }
+
+  async function handleDelete(item: MenuItem) {
+    if (!confirm(`¿Eliminar "${item.name}" del menú?`)) return
+    const { error } = await supabase.from('menu_items').delete().eq('id', item.id)
+    if (!error) load()
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-extrabold text-ink-900">Productos</h2>
+        <Button size="sm" onClick={openCreate}>
+          <Plus size={14} /> Producto
+        </Button>
+      </div>
+
+      <Card className="divide-y divide-ink-100 p-0">
+        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {!loading && items.length === 0 && (
+          <p className="p-5 text-sm text-ink-400">Sin productos todavía.</p>
+        )}
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <ItemThumb name={item.name} imageUrl={item.image_url} size="sm" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-semibold text-ink-900">{item.name}</span>
+                  {item.is_customizable_pizza && <Badge variant="brand">Personalizable</Badge>}
+                </div>
+                <p className="text-xs text-ink-400">
+                  {categoryName(item.category_id)} · {formatCurrency(item.base_price)}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button onClick={() => toggleActive(item)}>
+                <Badge variant={item.active ? 'success' : 'neutral'}>
+                  {item.active ? 'Activo' : 'Inactivo'}
+                </Badge>
+              </button>
+              <button
+                onClick={() => openEdit(item)}
+                className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+              >
+                <Pencil size={14} />
+              </button>
+              <button
+                onClick={() => handleDelete(item)}
+                className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-lg">
+          <div className="p-6">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+              {form.id ? 'Editar producto' : 'Nuevo producto'}
+            </DialogTitle>
+            <div className="space-y-3">
+              <div>
+                <Label>Nombre</Label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Descripción</Label>
+                <Textarea
+                  rows={2}
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Categoría</Label>
+                  <Select
+                    value={form.category_id || NONE}
+                    onValueChange={(v) => setForm({ ...form, category_id: v === NONE ? '' : v })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Sin categoría</SelectItem>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{form.is_customizable_pizza ? 'Precio base (referencia)' : 'Precio'}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.base_price}
+                    onChange={(e) => setForm({ ...form, base_price: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>URL de imagen (opcional)</Label>
+                <Input
+                  value={form.image_url}
+                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                  placeholder="https://…"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+                <Checkbox
+                  checked={form.is_customizable_pizza}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, is_customizable_pizza: checked === true })
+                  }
+                />
+                Es una pizza personalizable (tamaños, masa, salsa y toppings)
+              </label>
+              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+                <Checkbox
+                  checked={form.active}
+                  onCheckedChange={(checked) => setForm({ ...form, active: checked === true })}
+                />
+                Visible en el menú de clientes
+              </label>
+
+              {form.is_customizable_pizza && (
+                <div className="rounded-2xl bg-ink-50 p-3.5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-wide text-ink-600">Tamaños</p>
+                    <button
+                      onClick={addSizeRow}
+                      className="text-xs font-bold text-brand-500 hover:underline"
+                    >
+                      + Agregar tamaño
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {sizes.map((size, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          placeholder='Ej. 9.5"'
+                          value={size.name}
+                          onChange={(e) => updateSizeRow(i, { name: e.target.value })}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Precio"
+                          value={size.price}
+                          onChange={(e) => updateSizeRow(i, { price: e.target.value })}
+                          className="w-28"
+                        />
+                        <button
+                          onClick={() => removeSizeRow(i)}
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-ink-400 hover:text-danger-500"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    {sizes.length === 0 && (
+                      <p className="text-xs text-ink-400">Agrega al menos un tamaño.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
+              <Button fullWidth onClick={handleSave} disabled={saving}>
+                {saving ? 'Guardando…' : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

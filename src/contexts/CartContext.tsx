@@ -1,5 +1,7 @@
+'use client'
+
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { CartLine } from '../lib/types'
+import type { CartLine } from '@/lib/types'
 
 const STORAGE_KEY = 'pizzeria.cart.v1'
 
@@ -16,6 +18,7 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | undefined>(undefined)
 
 function loadInitial(): CartLine[] {
+  if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     return raw ? (JSON.parse(raw) as CartLine[]) : []
@@ -25,15 +28,22 @@ function loadInitial(): CartLine[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>(loadInitial)
+  const [lines, setLines] = useState<CartLine[]>([])
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
+    setLines(loadInitial())
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(lines))
     } catch {
       // localStorage no disponible (modo privado, etc.) — se ignora silenciosamente
     }
-  }, [lines])
+  }, [lines, hydrated])
 
   function addLine(line: Omit<CartLine, 'lineId'>) {
     const lineId = crypto.randomUUID()
