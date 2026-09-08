@@ -2,8 +2,10 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle2, Circle } from 'lucide-react'
+import { CheckCircle2, Circle, RotateCcw, MessageCircleWarning } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useCart } from '@/contexts/CartContext'
+import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -14,9 +16,12 @@ function OrderStatusContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('id') ?? undefined
   const router = useRouter()
+  const { addLine } = useCart()
   const [order, setOrder] = useState<Order | null>(null)
   const [items, setItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [reordering, setReordering] = useState(false)
+  const [reorderNotice, setReorderNotice] = useState<string | null>(null)
 
   useEffect(() => {
     if (!orderId) {
@@ -67,6 +72,21 @@ function OrderStatusContent() {
   const status = order.status as OrderStatus
   const isOffPath = ORDER_TERMINAL_STATUSES.includes(status)
   const currentIndex = ORDER_STATUS_FLOW.indexOf(status)
+
+  async function handleReorder() {
+    if (!order) return
+    setReordering(true)
+    setReorderNotice(null)
+    const { lines, warnings } = await buildCartLinesFromOrder(order.id)
+    setReordering(false)
+    if (lines.length === 0) {
+      setReorderNotice('Ninguno de los productos de este pedido está disponible ahora mismo.')
+      return
+    }
+    lines.forEach((line) => addLine(line))
+    if (warnings.length > 0) setReorderNotice(warnings.join(' '))
+    router.push('/checkout')
+  }
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
@@ -131,7 +151,26 @@ function OrderStatusContent() {
         </div>
       </Card>
 
-      <Button fullWidth variant="secondary" onClick={() => router.push('/menu')}>
+      {reorderNotice && (
+        <p role="status" className="rounded-2xl bg-amber-50 p-3 text-center text-xs font-semibold text-warning-500">
+          {reorderNotice}
+        </p>
+      )}
+
+      <div className="flex gap-2">
+        <Button fullWidth onClick={handleReorder} disabled={reordering}>
+          <RotateCcw size={16} aria-hidden="true" />
+          {reordering ? 'Agregando…' : 'Ordenar de nuevo'}
+        </Button>
+        <Button fullWidth variant="secondary" asChild>
+          <a href="/help">
+            <MessageCircleWarning size={16} aria-hidden="true" />
+            Reportar un problema
+          </a>
+        </Button>
+      </div>
+
+      <Button fullWidth variant="ghost" onClick={() => router.push('/menu')}>
         Volver al menú
       </Button>
     </div>
