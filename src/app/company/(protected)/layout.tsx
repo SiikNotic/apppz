@@ -165,9 +165,16 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500">
             <ChefHat size={18} />
           </span>
-          <div>
-            <p className="text-sm font-extrabold leading-tight">{BRAND_NAME}</p>
-            <p className="text-[10px] text-white/50">Company dashboard</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold leading-tight">{BRAND_NAME}</p>
+            {/* Sesión actual siempre visible: con varias cuentas de prueba
+                (owner, cocina, conductor…) es fácil no notar con cuál
+                quedaste conectado — sobre todo porque los permisos se
+                aplican de verdad en el servidor, no solo se ocultan botones. */}
+            <p className="truncate text-[10px] text-white/50">
+              {profile?.full_name || user?.email} ·{' '}
+              {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
+            </p>
           </div>
         </div>
         <button
