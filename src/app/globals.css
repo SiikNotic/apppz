@@ -173,3 +173,20 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Etiqueta de pedido (cocina): al imprimir, solo el ticket — nada de
+   overlay, sidebar ni el resto del dashboard. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #order-label-print,
+  #order-label-print * {
+    visibility: visible;
+  }
+  #order-label-print {
+    position: fixed;
+    inset: 0;
+    padding: 1rem;
+  }
+}

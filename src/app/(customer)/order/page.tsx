@@ -6,6 +6,7 @@ import { CheckCircle2, Circle, RotateCcw, MessageCircleWarning } from 'lucide-re
 import { supabase } from '@/lib/supabase'
 import { useCart } from '@/contexts/CartContext'
 import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
+import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-order'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -31,6 +32,18 @@ function OrderStatusContent() {
     const id = orderId
     let active = true
 
+    function syncLastOrder(o: Order | null) {
+      if (!o) return
+      // Mientras el pedido siga activo, lo recordamos para poder mostrar
+      // el aviso de seguimiento aunque el cliente cierre y reabra la app;
+      // una vez llega a un estado final ya no hace falta seguir avisando.
+      if (ORDER_TERMINAL_STATUSES.includes(o.status as OrderStatus)) {
+        clearLastOrderId()
+      } else if (getLastOrderId() === o.id || !getLastOrderId()) {
+        saveLastOrderId(o.id)
+      }
+    }
+
     async function load() {
       const [orderRes, itemsRes] = await Promise.all([
         supabase.from('orders').select('*').eq('id', id).maybeSingle(),
@@ -38,6 +51,7 @@ function OrderStatusContent() {
       ])
       if (!active) return
       setOrder(orderRes.data)
+      syncLastOrder(orderRes.data)
       setItems(itemsRes.data ?? [])
       setLoading(false)
     }
@@ -48,7 +62,11 @@ function OrderStatusContent() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` },
-        (payload) => setOrder(payload.new as Order)
+        (payload) => {
+          const updated = payload.new as Order
+          setOrder(updated)
+          syncLastOrder(updated)
+        }
       )
       .subscribe()
 

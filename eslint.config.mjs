@@ -3,7 +3,10 @@ import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 const eslintConfig = [
   ...nextCoreWebVitals,
   {
-    ignores: ['.next/**', 'node_modules/**'],
+    // Deno/Edge Function: runtime, imports (npm:) y globals distintos a los
+    // del resto del proyecto (Next.js/Node) — se lintea con `deno lint` si
+    // hace falta, no con este config.
+    ignores: ['.next/**', 'node_modules/**', 'supabase/functions/**'],
   },
   {
     rules: {

@@ -6,6 +6,7 @@ import { Minus, Plus, Trash2, ShoppingBag, Tag, Check } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { calculateCartPrice, createOrder, type CartRpcItem } from '@/lib/data-access/orders'
+import { saveLastOrderId } from '@/lib/active-order'
 import { fetchUserAddresses } from '@/lib/data-access/addresses'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -154,6 +155,7 @@ export default function CheckoutPage() {
       })
 
       clear()
+      saveLastOrderId(order.id)
       router.push(`/order?id=${order.id}`)
     } catch (err) {
       // Mensaje accionable, nunca un genérico "algo salió mal".

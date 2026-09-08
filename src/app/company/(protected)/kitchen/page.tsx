@@ -1,15 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Flame, Clock } from 'lucide-react'
+import { Flame, Clock, Printer, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { deductInventoryForOrder } from '@/lib/inventoryDeduction'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { Order, OrderItem, OrderItemTopping, OrderStatus } from '@/lib/types'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { formatDate } from '@/lib/format'
+import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@/lib/types'
 
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
+type AvailableDriver = { user_id: string; full_name: string }
 
 const COLUMNS: { status: OrderStatus; label: string; action: OrderStatus | null; actionLabel: string }[] = [
   { status: 'confirmed', label: 'Nuevos', action: 'preparing', actionLabel: 'ACEPTAR' },
@@ -27,6 +31,14 @@ export default function KitchenViewPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [, forceTick] = useState(0)
 
+  const [labelOrder, setLabelOrder] = useState<KitchenOrder | null>(null)
+
+  const [drivers, setDrivers] = useState<AvailableDriver[]>([])
+  const [assignOrder, setAssignOrder] = useState<KitchenOrder | null>(null)
+  const [selectedDriver, setSelectedDriver] = useState('')
+  const [assigning, setAssigning] = useState(false)
+  const [assignError, setAssignError] = useState<string | null>(null)
+
   async function load() {
     const { data } = await supabase
       .from('orders')
@@ -37,16 +49,38 @@ export default function KitchenViewPage() {
     setLoading(false)
   }
 
+  async function loadAvailableDrivers() {
+    const { data: driverRows } = await supabase.from('drivers').select('user_id').eq('status', 'available')
+    const ids = (driverRows ?? []).map((d) => d.user_id)
+    if (ids.length === 0) {
+      setDrivers([])
+      return
+    }
+    const { data: profiles } = await supabase.from('profiles').select('*').in('id', ids)
+    setDrivers(
+      ids.map((id) => ({
+        user_id: id,
+        full_name: (profiles ?? []).find((p: Profile) => p.id === id)?.full_name || 'Sin nombre',
+      }))
+    )
+  }
+
   useEffect(() => {
     load()
-    const channel = supabase
+    loadAvailableDrivers()
+    const ordersChannel = supabase
       .channel('kitchen-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, load)
+      .subscribe()
+    const driversChannel = supabase
+      .channel('kitchen-drivers')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, loadAvailableDrivers)
       .subscribe()
     // Refresca el "hace X min" cada 30s sin volver a pedir datos.
     const tick = setInterval(() => forceTick((n) => n + 1), 30000)
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(ordersChannel)
+      supabase.removeChannel(driversChannel)
       clearInterval(tick)
     }
   }, [])
@@ -60,6 +94,32 @@ export default function KitchenViewPage() {
     }
     await supabase.from('orders').update({ status: next }).eq('id', order.id)
     setBusyId(null)
+  }
+
+  function openAssign(order: KitchenOrder) {
+    setAssignOrder(order)
+    setSelectedDriver('')
+    setAssignError(null)
+  }
+
+  async function handleAssign() {
+    if (!assignOrder || !selectedDriver) return
+    setAssigning(true)
+    setAssignError(null)
+    const { error } = await supabase.rpc('assign_driver_to_order', {
+      p_order_id: assignOrder.id,
+      p_driver_id: selectedDriver,
+    })
+    setAssigning(false)
+    if (error) {
+      // El RPC valida en servidor (pedido listo, repartidor disponible) y
+      // devuelve un mensaje claro — nunca "algo salió mal".
+      setAssignError(error.message)
+      return
+    }
+    setAssignOrder(null)
+    load()
+    loadAvailableDrivers()
   }
 
   if (loading) return <p className="text-sm text-ink-400">Cargando cocina…</p>
@@ -90,12 +150,21 @@ export default function KitchenViewPage() {
                     <Card key={order.id} className={`p-4 ${priority ? 'border-2 border-danger-500' : ''}`}>
                       <div className="mb-2 flex items-center justify-between">
                         <span className="text-base font-extrabold text-ink-900">#{order.order_number}</span>
-                        <span
-                          className={`flex items-center gap-1 text-xs font-bold ${priority ? 'text-danger-500' : 'text-ink-400'}`}
-                        >
-                          {priority ? <Flame size={12} aria-hidden="true" /> : <Clock size={12} aria-hidden="true" />}
-                          {elapsed} min
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`flex items-center gap-1 text-xs font-bold ${priority ? 'text-danger-500' : 'text-ink-400'}`}
+                          >
+                            {priority ? <Flame size={12} aria-hidden="true" /> : <Clock size={12} aria-hidden="true" />}
+                            {elapsed} min
+                          </span>
+                          <button
+                            onClick={() => setLabelOrder(order)}
+                            aria-label={`Ver etiqueta del pedido #${order.order_number}`}
+                            className="grid h-7 w-7 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                          >
+                            <Printer size={13} aria-hidden="true" />
+                          </button>
+                        </div>
                       </div>
                       <ul className="space-y-2 text-sm">
                         {order.order_items.map((item) => (
@@ -133,6 +202,16 @@ export default function KitchenViewPage() {
                           {col.actionLabel}
                         </Button>
                       )}
+                      {col.status === 'ready' && order.order_type === 'delivery' && (
+                        <Button fullWidth size="lg" className="mt-3" onClick={() => openAssign(order)}>
+                          <Send size={16} aria-hidden="true" /> Enviar a repartidor
+                        </Button>
+                      )}
+                      {col.status === 'ready' && order.order_type === 'pickup' && (
+                        <p className="mt-3 rounded-xl bg-ink-50 p-2 text-center text-xs font-semibold text-ink-600">
+                          Para recoger en tienda — esperando al cliente.
+                        </p>
+                      )}
                     </Card>
                   )
                 })}
@@ -141,6 +220,102 @@ export default function KitchenViewPage() {
           )
         })}
       </div>
+
+      {/* Etiqueta del pedido: pensada para imprimirse y pegarse en la caja. */}
+      <Dialog open={!!labelOrder} onOpenChange={(open) => !open && setLabelOrder(null)}>
+        <DialogContent className="max-w-sm">
+          {labelOrder && (
+            <div className="p-6">
+              <div id="order-label-print" className="space-y-3 font-mono text-sm">
+                <div className="text-center">
+                  <p className="text-lg font-extrabold">PEDIDO #{labelOrder.order_number}</p>
+                  <p className="text-xs">{formatDate(labelOrder.created_at)}</p>
+                </div>
+                <div className="border-t border-dashed border-ink-300 pt-2">
+                  <p className="font-bold uppercase">
+                    {labelOrder.order_type === 'delivery' ? 'A domicilio' : 'Recoger en tienda'}
+                  </p>
+                  <p>{labelOrder.customer_name}</p>
+                  {labelOrder.phone && <p>Tel: {labelOrder.phone}</p>}
+                  {labelOrder.address && <p>{labelOrder.address}</p>}
+                </div>
+                <div className="border-t border-dashed border-ink-300 pt-2">
+                  {labelOrder.order_items.map((item) => (
+                    <div key={item.id} className="mb-1.5">
+                      <p className="font-bold">
+                        {item.quantity}× {item.item_name}
+                        {item.size_name ? ` (${item.size_name})` : ''}
+                      </p>
+                      {(item.crust_name || item.sauce_name) && (
+                        <p className="pl-3 text-xs">{[item.crust_name, item.sauce_name].filter(Boolean).join(' · ')}</p>
+                      )}
+                      {item.order_item_toppings.length > 0 && (
+                        <p className="pl-3 text-xs">+ {item.order_item_toppings.map((t) => t.topping_name).join(', ')}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {labelOrder.notes && (
+                  <div className="border-t border-dashed border-ink-300 pt-2">
+                    <p className="font-bold">Nota: {labelOrder.notes}</p>
+                  </div>
+                )}
+              </div>
+              <Button fullWidth className="mt-4 print:hidden" onClick={() => window.print()}>
+                <Printer size={16} aria-hidden="true" /> Imprimir etiqueta
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Asignar repartidor */}
+      <Dialog open={!!assignOrder} onOpenChange={(open) => !open && setAssignOrder(null)}>
+        <DialogContent className="max-w-sm">
+          {assignOrder && (
+            <div className="p-6">
+              <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">
+                Enviar pedido #{assignOrder.order_number}
+              </DialogTitle>
+              <p className="mb-4 text-sm text-ink-600">Elige quién va a entregarlo.</p>
+
+              {drivers.length === 0 ? (
+                <p className="rounded-2xl bg-ink-50 p-4 text-center text-sm text-ink-400">
+                  No hay repartidores disponibles ahora mismo.
+                </p>
+              ) : (
+                <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Elegir repartidor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {drivers.map((d) => (
+                      <SelectItem key={d.user_id} value={d.user_id}>
+                        {d.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {assignError && (
+                <p role="alert" className="mt-2 text-xs font-semibold text-danger-500">
+                  {assignError}
+                </p>
+              )}
+
+              <Button
+                fullWidth
+                className="mt-4"
+                disabled={!selectedDriver || assigning}
+                onClick={handleAssign}
+              >
+                {assigning ? 'Enviando…' : 'Confirmar y enviar'}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

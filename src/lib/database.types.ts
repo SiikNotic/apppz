@@ -1238,6 +1238,33 @@ export type Database = {
           updated_at: string
           user_id: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "rewards_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assign_driver_to_order: {
+        Args: { p_driver_id: string; p_order_id: string }
+        Returns: {
+          assigned_at: string
+          delivered_at: string | null
+          driver_id: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          picked_up_at: string | null
+          proof_photo_url: string | null
+          signature_url: string | null
+          status: Database["public"]["Enums"]["delivery_assignment_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_assignments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       calculate_cart_price: {
         Args: {
@@ -1284,10 +1311,16 @@ export type Database = {
           total: number
           updated_at: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       has_permission: { Args: { perm: string }; Returns: boolean }
-      is_company_staff: { Args: Record<PropertyKey, never>; Returns: boolean }
-      is_staff: { Args: Record<PropertyKey, never>; Returns: boolean }
+      is_company_staff: { Args: never; Returns: boolean }
+      is_staff: { Args: never; Returns: boolean }
       redeem_points: {
         Args: { p_points: number; p_reason: string }
         Returns: {
@@ -1296,6 +1329,12 @@ export type Database = {
           tier: string
           updated_at: string
           user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rewards_accounts"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       write_audit_log: {

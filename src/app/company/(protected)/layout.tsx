@@ -19,6 +19,7 @@ import {
   Settings,
   Menu,
   X,
+  UserPlus,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,7 @@ const IMPLEMENTED_ROUTES = new Set([
   '/company/kitchen',
   '/company/menu',
   '/company/customers',
+  '/company/team',
   '/company/promotions',
   '/company/rewards',
   '/company/drivers',
@@ -46,6 +48,7 @@ const ICONS: Record<string, LucideIcon> = {
   '/company/kitchen': Flame,
   '/company/menu': UtensilsCrossed,
   '/company/customers': Users,
+  '/company/team': UserPlus,
   '/company/promotions': Tag,
   '/company/rewards': Gift,
   '/company/drivers': Bike,

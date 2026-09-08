@@ -67,6 +67,7 @@ export const NAV_ITEMS_BY_PERMISSION: { href: string; label: string; permission:
   { href: '/company/kitchen', label: 'Kitchen', permission: PERMISSIONS.KITCHEN_VIEW },
   { href: '/company/menu', label: 'Menu', permission: PERMISSIONS.PRODUCTS_VIEW },
   { href: '/company/customers', label: 'Customers', permission: PERMISSIONS.CUSTOMERS_VIEW },
+  { href: '/company/team', label: 'Team', permission: PERMISSIONS.STAFF_MANAGE },
   { href: '/company/promotions', label: 'Promotions', permission: PERMISSIONS.PROMOTIONS_MANAGE },
   { href: '/company/rewards', label: 'Rewards', permission: PERMISSIONS.REWARDS_MANAGE },
   { href: '/company/drivers', label: 'Drivers', permission: PERMISSIONS.DRIVERS_MANAGE },

@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { ShoppingBag, ChefHat, User } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { ActiveOrderBanner } from '@/components/customer/active-order-banner'
 import { formatCurrency } from '@/lib/format'
 import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/config'
 
@@ -56,7 +57,10 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 pb-28 pt-5 sm:px-6">{children}</main>
+      <main className="mx-auto max-w-5xl space-y-4 px-4 pb-28 pt-5 sm:px-6">
+        <ActiveOrderBanner />
+        {children}
+      </main>
 
       <footer className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-ink-100 pt-5 text-xs text-ink-400">
