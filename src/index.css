@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Paleta inspirada en el Figma: naranja tomate cálido sobre crema */
+  --color-brand-50: #fff4ec;
+  --color-brand-100: #ffe4cf;
+  --color-brand-200: #ffc79a;
+  --color-brand-300: #ffa563;
+  --color-brand-400: #fd8138;
+  --color-brand-500: #f2601c;
+  --color-brand-600: #e04a12;
+  --color-brand-700: #b93810;
+  --color-brand-800: #942e14;
+  --color-brand-900: #792814;
+
+  --color-cream-50: #fffdfa;
+  --color-cream-100: #fdf6ec;
+  --color-cream-200: #f8ead6;
+  --color-cream-300: #f1dcbe;
+
+  --color-ink-50: #f6f5f3;
+  --color-ink-100: #e7e4df;
+  --color-ink-400: #7a746b;
+  --color-ink-600: #4a453f;
+  --color-ink-800: #2b2621;
+  --color-ink-900: #1c1815;
+
+  --color-success-500: #2fa76a;
+  --color-warning-500: #e0a800;
+  --color-danger-500: #e0402e;
+
+  --shadow-card: 0 8px 24px -12px rgb(28 24 21 / 0.18);
+  --shadow-pop: 0 16px 40px -16px rgb(28 24 21 / 0.28);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-cream-100);
+  color: var(--color-ink-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-300) transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
