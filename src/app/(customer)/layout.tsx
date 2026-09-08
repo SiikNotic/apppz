@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { ShoppingBag, ChefHat, User } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
@@ -56,6 +57,30 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 pb-28 pt-5 sm:px-6">{children}</main>
+
+      <footer className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-ink-100 pt-5 text-xs text-ink-400">
+          <Link href="/help" className="hover:text-ink-600 hover:underline">
+            Ayuda
+          </Link>
+          <Link href="/terms" className="hover:text-ink-600 hover:underline">
+            Términos
+          </Link>
+          <Link href="/privacy" className="hover:text-ink-600 hover:underline">
+            Privacidad
+          </Link>
+          <Link href="/accessibility" className="hover:text-ink-600 hover:underline">
+            Accesibilidad
+          </Link>
+          <span aria-hidden="true" className="text-ink-100">
+            ·
+          </span>
+          {/* Acceso del equipo: flujo separado del login de clientes, ver /company/login */}
+          <Link href="/company/login" className="hover:text-ink-600 hover:underline">
+            Acceso para el equipo
+          </Link>
+        </div>
+      </footer>
 
       {showCartBar && (
         <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-4">
