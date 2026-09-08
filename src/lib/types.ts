@@ -29,6 +29,7 @@ export type AuditLog = Tables<'audit_logs'>
 export type ProductImage = Tables<'product_images'>
 export type Favorite = Tables<'favorites'>
 export type Setting = Tables<'settings'>
+export type AccountDeletionRequest = Tables<'account_deletion_requests'>
 
 export type OrderStatus =
   | 'pending'

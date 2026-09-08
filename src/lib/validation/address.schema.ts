@@ -16,3 +16,5 @@ export const addressSchema = z.object({
 })
 
 export type AddressInput = z.infer<typeof addressSchema>
+
+export { firstFieldErrors } from './utils'

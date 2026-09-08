@@ -2,13 +2,15 @@
 
 import type { ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { ShoppingBag, ChefHat } from 'lucide-react'
+import { ShoppingBag, ChefHat, User } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { formatCurrency } from '@/lib/format'
 import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/config'
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {
   const { itemCount, subtotal } = useCart()
+  const { session } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const showCartBar = itemCount > 0 && pathname === '/'
@@ -26,18 +28,30 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
               <span className="block text-[11px] font-medium text-white/80">{BRAND_TAGLINE}</span>
             </span>
           </button>
-          <button
-            onClick={() => router.push('/checkout')}
-            className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15 hover:bg-white/25"
-            aria-label="Ver carrito"
-          >
-            <ShoppingBag size={20} />
-            {itemCount > 0 && (
-              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-ink-900 px-1 text-[10px] font-bold">
-                {itemCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(session ? '/account/profile' : '/login')}
+              className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15 hover:bg-white/25"
+              aria-label={session ? 'Mi cuenta' : 'Iniciar sesión'}
+            >
+              <User size={20} aria-hidden="true" />
+            </button>
+            <button
+              onClick={() => router.push('/checkout')}
+              className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15 hover:bg-white/25"
+              aria-label={`Ver carrito${itemCount > 0 ? `, ${itemCount} ${itemCount === 1 ? 'artículo' : 'artículos'}` : ''}`}
+            >
+              <ShoppingBag size={20} aria-hidden="true" />
+              {itemCount > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-ink-900 px-1 text-[10px] font-bold"
+                >
+                  {itemCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
