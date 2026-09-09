@@ -14,6 +14,7 @@ import {
   PartyPopper,
   Dog,
   KeyRound,
+  MessageCircleWarning,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -21,6 +22,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DeliveryChat } from '@/components/shared/delivery-chat'
+import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { Address, DeliveryAssignment, Driver, Order } from '@/lib/types'
 
@@ -90,6 +92,7 @@ export default function DriverPage() {
   const [error, setError] = useState<string | null>(null)
   const [togglingStatus, setTogglingStatus] = useState(false)
   const [routeCompletedFlash, setRouteCompletedFlash] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   async function loadAll() {
     if (!user) return
@@ -313,6 +316,10 @@ export default function DriverPage() {
 
             <DeliveryChat assignmentId={current.id} role="driver" active />
 
+            <Button fullWidth variant="secondary" onClick={() => setReportOpen(true)}>
+              <MessageCircleWarning size={16} aria-hidden="true" /> Reportar un problema
+            </Button>
+
             <div className="flex gap-2 border-t border-ink-100 pt-3">
               {current.status === 'assigned' && (
                 <Button
@@ -340,6 +347,13 @@ export default function DriverPage() {
               )}
             </div>
           </Card>
+
+          <ReportProblemDialog
+            open={reportOpen}
+            onOpenChange={setReportOpen}
+            orderId={current.order.id}
+            customerId={user?.id ?? null}
+          />
 
           {/* Cola de siguientes entregas — orden manual del conductor
               (sube/baja), no una ruta óptima calculada (ver nota arriba). */}

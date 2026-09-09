@@ -23,10 +23,14 @@ import {
   UserPlus,
   MessageCircleWarning,
   Home,
+  BellRing,
+  Volume2,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { BRAND_NAME } from '@/lib/config'
 import { NAV_ITEMS_BY_PERMISSION } from '@/lib/auth/permissions'
 
@@ -79,6 +83,31 @@ function CompanyChrome({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
+  // Reportes de soporte abiertos: visible en TODO el dashboard (no solo en
+  // /company/support) mediante un badge en el nav + la misma alerta
+  // visual/audible que ya usa Cocina para pedidos nuevos (useNewOrderAlert
+  // es genérico — se reutiliza aquí en vez de duplicar el mecanismo).
+  const canSeeSupport = can('customers.view')
+  const [openReportIds, setOpenReportIds] = useState<string[]>([])
+  useEffect(() => {
+    if (!canSeeSupport) return
+    let active = true
+    async function loadOpenReports() {
+      const { data } = await supabase.from('issue_reports').select('id').neq('status', 'resolved')
+      if (active) setOpenReportIds((data ?? []).map((r) => r.id))
+    }
+    loadOpenReports()
+    const channel = supabase
+      .channel('support-reports-alert')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'issue_reports' }, loadOpenReports)
+      .subscribe()
+    return () => {
+      active = false
+      supabase.removeChannel(channel)
+    }
+  }, [canSeeSupport])
+  const { alertActive, needsUnlock, unlock, dismiss } = useNewOrderAlert(openReportIds)
+
   const navItems = NAV_ITEMS_BY_PERMISSION.filter(
     (item) => IMPLEMENTED_ROUTES.has(item.href) && can(item.permission)
   )
@@ -128,6 +157,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             {items.map(({ href, label }) => {
               const isActive = pathname === href
               const Icon = ICONS[href] ?? Package
+              const unreadCount = href === '/company/support' ? openReportIds.length : 0
               return (
                 <Link
                   key={href}
@@ -141,7 +171,12 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                   )}
                 >
                   <Icon size={18} aria-hidden="true" />
-                  {label}
+                  <span className="flex-1">{label}</span>
+                  {unreadCount > 0 && (
+                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -224,6 +259,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             {items.map(({ href, label }) => {
               const isActive = pathname === href
               const Icon = ICONS[href] ?? Package
+              const unreadCount = href === '/company/support' ? openReportIds.length : 0
               return (
                 <Link
                   key={href}
@@ -236,7 +272,12 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                   )}
                 >
                   <Icon size={20} aria-hidden="true" />
-                  {label}
+                  <span className="flex-1">{label}</span>
+                  {unreadCount > 0 && (
+                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -268,7 +309,42 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <main id="company-main" className="min-w-0 flex-1 p-4 pb-6 sm:p-6">
+      <main id="company-main" className="min-w-0 flex-1 space-y-4 p-4 pb-6 sm:p-6">
+        {/* Visible en cualquier página del dashboard, no solo en Soporte —
+            si alguien necesita ayuda, el equipo debe enterarse esté donde
+            esté. Se omite en /company/support porque ya está viendo la
+            lista completa ahí mismo. */}
+        {pathname !== '/company/support' && needsUnlock && (
+          <button
+            onClick={unlock}
+            className="flex w-full items-center gap-2 rounded-2xl bg-ink-50 px-4 py-3 text-sm font-semibold text-ink-600 hover:bg-ink-100"
+          >
+            <Volume2 size={16} aria-hidden="true" />
+            Activar sonido de alerta para reportes de soporte
+          </button>
+        )}
+        {pathname !== '/company/support' && alertActive && (
+          <div
+            role="status"
+            className="flex items-center justify-between gap-3 rounded-2xl bg-danger-500 px-4 py-3 font-bold text-white shadow-pop"
+          >
+            <span className="flex items-center gap-2">
+              <BellRing size={18} aria-hidden="true" /> Nuevo reporte de soporte — alguien necesita ayuda.
+            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                href="/company/support"
+                onClick={dismiss}
+                className="rounded-full bg-white/20 px-3 py-1 text-xs hover:bg-white/30"
+              >
+                Ver
+              </Link>
+              <button onClick={dismiss} aria-label="Cerrar aviso" className="rounded-full p-1 hover:bg-white/20">
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
         {children}
       </main>
     </div>
