@@ -273,9 +273,20 @@ export default function KitchenViewPage() {
                         </Button>
                       )}
                       {col.status === 'ready' && order.order_type === 'pickup' && (
-                        <p className="mt-3 rounded-xl bg-ink-50 p-2 text-center text-xs font-semibold text-ink-600">
-                          Para recoger en tienda — esperando al cliente.
-                        </p>
+                        <>
+                          <p className="mt-3 rounded-xl bg-ink-50 p-2 text-center text-xs font-semibold text-ink-600">
+                            Para recoger en tienda — esperando al cliente.
+                          </p>
+                          <Button
+                            fullWidth
+                            size="lg"
+                            className="mt-2"
+                            disabled={busyId === order.id}
+                            onClick={() => advance(order, 'delivered')}
+                          >
+                            Marcar como recogido
+                          </Button>
+                        </>
                       )}
                     </Card>
                   )
