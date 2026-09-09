@@ -189,6 +189,7 @@ export type Database = {
           order_id: string
           picked_up_at: string | null
           proof_photo_url: string | null
+          route_order: number | null
           signature_url: string | null
           status: Database["public"]["Enums"]["delivery_assignment_status"]
         }
@@ -201,6 +202,7 @@ export type Database = {
           order_id: string
           picked_up_at?: string | null
           proof_photo_url?: string | null
+          route_order?: number | null
           signature_url?: string | null
           status?: Database["public"]["Enums"]["delivery_assignment_status"]
         }
@@ -213,6 +215,7 @@ export type Database = {
           order_id?: string
           picked_up_at?: string | null
           proof_photo_url?: string | null
+          route_order?: number | null
           signature_url?: string | null
           status?: Database["public"]["Enums"]["delivery_assignment_status"]
         }
@@ -1270,6 +1273,7 @@ export type Database = {
           order_id: string
           picked_up_at: string | null
           proof_photo_url: string | null
+          route_order: number | null
           signature_url: string | null
           status: Database["public"]["Enums"]["delivery_assignment_status"]
         }
@@ -1347,6 +1351,7 @@ export type Database = {
           order_id: string
           picked_up_at: string | null
           proof_photo_url: string | null
+          route_order: number | null
           signature_url: string | null
           status: Database["public"]["Enums"]["delivery_assignment_status"]
         }

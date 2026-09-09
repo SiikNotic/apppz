@@ -9,9 +9,10 @@ import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-order'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { DeliveryChat } from '@/components/shared/delivery-chat'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
-import type { Order, OrderItem, OrderStatus } from '@/lib/types'
+import type { DeliveryAssignment, Order, OrderItem, OrderStatus } from '@/lib/types'
 
 function OrderStatusContent() {
   const searchParams = useSearchParams()
@@ -20,6 +21,7 @@ function OrderStatusContent() {
   const { addLine } = useCart()
   const [order, setOrder] = useState<Order | null>(null)
   const [items, setItems] = useState<OrderItem[]>([])
+  const [assignment, setAssignment] = useState<DeliveryAssignment | null>(null)
   const [loading, setLoading] = useState(true)
   const [reordering, setReordering] = useState(false)
   const [reorderNotice, setReorderNotice] = useState<string | null>(null)
@@ -44,6 +46,17 @@ function OrderStatusContent() {
       }
     }
 
+    async function loadAssignment() {
+      const { data } = await supabase
+        .from('delivery_assignments')
+        .select('*')
+        .eq('order_id', id)
+        .order('assigned_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (active) setAssignment(data)
+    }
+
     async function load() {
       const [orderRes, itemsRes] = await Promise.all([
         supabase.from('orders').select('*').eq('id', id).maybeSingle(),
@@ -54,6 +67,7 @@ function OrderStatusContent() {
       syncLastOrder(orderRes.data)
       setItems(itemsRes.data ?? [])
       setLoading(false)
+      if (orderRes.data?.order_type === 'delivery') loadAssignment()
     }
     load()
 
@@ -66,7 +80,13 @@ function OrderStatusContent() {
           const updated = payload.new as Order
           setOrder(updated)
           syncLastOrder(updated)
+          if (updated.order_type === 'delivery') loadAssignment()
         }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'delivery_assignments', filter: `order_id=eq.${id}` },
+        () => loadAssignment()
       )
       .subscribe()
 
@@ -140,6 +160,10 @@ function OrderStatusContent() {
             })}
           </ol>
         </Card>
+      )}
+
+      {assignment && (assignment.status === 'assigned' || assignment.status === 'en_route') && (
+        <DeliveryChat assignmentId={assignment.id} role="customer" active />
       )}
 
       <Card className="space-y-3 p-5">
