@@ -12,6 +12,7 @@ import { Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { IssueReportMessage } from '@/lib/types'
 
 type MessageWithSender = IssueReportMessage & { sender: { full_name: string | null } | null }
@@ -24,6 +25,7 @@ interface SupportChatThreadProps {
 }
 
 export function SupportChatThread({ reportId, currentUserId, isStaff }: SupportChatThreadProps) {
+  const { t } = useLanguage()
   const [messages, setMessages] = useState<MessageWithSender[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
@@ -94,9 +96,9 @@ export function SupportChatThread({ reportId, currentUserId, isStaff }: SupportC
   return (
     <div className="flex flex-col gap-3">
       <div className="max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-ink-50 p-3">
-        {loading && <p className="text-xs text-ink-400">Cargando…</p>}
+        {loading && <p className="text-xs text-ink-400">{t('common.loading')}</p>}
         {!loading && messages.length === 0 && (
-          <p className="text-xs text-ink-400">Sin mensajes todavía — escribe el primero.</p>
+          <p className="text-xs text-ink-400">{t('sharedChat.noMessagesYet')}</p>
         )}
         {messages.map((m) => {
           const mine = m.sender_id === currentUserId
@@ -109,7 +111,7 @@ export function SupportChatThread({ reportId, currentUserId, isStaff }: SupportC
               >
                 {!mine && (
                   <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-400">
-                    {m.sender?.full_name || (isStaff ? 'Cliente' : 'Soporte')}
+                    {m.sender?.full_name || (isStaff ? t('rewardsAdmin.customerFallback') : t('sharedChat.supportFallback'))}
                   </p>
                 )}
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>
@@ -126,8 +128,8 @@ export function SupportChatThread({ reportId, currentUserId, isStaff }: SupportC
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSend()
           }}
-          placeholder="Escribe un mensaje…"
-          aria-label="Mensaje"
+          placeholder={t('sharedChat.messagePlaceholder')}
+          aria-label={t('sharedChat.messageAria')}
         />
         <Button size="sm" onClick={handleSend} disabled={sending || !text.trim()}>
           <Send size={14} aria-hidden="true" />

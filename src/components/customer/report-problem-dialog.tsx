@@ -15,15 +15,25 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SupportChatThread } from '@/components/shared/support-chat-thread'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { ISSUE_REPORT_CATEGORY_LABELS } from '@/lib/types'
 import type { IssueReport } from '@/lib/types'
 
 const CATEGORIES = Object.keys(ISSUE_REPORT_CATEGORY_LABELS)
 
-const STATUS_LABELS: Record<string, string> = {
-  open: 'Abierto',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
+const CATEGORY_KEYS: Record<string, string> = {
+  wrong_order: 'support.categoryWrongOrder',
+  missing_item: 'support.categoryMissingItem',
+  damaged_order: 'support.categoryDamagedOrder',
+  delivery_issue: 'support.categoryDeliveryIssue',
+  payment_issue: 'support.categoryPaymentIssue',
+  other: 'support.categoryOther',
+}
+
+const STATUS_KEYS: Record<string, string> = {
+  open: 'support.statusOpen',
+  in_progress: 'support.statusInProgress',
+  resolved: 'support.statusResolved',
 }
 
 interface ReportProblemDialogProps {
@@ -34,6 +44,7 @@ interface ReportProblemDialogProps {
 }
 
 export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }: ReportProblemDialogProps) {
+  const { t } = useLanguage()
   const [checking, setChecking] = useState(true)
   const [existingReport, setExistingReport] = useState<IssueReport | null>(null)
 
@@ -90,7 +101,7 @@ export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }:
       .single()
     setSending(false)
     if (insertError || !data) {
-      setError('No se pudo enviar el reporte. Intenta de nuevo.')
+      setError(t('sharedChat.sendReportFailed'))
       return
     }
     setExistingReport(data)
@@ -101,32 +112,32 @@ export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }:
       <DialogContent className="max-w-sm">
         <div className="p-6">
           {checking ? (
-            <p className="py-6 text-center text-sm text-ink-400">Cargando…</p>
+            <p className="py-6 text-center text-sm text-ink-400">{t('common.loading')}</p>
           ) : existingReport ? (
             <>
               <div className="mb-3 flex items-center justify-between">
-                <DialogTitle className="text-lg font-extrabold text-ink-900">Tu reporte</DialogTitle>
+                <DialogTitle className="text-lg font-extrabold text-ink-900">{t('sharedChat.yourReport')}</DialogTitle>
                 <Badge variant={existingReport.status === 'resolved' ? 'success' : 'warning'}>
-                  {STATUS_LABELS[existingReport.status] ?? existingReport.status}
+                  {STATUS_KEYS[existingReport.status] ? t(STATUS_KEYS[existingReport.status]) : existingReport.status}
                 </Badge>
               </div>
               <p className="mb-3 text-xs text-ink-400">
-                {ISSUE_REPORT_CATEGORY_LABELS[existingReport.category] ?? existingReport.category}
+                {CATEGORY_KEYS[existingReport.category] ? t(CATEGORY_KEYS[existingReport.category]) : existingReport.category}
                 {existingReport.description ? ` — ${existingReport.description}` : ''}
               </p>
               {customerId ? (
                 <SupportChatThread reportId={existingReport.id} currentUserId={customerId} isStaff={false} />
               ) : (
-                <p className="text-xs text-ink-400">Inicia sesión para poder escribir en la conversación.</p>
+                <p className="text-xs text-ink-400">{t('sharedChat.loginToChat')}</p>
               )}
             </>
           ) : (
             <>
-              <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">Reportar un problema</DialogTitle>
-              <p className="mb-4 text-sm text-ink-400">Cuéntanos qué pasó con este pedido.</p>
+              <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">{t('sharedChat.reportProblemTitle')}</DialogTitle>
+              <p className="mb-4 text-sm text-ink-400">{t('sharedChat.reportProblemSubtitle')}</p>
 
               <div className="mb-4">
-                <Label>Categoría</Label>
+                <Label>{t('sharedChat.category')}</Label>
                 <div className="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {CATEGORIES.map((key) => (
                     <button
@@ -140,20 +151,20 @@ export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }:
                           : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
                       }`}
                     >
-                      {ISSUE_REPORT_CATEGORY_LABELS[key]}
+                      {t(CATEGORY_KEYS[key])}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="mb-4">
-                <Label htmlFor="report-description">Descripción (opcional)</Label>
+                <Label htmlFor="report-description">{t('rewardsAdmin.descriptionOptional')}</Label>
                 <Textarea
                   id="report-description"
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Danos más detalles si puedes…"
+                  placeholder={t('sharedChat.descriptionPlaceholder')}
                 />
               </div>
 
@@ -164,7 +175,7 @@ export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }:
               )}
 
               <Button fullWidth onClick={handleSubmit} disabled={sending}>
-                {sending ? 'Enviando…' : 'Enviar reporte'}
+                {sending ? t('kitchen.sending') : t('sharedChat.sendReport')}
               </Button>
             </>
           )}

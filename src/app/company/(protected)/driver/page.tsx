@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { DeliveryChat } from '@/components/shared/delivery-chat'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Address, DeliveryAssignment, Driver, DriverShift, Order } from '@/lib/types'
 
 type AssignmentWithOrder = DeliveryAssignment & { order: Order; address: Address | null }
@@ -82,6 +83,7 @@ function navigateUrl(address: string) {
 
 export default function DriverPage() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const isDriver = profile?.company_role === 'driver'
 
   const [driver, setDriver] = useState<Driver | null>(null)
@@ -185,7 +187,7 @@ export default function DriverPage() {
   }
 
   async function markFailed(assignmentId: string) {
-    if (!confirm('¿Marcar esta entrega como no completada? El pedido pasará a "fallido".')) return
+    if (!confirm(t('driverPage.confirmMarkFailed'))) return
     await updateAssignment(assignmentId, 'failed')
   }
 
@@ -214,12 +216,12 @@ export default function DriverPage() {
     return (
       <Card className="flex flex-col items-center gap-2 p-10 text-center">
         <Bike size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">Esta vista es solo para cuentas de conductor.</p>
+        <p className="text-sm text-ink-400">{t('driverPage.notDriverOnly')}</p>
       </Card>
     )
   }
 
-  if (loading) return <p className="text-sm text-ink-400">Cargando…</p>
+  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
 
   const [current, ...queue] = active
 
@@ -227,9 +229,11 @@ export default function DriverPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">Mis entregas</h1>
+          <h1 className="text-2xl font-extrabold text-ink-900">{t('driverPage.title')}</h1>
           <p className="text-sm text-ink-400">
-            {profile?.full_name ? `Hola, ${profile.full_name.split(' ')[0]}.` : 'Tus pedidos asignados.'}
+            {profile?.full_name
+              ? t('driverPage.greeting', { name: profile.full_name.split(' ')[0] })
+              : t('driverPage.subtitleFallback')}
           </p>
         </div>
         <Button
@@ -239,10 +243,10 @@ export default function DriverPage() {
           onClick={toggleAvailability}
         >
           {driver?.status === 'on_delivery'
-            ? 'En una entrega'
+            ? t('driverPage.statusOnDelivery')
             : driver?.status === 'available'
-              ? 'Disponible'
-              : 'Desconectado'}
+              ? t('driverPage.statusAvailable')
+              : t('driverPage.statusOffline')}
         </Button>
       </div>
 
@@ -252,19 +256,19 @@ export default function DriverPage() {
       <Card className="flex items-center justify-between p-4">
         <div>
           <p className="text-sm font-bold text-ink-900">
-            {openShift ? 'Turno activo' : 'Sin turno iniciado'}
+            {openShift ? t('driverPage.shiftActive') : t('driversAdmin.noShiftStarted')}
           </p>
           {openShift && (
-            <p className="text-xs text-ink-400">Desde {formatDate(openShift.clock_in_at)}</p>
+            <p className="text-xs text-ink-400">{t('teamAdmin.sinceDate', { date: formatDate(openShift.clock_in_at) })}</p>
           )}
         </div>
         {openShift ? (
           <Button size="sm" variant="secondary" disabled={shiftBusy} onClick={clockOut}>
-            {shiftBusy ? 'Guardando…' : 'Marcar salida'}
+            {shiftBusy ? t('menuMgmt.savingButton') : t('driverPage.clockOut')}
           </Button>
         ) : (
           <Button size="sm" disabled={shiftBusy} onClick={clockIn}>
-            {shiftBusy ? 'Guardando…' : 'Marcar entrada'}
+            {shiftBusy ? t('menuMgmt.savingButton') : t('driverPage.clockIn')}
           </Button>
         )}
       </Card>
@@ -280,16 +284,16 @@ export default function DriverPage() {
           {routeCompletedFlash ? (
             <>
               <PartyPopper size={28} className="text-brand-900" aria-hidden="true" />
-              <p className="text-base font-extrabold text-ink-900">¡Ruta completada!</p>
-              <p className="text-sm text-ink-400">No te quedan más entregas por ahora. Buen trabajo.</p>
+              <p className="text-base font-extrabold text-ink-900">{t('driverPage.routeCompletedTitle')}</p>
+              <p className="text-sm text-ink-400">{t('driverPage.routeCompletedBody')}</p>
             </>
           ) : (
             <>
               <Package size={24} className="text-ink-200" aria-hidden="true" />
               <p className="text-sm text-ink-400">
                 {driver?.status === 'available'
-                  ? 'Sin entregas asignadas todavía. Te avisaremos aquí en cuanto llegue una.'
-                  : 'Ponte "Disponible" para poder recibir entregas.'}
+                  ? t('driverPage.noAssignmentsAvailable')
+                  : t('driverPage.goAvailablePrompt')}
               </p>
             </>
           )}
@@ -303,7 +307,7 @@ export default function DriverPage() {
             <div className="flex items-center justify-between">
               <span className="text-base font-extrabold text-ink-900">#{current.order.order_number}</span>
               <Badge variant={current.status === 'en_route' ? 'brand' : 'warning'}>
-                {current.status === 'en_route' ? 'En camino' : 'Por recoger'}
+                {current.status === 'en_route' ? t('driverPage.enRoute') : t('driverPage.toPickup')}
               </Badge>
             </div>
 
@@ -311,19 +315,19 @@ export default function DriverPage() {
               <p className="flex items-start gap-2">
                 <MapPin size={16} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
                 <span>
-                  {current.order.address || 'Sin dirección registrada'}
-                  {current.address?.apartment && ` · Depto/Unidad: ${current.address.apartment}`}
+                  {current.order.address || t('driverPage.noAddress')}
+                  {current.address?.apartment && ` · ${t('driverPage.apartmentPrefix')} ${current.address.apartment}`}
                 </span>
               </p>
               {current.address?.access_code && (
                 <p className="flex items-center gap-2 text-warning-500">
                   <KeyRound size={16} className="shrink-0" aria-hidden="true" />
-                  Código de acceso: <span className="font-bold">{current.address.access_code}</span>
+                  {t('driverPage.accessCode')} <span className="font-bold">{current.address.access_code}</span>
                 </p>
               )}
               {current.address?.dog_warning && (
                 <p className="flex items-center gap-2 font-semibold text-danger-500">
-                  <Dog size={16} className="shrink-0" aria-hidden="true" /> Cuidado: hay perro en la propiedad
+                  <Dog size={16} className="shrink-0" aria-hidden="true" /> {t('driverPage.dogWarning')}
                 </p>
               )}
               {(current.address?.instructions || current.address?.delivery_notes) && (
@@ -335,7 +339,7 @@ export default function DriverPage() {
               )}
               {current.notes && (
                 <p className="rounded-2xl bg-amber-50 p-3 text-xs text-warning-500">
-                  Nota del pedido: {current.notes}
+                  {t('driverPage.orderNote')} {current.notes}
                 </p>
               )}
               <p className="font-bold text-ink-900">{formatCurrency(current.order.total)}</p>
@@ -344,18 +348,18 @@ export default function DriverPage() {
             <div className="grid grid-cols-2 gap-2">
               <Button asChild fullWidth variant="secondary">
                 <a href={navigateUrl(current.order.address || '')} target="_blank" rel="noopener noreferrer">
-                  <Navigation size={16} aria-hidden="true" /> Navegar
+                  <Navigation size={16} aria-hidden="true" /> {t('driverPage.navigate')}
                 </a>
               </Button>
               {current.order.phone ? (
                 <Button asChild fullWidth variant="secondary">
                   <a href={`tel:${current.order.phone}`}>
-                    <Phone size={16} aria-hidden="true" /> Llamar
+                    <Phone size={16} aria-hidden="true" /> {t('driverPage.call')}
                   </a>
                 </Button>
               ) : (
                 <Button fullWidth variant="secondary" disabled>
-                  <Phone size={16} aria-hidden="true" /> Sin teléfono
+                  <Phone size={16} aria-hidden="true" /> {t('driverPage.noPhone')}
                 </Button>
               )}
             </div>
@@ -363,7 +367,7 @@ export default function DriverPage() {
             <DeliveryChat assignmentId={current.id} role="driver" active />
 
             <Button fullWidth variant="secondary" onClick={() => setReportOpen(true)}>
-              <MessageCircleWarning size={16} aria-hidden="true" /> Reportar un problema
+              <MessageCircleWarning size={16} aria-hidden="true" /> {t('driverPage.reportProblem')}
             </Button>
 
             <div className="flex gap-2 border-t border-ink-100 pt-3">
@@ -373,19 +377,19 @@ export default function DriverPage() {
                   disabled={busyId === current.id}
                   onClick={() => updateAssignment(current.id, 'en_route')}
                 >
-                  Voy en camino
+                  {t('driverPage.onTheWay')}
                 </Button>
               )}
               {current.status === 'en_route' && (
                 <>
                   <Button fullWidth disabled={busyId === current.id} onClick={() => updateAssignment(current.id, 'delivered')}>
-                    <CheckCircle2 size={16} aria-hidden="true" /> Entregado
+                    <CheckCircle2 size={16} aria-hidden="true" /> {t('driverPage.delivered')}
                   </Button>
                   <Button
                     variant="secondary"
                     disabled={busyId === current.id}
                     onClick={() => markFailed(current.id)}
-                    aria-label="No se pudo entregar"
+                    aria-label={t('driverPage.cannotDeliverAria')}
                   >
                     <X size={16} aria-hidden="true" />
                   </Button>
@@ -406,7 +410,7 @@ export default function DriverPage() {
           {queue.length > 0 && (
             <div>
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
-                Siguientes ({queue.length})
+                {t('driverPage.nextCount', { count: queue.length })}
               </h2>
               <div className="space-y-2">
                 {queue.map((a, i) => {
@@ -416,7 +420,7 @@ export default function DriverPage() {
                       <div className="flex shrink-0 flex-col">
                         <button
                           onClick={() => moveInQueue(queueIndex, -1)}
-                          aria-label="Subir en la cola"
+                          aria-label={t('driverPage.moveUpAria')}
                           className="grid h-6 w-6 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900"
                         >
                           <ChevronUp size={14} />
@@ -424,7 +428,7 @@ export default function DriverPage() {
                         <button
                           onClick={() => moveInQueue(queueIndex, 1)}
                           disabled={i === queue.length - 1}
-                          aria-label="Bajar en la cola"
+                          aria-label={t('driverPage.moveDownAria')}
                           className="grid h-6 w-6 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900 disabled:opacity-30"
                         >
                           <ChevronDown size={14} />
@@ -432,7 +436,7 @@ export default function DriverPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-ink-900">
-                          #{a.order.order_number} · {a.order.address || 'Sin dirección'}
+                          #{a.order.order_number} · {a.order.address || t('driverPage.noAddressShort')}
                         </p>
                         <p className="text-xs text-ink-400">{formatCurrency(a.order.total)}</p>
                       </div>
@@ -447,7 +451,7 @@ export default function DriverPage() {
 
       {history.length > 0 && (
         <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-600">Recientes</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-600">{t('driverPage.recentHeading')}</h2>
           <Card className="divide-y divide-ink-100 p-0">
             {history.map((a) => (
               <div key={a.id} className="flex items-center justify-between px-5 py-3">
@@ -456,7 +460,7 @@ export default function DriverPage() {
                   <p className="text-xs text-ink-400">{formatDate(a.assigned_at)}</p>
                 </div>
                 <Badge variant={a.status === 'delivered' ? 'success' : 'danger'}>
-                  {a.status === 'delivered' ? 'Entregado' : 'No entregado'}
+                  {a.status === 'delivered' ? t('driverPage.delivered') : t('driverPage.notDelivered')}
                 </Badge>
               </div>
             ))}

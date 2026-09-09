@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface ChatMessage {
@@ -33,6 +34,7 @@ interface DeliveryChatProps {
 const MAX_MESSAGES = 200
 
 export function DeliveryChat({ assignmentId, role, active }: DeliveryChatProps) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
@@ -83,7 +85,7 @@ export function DeliveryChat({ assignmentId, role, active }: DeliveryChatProps) 
     return (
       <Button variant="secondary" fullWidth onClick={() => setOpen(true)}>
         <MessageCircle size={16} aria-hidden="true" />
-        {role === 'driver' ? 'Chat con el cliente' : 'Chat con el conductor'}
+        {role === 'driver' ? t('sharedChat.chatWithCustomer') : t('sharedChat.chatWithDriver')}
       </Button>
     )
   }
@@ -92,24 +94,22 @@ export function DeliveryChat({ assignmentId, role, active }: DeliveryChatProps) 
     <Card className="flex h-80 flex-col gap-0 overflow-hidden p-0">
       <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
         <p className="text-sm font-bold text-ink-900">
-          {role === 'driver' ? 'Chat con el cliente' : 'Chat con el conductor'}
+          {role === 'driver' ? t('sharedChat.chatWithCustomer') : t('sharedChat.chatWithDriver')}
         </p>
         <button
           onClick={() => setOpen(false)}
           className="text-xs font-semibold text-ink-400 hover:text-ink-600"
         >
-          Cerrar
+          {t('common.close')}
         </button>
       </div>
 
       <div ref={listRef} className="flex-1 space-y-2 overflow-y-auto p-4">
         {!connected && (
-          <p className="text-center text-xs text-ink-400">Conectando…</p>
+          <p className="text-center text-xs text-ink-400">{t('sharedChat.connecting')}</p>
         )}
         {connected && messages.length === 0 && (
-          <p className="text-center text-xs text-ink-400">
-            Este chat es temporal — solo existe mientras dure la entrega.
-          </p>
+          <p className="text-center text-xs text-ink-400">{t('sharedChat.ephemeralNotice')}</p>
         )}
         {messages.map((m, i) => (
           <div
@@ -133,15 +133,15 @@ export function DeliveryChat({ assignmentId, role, active }: DeliveryChatProps) 
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Escribe un mensaje…"
-          aria-label="Mensaje"
+          placeholder={t('sharedChat.messagePlaceholder')}
+          aria-label={t('sharedChat.messageAria')}
           disabled={!connected}
           className="h-10 flex-1 rounded-full border border-ink-100 bg-white px-4 text-sm outline-none focus:border-brand-500 disabled:opacity-50"
         />
         <button
           onClick={handleSend}
           disabled={!connected || !draft.trim()}
-          aria-label="Enviar mensaje"
+          aria-label={t('sharedChat.sendMessageAria')}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-ink-900 disabled:opacity-40"
         >
           <Send size={16} aria-hidden="true" />
