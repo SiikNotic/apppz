@@ -1,14 +1,23 @@
 import { useMemo, useState } from 'react'
 import { estimatePizzaPrice } from '@/lib/business-logic/pricing'
-import { FREE_TOPPINGS_LIMIT } from '@/lib/types'
 import type { MenuItem, ItemSize, Crust, Sauce, Topping, CartLine } from '@/lib/types'
 
 /**
  * Estado y cálculo de precio (estimado, no autoritativo) del configurador
  * de pizza. Compartido entre el modal de la lista de menú y la página de
  * detalle de producto para no duplicar la lógica dos veces.
+ *
+ * freeToppingsLimit viene SIEMPRE del producto (item.free_toppings_limit)
+ * — única fuente de verdad, la misma que aplica calculate_cart_price() en
+ * el servidor. Ya no existe un límite global.
  */
-export function usePizzaBuilder(sizes: ItemSize[], crusts: Crust[], sauces: Sauce[], toppings: Topping[]) {
+export function usePizzaBuilder(
+  sizes: ItemSize[],
+  crusts: Crust[],
+  sauces: Sauce[],
+  toppings: Topping[],
+  freeToppingsLimit: number
+) {
   const [sizeId, setSizeId] = useState(sizes[0]?.id)
   const [crustId, setCrustId] = useState(crusts[0]?.id)
   const [sauceId, setSauceId] = useState(sauces[0]?.id)
@@ -23,8 +32,8 @@ export function usePizzaBuilder(sizes: ItemSize[], crusts: Crust[], sauces: Sauc
       toppingIds
         .map((id) => toppings.find((t) => t.id === id))
         .filter((t): t is Topping => !!t)
-        .map((t, i) => ({ ...t, free: i < FREE_TOPPINGS_LIMIT })),
-    [toppingIds, toppings]
+        .map((t, i) => ({ ...t, free: i < freeToppingsLimit })),
+    [toppingIds, toppings, freeToppingsLimit]
   )
 
   const total = estimatePizzaPrice({
@@ -32,9 +41,10 @@ export function usePizzaBuilder(sizes: ItemSize[], crusts: Crust[], sauces: Sauc
     crust: selectedCrust,
     sauce: selectedSauce,
     selectedToppings,
+    freeToppingsLimit,
   })
 
-  const freeRemaining = Math.max(0, FREE_TOPPINGS_LIMIT - toppingIds.length)
+  const freeRemaining = Math.max(0, freeToppingsLimit - toppingIds.length)
 
   function toggleTopping(id: string) {
     setToppingIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]))

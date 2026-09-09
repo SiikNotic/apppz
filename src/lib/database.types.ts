@@ -480,6 +480,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           description: string | null
+          free_toppings_limit: number
           id: string
           image_url: string | null
           is_customizable_pizza: boolean
@@ -491,6 +492,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          free_toppings_limit?: number
           id?: string
           image_url?: string | null
           is_customizable_pizza?: boolean
@@ -502,6 +504,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          free_toppings_limit?: number
           id?: string
           image_url?: string | null
           is_customizable_pizza?: boolean

@@ -36,7 +36,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
   const [favoriteId, setFavoriteId] = useState<string | null>(null)
   const [added, setAdded] = useState(false)
 
-  const builder = usePizzaBuilder(sizes, crusts, sauces, toppings)
+  const builder = usePizzaBuilder(sizes, crusts, sauces, toppings, item?.free_toppings_limit ?? 0)
 
   useEffect(() => {
     let active = true

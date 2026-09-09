@@ -27,6 +27,7 @@ interface ProductFormState {
   image_url: string
   is_customizable_pizza: boolean
   active: boolean
+  free_toppings_limit: string
 }
 
 const EMPTY_FORM: ProductFormState = {
@@ -37,6 +38,7 @@ const EMPTY_FORM: ProductFormState = {
   image_url: '',
   is_customizable_pizza: false,
   active: true,
+  free_toppings_limit: '0',
 }
 
 export function ProductsTab() {
@@ -105,6 +107,7 @@ export function ProductsTab() {
       image_url: item.image_url ?? '',
       is_customizable_pizza: item.is_customizable_pizza,
       active: item.active,
+      free_toppings_limit: String(item.free_toppings_limit),
     })
     setError(null)
     setUploadError(null)
@@ -214,6 +217,7 @@ export function ProductsTab() {
       image_url: form.image_url.trim() || null,
       is_customizable_pizza: form.is_customizable_pizza,
       active: form.active,
+      free_toppings_limit: form.is_customizable_pizza ? Math.max(0, Number(form.free_toppings_limit) || 0) : 0,
     }
 
     const { data: saved, error } = form.id
@@ -487,6 +491,22 @@ export function ProductsTab() {
                 />
                 Es una pizza personalizable (tamaños, masa, salsa y toppings)
               </label>
+              {form.is_customizable_pizza && (
+                <div>
+                  <Label htmlFor="free-toppings-limit">Toppings gratis incluidos</Label>
+                  <Input
+                    id="free-toppings-limit"
+                    type="number"
+                    min="0"
+                    value={form.free_toppings_limit}
+                    onChange={(e) => setForm({ ...form, free_toppings_limit: e.target.value })}
+                  />
+                  <p className="mt-1 text-[11px] text-ink-400">
+                    Cuántos toppings puede elegir el cliente antes de que se le cobren extra — cada
+                    producto define el suyo, ya no hay un límite global.
+                  </p>
+                </div>
+              )}
               <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
                 <Checkbox
                   checked={form.active}

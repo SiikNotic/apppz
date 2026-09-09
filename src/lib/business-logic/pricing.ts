@@ -1,4 +1,3 @@
-import { FREE_TOPPINGS_LIMIT } from '@/lib/types'
 import type { ItemSize, Crust, Sauce, Topping } from '@/lib/types'
 
 /**
@@ -9,6 +8,12 @@ import type { ItemSize, Crust, Sauce, Topping } from '@/lib/types'
  * hace `calculate_cart_price` en el servidor (ver lib/data-access/orders.ts).
  * Si ambos números llegaran a diferir (ej. cambió un precio mientras el
  * cliente tenía el carrito abierto), el servidor gana siempre.
+ *
+ * freeToppingsLimit SIEMPRE debe venir del producto (menu_items.
+ * free_toppings_limit) — es la única fuente de verdad, la misma que usa
+ * calculate_cart_price(). Nunca un valor global: dos pizzas pueden tener
+ * límites distintos. Si se omite, se asume 0 (nunca sobreestima toppings
+ * gratis que el servidor no vaya a reconocer).
  */
 export function estimatePizzaPrice(params: {
   size?: Pick<ItemSize, 'price'>
@@ -17,7 +22,7 @@ export function estimatePizzaPrice(params: {
   selectedToppings: Pick<Topping, 'price'>[]
   freeToppingsLimit?: number
 }): number {
-  const freeLimit = params.freeToppingsLimit ?? FREE_TOPPINGS_LIMIT
+  const freeLimit = params.freeToppingsLimit ?? 0
   let price = params.size?.price ?? 0
   price += params.crust?.extra_price ?? 0
   price += params.sauce?.extra_price ?? 0

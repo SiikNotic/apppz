@@ -90,8 +90,6 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   failed: 'Fallido',
 }
 
-export const FREE_TOPPINGS_LIMIT = 4
-
 /** Un item dentro del carrito del cliente, antes de convertirse en order_items */
 export interface CartLine {
   lineId: string

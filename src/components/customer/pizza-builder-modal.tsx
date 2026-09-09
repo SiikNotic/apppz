@@ -31,7 +31,7 @@ export function PizzaBuilderModal({
   onAdd,
 }: PizzaBuilderModalProps) {
   const [step, setStep] = useState<1 | 2>(1)
-  const builder = usePizzaBuilder(sizes, crusts, sauces, toppings)
+  const builder = usePizzaBuilder(sizes, crusts, sauces, toppings, item.free_toppings_limit)
 
   function handleClose() {
     setStep(1)
