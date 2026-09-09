@@ -67,7 +67,10 @@ export default function HomePage() {
 
       {/* Delivery/Pickup + búsqueda */}
       <section className="flex flex-col gap-3 sm:flex-row">
-        <div className="flex rounded-full bg-white p-1 shadow-card">
+        {/* self-start evita que el flex-col de mobile estire el pill a todo
+            el ancho (align-items:stretch por defecto) — en fila (desktop)
+            self-auto restaura exactamente el comportamiento de siempre. */}
+        <div className="flex self-start rounded-full bg-white p-1 shadow-card sm:self-auto">
           <button
             onClick={() => setOrderType('delivery')}
             aria-pressed={orderType === 'delivery'}

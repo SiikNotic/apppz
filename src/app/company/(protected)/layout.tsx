@@ -22,6 +22,7 @@ import {
   X,
   UserPlus,
   MessageCircleWarning,
+  Home,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -110,15 +111,19 @@ function CompanyChrome({ children }: { children: ReactNode }) {
       </a>
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-ink-900 p-5 text-white lg:flex">
         <div>
-          <div className="mb-8 flex items-center gap-2.5 px-1">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-500 text-ink-900">
+          <Link
+            href="/"
+            title="Ir al sitio del cliente"
+            className="mb-8 flex items-center gap-2.5 rounded-2xl px-1 py-1 -mx-1 transition hover:bg-white/5"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-500 text-ink-900">
               <ChefHat size={20} />
             </span>
-            <div>
-              <p className="text-sm font-extrabold leading-tight">{BRAND_NAME}</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-extrabold leading-tight">{BRAND_NAME}</p>
               <p className="text-[11px] text-white/50">Company dashboard</p>
             </div>
-          </div>
+          </Link>
           <nav aria-label="Navegación principal" className="space-y-1">
             {items.map(({ href, label }) => {
               const isActive = pathname === href
@@ -150,6 +155,13 @@ function CompanyChrome({ children }: { children: ReactNode }) {
               {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
             </p>
           </div>
+          <Link
+            href="/"
+            className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <Home size={18} aria-hidden="true" />
+            Ver sitio del cliente
+          </Link>
           <button
             onClick={handleSignOut}
             className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white"
@@ -164,8 +176,8 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           en una barra inferior, así que en móvil se navega desde un menú
           de pantalla completa (mismas secciones que el sidebar de escritorio). */}
       <header className="sticky top-0 z-30 flex items-center justify-between bg-ink-900 px-4 py-3 text-white lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500 text-ink-900">
+        <Link href="/" title="Ir al sitio del cliente" className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <ChefHat size={18} />
           </span>
           <div className="min-w-0">
@@ -179,7 +191,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
               {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
             </p>
           </div>
-        </div>
+        </Link>
         <button
           onClick={() => setMobileNavOpen(true)}
           aria-label="Abrir menú"
@@ -237,6 +249,14 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                 {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
               </p>
             </div>
+            <Link
+              href="/"
+              onClick={() => setMobileNavOpen(false)}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <Home size={20} aria-hidden="true" />
+              Ver sitio del cliente
+            </Link>
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/10 hover:text-white"
