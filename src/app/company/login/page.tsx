@@ -10,9 +10,11 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { BRAND_NAME } from '@/lib/config'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function CompanyLoginPage() {
   const { signIn, signOut } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,7 +30,7 @@ export default function CompanyLoginPage() {
     if (signInError) {
       setLoading(false)
       // Mensaje genérico: nunca revelar si el correo existe o no.
-      setError('Correo o contraseña incorrectos.')
+      setError(t('auth.invalidCredentials'))
       return
     }
 
@@ -42,7 +44,7 @@ export default function CompanyLoginPage() {
 
     if (!profile?.is_company_staff) {
       await signOut()
-      setError('Esta cuenta no tiene acceso al dashboard de la compañía.')
+      setError(t('companyLogin.noAccessError'))
       return
     }
 
@@ -58,13 +60,13 @@ export default function CompanyLoginPage() {
           </span>
           <h1 className="mt-3 text-lg font-extrabold text-ink-900">{BRAND_NAME}</h1>
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-            Company dashboard
+            {t('nav.companyDashboard')}
           </p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
-            <Label htmlFor="company-email">Correo</Label>
+            <Label htmlFor="company-email">{t('auth.email')}</Label>
             <Input
               id="company-email"
               type="email"
@@ -75,7 +77,7 @@ export default function CompanyLoginPage() {
             />
           </div>
           <div>
-            <Label htmlFor="company-password">Contraseña</Label>
+            <Label htmlFor="company-password">{t('auth.password')}</Label>
             <Input
               id="company-password"
               type="password"
@@ -93,14 +95,11 @@ export default function CompanyLoginPage() {
           )}
 
           <Button type="submit" fullWidth size="lg" disabled={loading}>
-            {loading ? 'Un momento…' : 'Entrar'}
+            {loading ? t('companyLogin.momentWait') : t('auth.signIn')}
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-[11px] text-ink-400">
-          Las cuentas de staff las crea un administrador desde el dashboard — no hay registro
-          público aquí.
-        </p>
+        <p className="mt-4 text-center text-[11px] text-ink-400">{t('companyLogin.staffAccountsNotice')}</p>
       </Card>
     </div>
   )
