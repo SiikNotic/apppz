@@ -3,12 +3,16 @@
 import { useEffect, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { User, MapPin, CreditCard, Heart, Gift } from 'lucide-react'
+import { User, MapPin, CreditCard, Heart, Gift, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 
 const TABS = [
   { href: '/account/profile', label: 'Perfil', icon: User },
+  // /orders vive fuera de /account (no depende de sesión para su propia
+  // ruta) pero es el historial de compra del cliente, así que se muestra
+  // aquí mismo — si no, no había ninguna forma de encontrarlo.
+  { href: '/orders', label: 'Pedidos', icon: ClipboardList },
   { href: '/account/addresses', label: 'Direcciones', icon: MapPin },
   { href: '/account/payment-methods', label: 'Pago', icon: CreditCard },
   { href: '/account/favorites', label: 'Favoritos', icon: Heart },

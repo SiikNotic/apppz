@@ -55,6 +55,16 @@ export const ORDER_STATUS_FLOW: OrderStatus[] = [
 /** Estados terminales fuera del camino feliz. */
 export const ORDER_TERMINAL_STATUSES: OrderStatus[] = ['cancelled', 'refunded', 'failed']
 
+/**
+ * Estados en los que un pedido ya no va a cambiar más — a diferencia de
+ * ORDER_TERMINAL_STATUSES, aquí sí se incluye "delivered" (que es el
+ * final feliz del camino, no un estado "fuera de camino"). Se usa para
+ * saber cuándo dejar de recordar/avisar sobre un pedido (el banner de
+ * seguimiento persistente, por ejemplo) — no para decidir si se muestra
+ * el timeline de progreso.
+ */
+export const ORDER_CLOSED_STATUSES: OrderStatus[] = [...ORDER_TERMINAL_STATUSES, 'delivered']
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pendiente',
   confirmed: 'Confirmado',

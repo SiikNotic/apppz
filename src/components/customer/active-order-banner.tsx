@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getLastOrderId, clearLastOrderId } from '@/lib/active-order'
-import { ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES } from '@/lib/types'
+import { ORDER_STATUS_LABELS, ORDER_CLOSED_STATUSES } from '@/lib/types'
 import type { Order, OrderStatus } from '@/lib/types'
 
 /**
@@ -28,7 +28,7 @@ export function ActiveOrderBanner() {
     async function load() {
       const { data } = await supabase.from('orders').select('*').eq('id', id).maybeSingle()
       if (!active) return
-      if (!data || ORDER_TERMINAL_STATUSES.includes(data.status as OrderStatus)) {
+      if (!data || ORDER_CLOSED_STATUSES.includes(data.status as OrderStatus)) {
         clearLastOrderId()
         setOrder(null)
         return
@@ -44,7 +44,7 @@ export function ActiveOrderBanner() {
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` },
         (payload) => {
           const updated = payload.new as Order
-          if (ORDER_TERMINAL_STATUSES.includes(updated.status as OrderStatus)) {
+          if (ORDER_CLOSED_STATUSES.includes(updated.status as OrderStatus)) {
             clearLastOrderId()
             setOrder(null)
           } else {

@@ -10,7 +10,7 @@ import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES } from '@/lib/types'
+import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
 import type { Order, OrderItem, OrderStatus } from '@/lib/types'
 
 function OrderStatusContent() {
@@ -37,7 +37,7 @@ function OrderStatusContent() {
       // Mientras el pedido siga activo, lo recordamos para poder mostrar
       // el aviso de seguimiento aunque el cliente cierre y reabra la app;
       // una vez llega a un estado final ya no hace falta seguir avisando.
-      if (ORDER_TERMINAL_STATUSES.includes(o.status as OrderStatus)) {
+      if (ORDER_CLOSED_STATUSES.includes(o.status as OrderStatus)) {
         clearLastOrderId()
       } else if (getLastOrderId() === o.id || !getLastOrderId()) {
         saveLastOrderId(o.id)
