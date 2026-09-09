@@ -379,39 +379,55 @@ export type Database = {
       }
       issue_reports: {
         Row: {
+          assigned_to: string | null
           category: string
           created_at: string
           customer_id: string | null
+          customer_last_read_at: string | null
           description: string | null
           id: string
           order_id: string | null
           resolved_at: string | null
           resolved_by: string | null
+          staff_last_read_at: string | null
           status: string
         }
         Insert: {
+          assigned_to?: string | null
           category: string
           created_at?: string
           customer_id?: string | null
+          customer_last_read_at?: string | null
           description?: string | null
           id?: string
           order_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          staff_last_read_at?: string | null
           status?: string
         }
         Update: {
+          assigned_to?: string | null
           category?: string
           created_at?: string
           customer_id?: string | null
+          customer_last_read_at?: string | null
           description?: string | null
           id?: string
           order_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          staff_last_read_at?: string | null
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "issue_reports_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "issue_reports_customer_id_fkey"
             columns: ["customer_id"]
@@ -429,6 +445,45 @@ export type Database = {
           {
             foreignKeyName: "issue_reports_resolved_by_fkey"
             columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      issue_report_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          report_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          report_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          report_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_report_messages_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "issue_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_report_messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

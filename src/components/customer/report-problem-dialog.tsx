@@ -4,17 +4,27 @@
 // enlace que además se rompía en producción por el bug de basePath) y
 // esa página es solo FAQ estática, sin ningún backend detrás. Este
 // modal envía un reporte de verdad a `issue_reports`, visible para el
-// staff en /company/support.
-import { useState } from 'react'
-import { CheckCircle2 } from 'lucide-react'
+// staff en /company/support, y — si ya existe un reporte abierto para
+// este pedido — muestra directamente la conversación en curso (Problema
+// 7) en vez de dejar crear reportes duplicados para el mismo problema.
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { SupportChatThread } from '@/components/shared/support-chat-thread'
 import { ISSUE_REPORT_CATEGORY_LABELS } from '@/lib/types'
+import type { IssueReport } from '@/lib/types'
 
 const CATEGORIES = Object.keys(ISSUE_REPORT_CATEGORY_LABELS)
+
+const STATUS_LABELS: Record<string, string> = {
+  open: 'Abierto',
+  in_progress: 'En proceso',
+  resolved: 'Resuelto',
+}
 
 interface ReportProblemDialogProps {
   open: boolean
@@ -24,17 +34,39 @@ interface ReportProblemDialogProps {
 }
 
 export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }: ReportProblemDialogProps) {
+  const [checking, setChecking] = useState(true)
+  const [existingReport, setExistingReport] = useState<IssueReport | null>(null)
+
   const [category, setCategory] = useState<string>('wrong_order')
   const [description, setDescription] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sent, setSent] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    let active = true
+    setChecking(true)
+    supabase
+      .from('issue_reports')
+      .select('*')
+      .eq('order_id', orderId)
+      .neq('status', 'resolved')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active) return
+        setExistingReport(data)
+        setChecking(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [open, orderId])
 
   function handleOpenChange(next: boolean) {
     if (!next) {
-      // Reset al cerrar, para que la próxima vez que se abra empiece limpio.
       setTimeout(() => {
-        setSent(false)
         setCategory('wrong_order')
         setDescription('')
         setError(null)
@@ -46,35 +78,48 @@ export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }:
   async function handleSubmit() {
     setSending(true)
     setError(null)
-    const { error: insertError } = await supabase.from('issue_reports').insert({
-      order_id: orderId,
-      customer_id: customerId ?? null,
-      category,
-      description: description.trim() || null,
-    })
+    const { data, error: insertError } = await supabase
+      .from('issue_reports')
+      .insert({
+        order_id: orderId,
+        customer_id: customerId ?? null,
+        category,
+        description: description.trim() || null,
+      })
+      .select()
+      .single()
     setSending(false)
-    if (insertError) {
+    if (insertError || !data) {
       setError('No se pudo enviar el reporte. Intenta de nuevo.')
       return
     }
-    setSent(true)
+    setExistingReport(data)
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-sm">
         <div className="p-6">
-          {sent ? (
-            <div className="flex flex-col items-center gap-3 py-4 text-center">
-              <CheckCircle2 size={40} className="text-success-500" aria-hidden="true" />
-              <DialogTitle className="text-lg font-extrabold text-ink-900">Reporte enviado</DialogTitle>
-              <p className="text-sm text-ink-600">
-                Nuestro equipo lo va a revisar. Si dejaste tu cuenta con correo, te avisamos ahí.
+          {checking ? (
+            <p className="py-6 text-center text-sm text-ink-400">Cargando…</p>
+          ) : existingReport ? (
+            <>
+              <div className="mb-3 flex items-center justify-between">
+                <DialogTitle className="text-lg font-extrabold text-ink-900">Tu reporte</DialogTitle>
+                <Badge variant={existingReport.status === 'resolved' ? 'success' : 'warning'}>
+                  {STATUS_LABELS[existingReport.status] ?? existingReport.status}
+                </Badge>
+              </div>
+              <p className="mb-3 text-xs text-ink-400">
+                {ISSUE_REPORT_CATEGORY_LABELS[existingReport.category] ?? existingReport.category}
+                {existingReport.description ? ` — ${existingReport.description}` : ''}
               </p>
-              <Button fullWidth onClick={() => handleOpenChange(false)}>
-                Listo
-              </Button>
-            </div>
+              {customerId ? (
+                <SupportChatThread reportId={existingReport.id} currentUserId={customerId} isStaff={false} />
+              ) : (
+                <p className="text-xs text-ink-400">Inicia sesión para poder escribir en la conversación.</p>
+              )}
+            </>
           ) : (
             <>
               <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">Reportar un problema</DialogTitle>
