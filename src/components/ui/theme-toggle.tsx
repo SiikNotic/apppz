@@ -4,16 +4,18 @@ import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const OPTIONS = [
-  { value: 'light', label: 'Claro', icon: Sun },
-  { value: 'dark', label: 'Oscuro', icon: Moon },
-  { value: 'system', label: 'Sistema', icon: Monitor },
-] as const
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme()
+  const { t } = useLanguage()
   const [mounted, setMounted] = useState(false)
+
+  const OPTIONS = [
+    { value: 'light', label: t('common.themeLight'), icon: Sun },
+    { value: 'dark', label: t('common.themeDark'), icon: Moon },
+    { value: 'system', label: t('common.themeSystem'), icon: Monitor },
+  ] as const
 
   // Evita mismatch de hidratación: el tema real solo se conoce en el
   // cliente (depende de localStorage / prefers-color-scheme).
@@ -21,7 +23,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   if (!mounted) return <div className={cn('h-9 w-[108px]', className)} aria-hidden="true" />
 
   return (
-    <div role="radiogroup" aria-label="Tema" className={cn('inline-flex rounded-full bg-ink-50 p-1', className)}>
+    <div role="radiogroup" aria-label={t('common.theme')} className={cn('inline-flex rounded-full bg-ink-50 p-1', className)}>
       {OPTIONS.map(({ value, label, icon: Icon }) => (
         <button
           key={value}

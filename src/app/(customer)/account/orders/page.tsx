@@ -54,7 +54,7 @@ export default function OrdersHistoryPage() {
     try {
       const { lines, warnings } = await buildCartLinesFromOrder(order.id)
       if (lines.length === 0) {
-        setReorderNotice('Ninguno de los productos de ese pedido está disponible ahora mismo.')
+        setReorderNotice(t('orderHistory.noItemsAvailable'))
         return
       }
       lines.forEach((line) => addLine(line))
@@ -67,7 +67,7 @@ export default function OrdersHistoryPage() {
     }
   }
 
-  if (authLoading || loading) return <p className="py-16 text-center text-sm text-ink-400">Cargando…</p>
+  if (authLoading || loading) return <p className="py-16 text-center text-sm text-ink-400">{t('common.loading')}</p>
 
   const active = orders.filter((o) => !ORDER_TERMINAL_STATUSES.includes(o.status as OrderStatus) && o.status !== 'delivered')
   const past = orders.filter((o) => o.status === 'delivered')
@@ -76,8 +76,8 @@ export default function OrdersHistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Mis pedidos</h1>
-        <p className="text-sm text-ink-400">Tu historial completo, pedidos en curso y cancelados.</p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('orderHistory.title')}</h1>
+        <p className="text-sm text-ink-400">{t('orderHistory.subtitle')}</p>
       </div>
 
       {reorderNotice && (
@@ -89,14 +89,14 @@ export default function OrdersHistoryPage() {
       {orders.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 p-10 text-center">
           <ClipboardList size={28} className="text-ink-200" aria-hidden="true" />
-          <p className="text-sm text-ink-400">Todavía no has hecho ningún pedido.</p>
-          <Button onClick={() => router.push('/menu')}>Ver el menú</Button>
+          <p className="text-sm text-ink-400">{t('orderHistory.noOrdersYet')}</p>
+          <Button onClick={() => router.push('/menu')}>{t('checkout.seeMenu')}</Button>
         </Card>
       ) : (
         <>
           {active.length > 0 && (
             <OrderSection
-              title="En curso"
+              title={t('orderHistory.sectionActive')}
               orders={active}
               onReorder={handleReorder}
               reorderingId={reorderingId}
@@ -105,7 +105,7 @@ export default function OrdersHistoryPage() {
           )}
           {past.length > 0 && (
             <OrderSection
-              title="Anteriores"
+              title={t('orderHistory.sectionPast')}
               orders={past}
               onReorder={handleReorder}
               reorderingId={reorderingId}
@@ -114,7 +114,7 @@ export default function OrdersHistoryPage() {
           )}
           {cancelled.length > 0 && (
             <OrderSection
-              title="Cancelados"
+              title={t('orderHistory.sectionCancelled')}
               orders={cancelled}
               onReorder={handleReorder}
               reorderingId={reorderingId}
@@ -153,7 +153,7 @@ function OrderSection({
                 className="text-left"
               >
                 <p className="text-sm font-bold text-ink-900 hover:underline">
-                  Pedido #{order.order_number}
+                  {t('orderHistory.orderPrefix')} #{order.order_number}
                 </p>
                 <p className="text-xs text-ink-400">{formatDate(order.created_at)}</p>
               </button>
@@ -170,7 +170,7 @@ function OrderSection({
                 disabled={reorderingId === order.id}
               >
                 <RotateCcw size={14} aria-hidden="true" />
-                {reorderingId === order.id ? 'Agregando…' : 'Ordenar de nuevo'}
+                {reorderingId === order.id ? t('orderHistory.adding') : t('orderHistory.reorder')}
               </Button>
             </div>
           </Card>

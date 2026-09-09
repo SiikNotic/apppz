@@ -90,14 +90,14 @@ const ICONS: Record<string, LucideIcon> = {
   '/company/support': MessageCircleWarning,
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  manager: 'Manager',
-  kitchen: 'Kitchen',
-  cashier: 'Cashier',
-  driver: 'Driver',
-  staff: 'Staff',
+const ROLE_KEYS: Record<string, string> = {
+  owner: 'teamAdmin.roleOwner',
+  admin: 'teamAdmin.roleAdmin',
+  manager: 'teamAdmin.roleManager',
+  kitchen: 'teamAdmin.roleKitchen',
+  cashier: 'teamAdmin.roleCashier',
+  driver: 'teamAdmin.roleDriver',
+  staff: 'teamAdmin.roleStaff',
 }
 
 function CompanyChrome({ children }: { children: ReactNode }) {
@@ -160,13 +160,13 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         href="#company-main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-pop"
       >
-        Saltar al contenido
+        {t('common.skipToContent')}
       </a>
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-ink-900 p-5 text-white lg:flex">
         <div>
           <Link
             href="/"
-            title="Ir al sitio del cliente"
+            title={t('nav.viewSite')}
             className="mb-8 flex items-center gap-2.5 rounded-2xl px-1 py-1 -mx-1 transition hover:bg-white/5"
           >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-500 text-ink-900">
@@ -177,7 +177,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
               <p className="text-[11px] text-white/50">{t('nav.companyDashboard')}</p>
             </div>
           </Link>
-          <nav aria-label="Navegación principal" className="space-y-1">
+          <nav aria-label={t('common.mainNav')} className="space-y-1">
             {items.map(({ href, label }) => {
               const isActive = pathname === href
               const Icon = ICONS[href] ?? Package
@@ -211,7 +211,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           <div className="px-1">
             <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
             <p className="text-[11px] uppercase tracking-wide text-white/40">
-              {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
+              {profile?.company_role && ROLE_KEYS[profile.company_role] ? t(ROLE_KEYS[profile.company_role]) : t('teamAdmin.roleStaff')}
             </p>
           </div>
           <Link
@@ -236,7 +236,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           en una barra inferior, así que en móvil se navega desde un menú
           de pantalla completa (mismas secciones que el sidebar de escritorio). */}
       <header className="sticky top-0 z-30 flex items-center justify-between bg-ink-900 px-4 py-3 text-white lg:hidden">
-        <Link href="/" title="Ir al sitio del cliente" className="flex min-w-0 items-center gap-2.5">
+        <Link href="/" title={t('nav.viewSite')} className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <ChefHat size={18} />
           </span>
@@ -248,13 +248,13 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                 aplican de verdad en el servidor, no solo se ocultan botones. */}
             <p className="truncate text-[10px] text-white/50">
               {profile?.full_name || user?.email} ·{' '}
-              {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
+              {profile?.company_role && ROLE_KEYS[profile.company_role] ? t(ROLE_KEYS[profile.company_role]) : t('teamAdmin.roleStaff')}
             </p>
           </div>
         </Link>
         <button
           onClick={() => setMobileNavOpen(true)}
-          aria-label="Abrir menú"
+          aria-label={t('common.openMenu')}
           aria-expanded={mobileNavOpen}
           className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 hover:bg-white/20"
         >
@@ -273,14 +273,14 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             </div>
             <button
               onClick={() => setMobileNavOpen(false)}
-              aria-label="Cerrar menú"
+              aria-label={t('common.closeMenu')}
               className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 hover:bg-white/20"
             >
               <X size={20} aria-hidden="true" />
             </button>
           </div>
 
-          <nav aria-label="Navegación principal" className="flex-1 space-y-1 overflow-y-auto px-4 py-2">
+          <nav aria-label={t('common.mainNav')} className="flex-1 space-y-1 overflow-y-auto px-4 py-2">
             {items.map(({ href, label }) => {
               const isActive = pathname === href
               const Icon = ICONS[href] ?? Package
@@ -312,7 +312,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             <div className="px-1">
               <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
               <p className="text-[11px] uppercase tracking-wide text-white/40">
-                {profile?.company_role ? ROLE_LABELS[profile.company_role] : 'Staff'}
+                {profile?.company_role && ROLE_KEYS[profile.company_role] ? t(ROLE_KEYS[profile.company_role]) : t('teamAdmin.roleStaff')}
               </p>
             </div>
             <Link
@@ -346,7 +346,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             className="flex w-full items-center gap-2 rounded-2xl bg-ink-50 px-4 py-3 text-sm font-semibold text-ink-600 hover:bg-ink-100"
           >
             <Volume2 size={16} aria-hidden="true" />
-            Activar sonido de alerta para reportes de soporte
+            {t('support.enableAlertSound')}
           </button>
         )}
         {pathname !== '/company/support' && alertActive && (
@@ -355,7 +355,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             className="flex items-center justify-between gap-3 rounded-2xl bg-danger-500 px-4 py-3 font-bold text-white shadow-pop"
           >
             <span className="flex items-center gap-2">
-              <BellRing size={18} aria-hidden="true" /> Nuevo reporte de soporte — alguien necesita ayuda.
+              <BellRing size={18} aria-hidden="true" /> {t('support.newReportAlert')}
             </span>
             <div className="flex shrink-0 items-center gap-2">
               <Link
@@ -363,9 +363,9 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                 onClick={dismiss}
                 className="rounded-full bg-white/20 px-3 py-1 text-xs hover:bg-white/30"
               >
-                Ver
+                {t('support.viewLink')}
               </Link>
-              <button onClick={dismiss} aria-label="Cerrar aviso" className="rounded-full p-1 hover:bg-white/20">
+              <button onClick={dismiss} aria-label={t('kitchen.closeAlert')} className="rounded-full p-1 hover:bg-white/20">
                 <X size={16} aria-hidden="true" />
               </button>
             </div>
@@ -379,6 +379,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
 
 export default function ProtectedCompanyLayout({ children }: { children: ReactNode }) {
   const { session, loading, isCompanyStaff } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
 
   useEffect(() => {
@@ -395,7 +396,7 @@ export default function ProtectedCompanyLayout({ children }: { children: ReactNo
   if (loading || !session || !isCompanyStaff) {
     return (
       <div className="grid min-h-screen place-items-center bg-ink-900">
-        <p className="text-sm font-semibold text-white/70">Cargando…</p>
+        <p className="text-sm font-semibold text-white/70">{t('common.loading')}</p>
       </div>
     )
   }
