@@ -17,26 +17,9 @@ import {
   type EmployeeDetailsValues,
 } from '@/components/company/team/employee-details-form'
 import { formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Profile } from '@/lib/types'
 import type { CompanyRole } from '@/lib/auth/permissions'
-
-const ROLE_OPTIONS: { value: CompanyRole; label: string; hint: string }[] = [
-  { value: 'kitchen', label: 'Cocinero', hint: 'Ve y prepara los pedidos en la vista de Cocina.' },
-  { value: 'driver', label: 'Conductor', hint: 'Aparece en Drivers para recibir entregas asignadas.' },
-  { value: 'cashier', label: 'Cajero', hint: 'Ve pedidos y clientes, actualiza estados.' },
-  { value: 'manager', label: 'Manager', hint: 'Acceso amplio: menú, promos, reportes, equipo no incluido.' },
-  { value: 'admin', label: 'Admin', hint: 'Acceso total excepto administrar el equipo.' },
-]
-
-const ROLE_LABELS: Record<string, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  manager: 'Manager',
-  kitchen: 'Cocinero',
-  cashier: 'Cajero',
-  driver: 'Conductor',
-  staff: 'Staff',
-}
 
 function generateTempPassword(): string {
   // Contraseña temporal segura y fácil de dictar/copiar al nuevo empleado;
@@ -49,7 +32,26 @@ function generateTempPassword(): string {
 
 export default function TeamPage() {
   const { can } = useAuth()
+  const { t } = useLanguage()
   const canManage = can('staff.manage')
+
+  const ROLE_OPTIONS: { value: CompanyRole; label: string; hint: string }[] = [
+    { value: 'kitchen', label: t('teamAdmin.roleKitchen'), hint: t('teamAdmin.roleKitchenHint') },
+    { value: 'driver', label: t('teamAdmin.roleDriver'), hint: t('teamAdmin.roleDriverHint') },
+    { value: 'cashier', label: t('teamAdmin.roleCashier'), hint: t('teamAdmin.roleCashierHint') },
+    { value: 'manager', label: t('teamAdmin.roleManager'), hint: t('teamAdmin.roleManagerHint') },
+    { value: 'admin', label: t('teamAdmin.roleAdmin'), hint: t('teamAdmin.roleAdminHint') },
+  ]
+
+  const ROLE_LABELS: Record<string, string> = {
+    owner: t('teamAdmin.roleOwner'),
+    admin: t('teamAdmin.roleAdmin'),
+    manager: t('teamAdmin.roleManager'),
+    kitchen: t('teamAdmin.roleKitchen'),
+    cashier: t('teamAdmin.roleCashier'),
+    driver: t('teamAdmin.roleDriver'),
+    staff: t('teamAdmin.roleStaff'),
+  }
 
   const [staff, setStaff] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
@@ -162,7 +164,7 @@ export default function TeamPage() {
     // del contexto de la respuesta para mostrar el mensaje real.
     if (fnError) {
       setSaving(false)
-      let message = 'No se pudo crear la cuenta. Intenta de nuevo.'
+      let message = t('teamAdmin.createAccountFailedGeneric')
       const ctx = (fnError as { context?: Response }).context
       if (ctx) {
         try {
@@ -269,7 +271,7 @@ export default function TeamPage() {
     setStatusSaving(false)
 
     if (fnError) {
-      let message = 'No se pudo completar la acción. Intenta de nuevo.'
+      let message = t('teamAdmin.actionFailedGeneric')
       const ctx = (fnError as { context?: Response }).context
       if (ctx) {
         try {
@@ -295,7 +297,7 @@ export default function TeamPage() {
     return (
       <Card className="flex flex-col items-center gap-2 p-10 text-center">
         <Users size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">No tienes permiso para ver esta sección.</p>
+        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
       </Card>
     )
   }
@@ -304,18 +306,18 @@ export default function TeamPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">Equipo</h1>
-          <p className="text-sm text-ink-400">Da de alta cocineros, conductores y demás personal.</p>
+          <h1 className="text-2xl font-extrabold text-ink-900">{t('teamAdmin.title')}</h1>
+          <p className="text-sm text-ink-400">{t('teamAdmin.subtitle')}</p>
         </div>
         <Button size="sm" onClick={openCreate}>
-          <UserPlus size={14} /> Contratar
+          <UserPlus size={14} /> {t('teamAdmin.hire')}
         </Button>
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && staff.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Solo estás tú por ahora.</p>
+          <p className="p-5 text-sm text-ink-400">{t('teamAdmin.onlyYouForNow')}</p>
         )}
         {staff.map((member) => {
           const isTerminated = !!member.terminated_at
@@ -324,24 +326,24 @@ export default function TeamPage() {
             <div key={member.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-ink-900">
-                  {member.full_name || 'Sin nombre'}
+                  {member.full_name || t('teamAdmin.noName')}
                 </p>
                 <p className="text-xs text-ink-400">
                   {isTerminated
-                    ? `Despedido ${formatDate(member.terminated_at!)}`
-                    : `Desde ${formatDate(member.created_at)}`}
+                    ? t('teamAdmin.terminatedOn', { date: formatDate(member.terminated_at!) })
+                    : t('teamAdmin.sinceDate', { date: formatDate(member.created_at) })}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge variant={isTerminated ? 'danger' : isOwner ? 'brand' : 'neutral'}>
-                  {isTerminated ? 'Despedido' : member.company_role ? ROLE_LABELS[member.company_role] : 'Staff'}
+                  {isTerminated ? t('teamAdmin.terminatedBadge') : member.company_role ? ROLE_LABELS[member.company_role] : t('teamAdmin.roleStaff')}
                 </Badge>
                 {!isOwner &&
                   (isTerminated ? (
                     <button
                       onClick={() => openReactivate(member)}
-                      aria-label={`Reactivar a ${member.full_name || 'este empleado'}`}
-                      title="Reactivar"
+                      aria-label={t('teamAdmin.reactivateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                      title={t('teamAdmin.reactivateTitle')}
                       className="grid h-8 w-8 place-items-center rounded-full bg-success-500/10 text-success-500 hover:brightness-95"
                     >
                       <UserCheck size={14} aria-hidden="true" />
@@ -350,24 +352,24 @@ export default function TeamPage() {
                     <>
                       <button
                         onClick={() => openDetails(member)}
-                        aria-label={`Ver detalles de ${member.full_name || 'este empleado'}`}
-                        title="Detalles del empleado"
+                        aria-label={t('teamAdmin.viewDetailsAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                        title={t('teamAdmin.detailsTitle')}
                         className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
                       >
                         <IdCard size={14} aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => openChangeRole(member)}
-                        aria-label={`Cambiar rol de ${member.full_name || 'este empleado'}`}
-                        title="Cambiar rol"
+                        aria-label={t('teamAdmin.changeRoleAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                        title={t('teamAdmin.changeRoleTitle')}
                         className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
                       >
                         <Repeat size={14} aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => openTerminate(member)}
-                        aria-label={`Despedir a ${member.full_name || 'este empleado'}`}
-                        title="Despedir"
+                        aria-label={t('teamAdmin.terminateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                        title={t('teamAdmin.terminateTitle')}
                         className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
                       >
                         <UserX size={14} aria-hidden="true" />
@@ -386,36 +388,35 @@ export default function TeamPage() {
             {created ? (
               <>
                 <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
-                  Cuenta creada
+                  {t('teamAdmin.accountCreated')}
                 </DialogTitle>
                 <p className="mb-4 text-sm text-ink-600">
-                  Comparte estos datos con la persona para que inicie sesión en{' '}
-                  <span className="font-semibold">/company/login</span> y cambie su contraseña
-                  desde su perfil.
+                  {t('teamAdmin.shareCredentialsPre')}{' '}
+                  <span className="font-semibold">/company/login</span> {t('teamAdmin.shareCredentialsPost')}
                 </p>
                 <div className="space-y-2 rounded-2xl bg-ink-50 p-4 text-sm">
                   <p>
-                    <span className="font-semibold">Correo:</span> {created.email}
+                    <span className="font-semibold">{t('teamAdmin.emailLabel')}</span> {created.email}
                   </p>
                   <p>
-                    <span className="font-semibold">Contraseña temporal:</span> {created.password}
+                    <span className="font-semibold">{t('teamAdmin.tempPasswordLabel')}</span> {created.password}
                   </p>
                 </div>
                 <Button fullWidth className="mt-4" onClick={() => setFormOpen(false)}>
-                  Listo
+                  {t('teamAdmin.done')}
                 </Button>
               </>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-3">
                 <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">
-                  Nueva cuenta de staff
+                  {t('teamAdmin.newStaffAccount')}
                 </DialogTitle>
                 <div>
-                  <Label htmlFor="staff-name">Nombre completo</Label>
+                  <Label htmlFor="staff-name">{t('auth.fullName')}</Label>
                   <Input id="staff-name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                 </div>
                 <div>
-                  <Label htmlFor="staff-email">Correo</Label>
+                  <Label htmlFor="staff-email">{t('auth.email')}</Label>
                   <Input
                     id="staff-email"
                     type="email"
@@ -425,19 +426,17 @@ export default function TeamPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="staff-password">Contraseña temporal</Label>
+                  <Label htmlFor="staff-password">{t('teamAdmin.tempPasswordField')}</Label>
                   <Input
                     id="staff-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
-                  <p className="mt-1 text-[11px] text-ink-400">
-                    Generada automáticamente — puedes cambiarla antes de crear la cuenta.
-                  </p>
+                  <p className="mt-1 text-[11px] text-ink-400">{t('teamAdmin.tempPasswordHint')}</p>
                 </div>
                 <div>
-                  <Label>Rol</Label>
+                  <Label>{t('teamAdmin.roleLabel')}</Label>
                   <Select value={role} onValueChange={(v) => setRole(v as CompanyRole)}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -466,7 +465,7 @@ export default function TeamPage() {
                 )}
 
                 <Button type="submit" fullWidth disabled={saving}>
-                  {saving ? 'Creando…' : 'Crear cuenta'}
+                  {saving ? t('teamAdmin.creatingAccount') : t('teamAdmin.createAccountBtn')}
                 </Button>
               </form>
             )}
@@ -480,13 +479,9 @@ export default function TeamPage() {
             {statusAction === 'terminate' ? (
               <>
                 <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
-                  ¿Despedir a {statusTarget?.full_name || 'esta persona'}?
+                  {t('teamAdmin.confirmTerminateTitle', { name: statusTarget?.full_name || t('teamAdmin.personFallback') })}
                 </DialogTitle>
-                <p className="mb-4 text-sm text-ink-600">
-                  Perderá acceso a la plataforma de inmediato: no podrá iniciar sesión ni realizar
-                  ninguna acción protegida. Su historial (pedidos, entregas, auditoría) se conserva —
-                  puedes reactivar la cuenta más adelante si hace falta.
-                </p>
+                <p className="mb-4 text-sm text-ink-600">{t('teamAdmin.confirmTerminateBody')}</p>
                 {statusError && (
                   <p role="alert" className="mb-3 text-xs font-semibold text-danger-500">
                     {statusError}
@@ -494,7 +489,7 @@ export default function TeamPage() {
                 )}
                 <div className="flex gap-2">
                   <Button fullWidth variant="secondary" onClick={() => setStatusTarget(null)}>
-                    Cancelar
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     fullWidth
@@ -502,7 +497,7 @@ export default function TeamPage() {
                     onClick={submitStatusChange}
                     disabled={statusSaving}
                   >
-                    {statusSaving ? 'Despidiendo…' : 'Sí, despedir'}
+                    {statusSaving ? t('teamAdmin.terminating') : t('teamAdmin.yesTerminate')}
                   </Button>
                 </div>
               </>
@@ -510,16 +505,14 @@ export default function TeamPage() {
               <>
                 <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
                   {statusAction === 'reactivate'
-                    ? `Reactivar a ${statusTarget?.full_name || 'esta persona'}`
-                    : `Cambiar rol de ${statusTarget?.full_name || 'esta persona'}`}
+                    ? t('teamAdmin.reactivatePersonTitle', { name: statusTarget?.full_name || t('teamAdmin.personFallback') })
+                    : t('teamAdmin.changeRolePersonTitle', { name: statusTarget?.full_name || t('teamAdmin.personFallback') })}
                 </DialogTitle>
                 <p className="mb-4 text-sm text-ink-600">
-                  {statusAction === 'reactivate'
-                    ? 'Recupera acceso a la plataforma con el rol que elijas.'
-                    : 'El cambio aplica de inmediato — no afecta su sesión activa ni su historial.'}
+                  {statusAction === 'reactivate' ? t('teamAdmin.reactivateBody') : t('teamAdmin.changeRoleBody')}
                 </p>
                 <div className="mb-4">
-                  <Label>Rol</Label>
+                  <Label>{t('teamAdmin.roleLabel')}</Label>
                   <Select value={reactivateRole} onValueChange={(v) => setReactivateRole(v as CompanyRole)}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -540,10 +533,10 @@ export default function TeamPage() {
                 )}
                 <Button fullWidth onClick={submitStatusChange} disabled={statusSaving}>
                   {statusSaving
-                    ? 'Guardando…'
+                    ? t('menuMgmt.savingButton')
                     : statusAction === 'reactivate'
-                      ? 'Reactivar'
-                      : 'Guardar rol'}
+                      ? t('teamAdmin.reactivateBtn')
+                      : t('teamAdmin.saveRoleBtn')}
                 </Button>
               </>
             )}
@@ -555,10 +548,10 @@ export default function TeamPage() {
         <DialogContent className="max-w-lg">
           <div className="max-h-[85vh] overflow-y-auto p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              Detalles de {detailsTarget?.full_name || 'este empleado'}
+              {t('teamAdmin.detailsOf', { name: detailsTarget?.full_name || t('teamAdmin.employeeFallback') })}
             </DialogTitle>
             {detailsLoading ? (
-              <p className="text-sm text-ink-400">Cargando…</p>
+              <p className="text-sm text-ink-400">{t('common.loading')}</p>
             ) : (
               <div className="space-y-4">
                 <EmployeeDetailsForm
@@ -572,7 +565,7 @@ export default function TeamPage() {
                   </p>
                 )}
                 <Button fullWidth onClick={submitDetails} disabled={detailsSaving}>
-                  {detailsSaving ? 'Guardando…' : 'Guardar detalles'}
+                  {detailsSaving ? t('menuMgmt.savingButton') : t('teamAdmin.saveDetails')}
                 </Button>
               </div>
             )}

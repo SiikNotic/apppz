@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { CompanyRole } from '@/lib/auth/permissions'
 
 export interface EmployeeDetailsValues {
@@ -63,12 +64,6 @@ export const EMPTY_EMPLOYEE_DETAILS: EmployeeDetailsValues = {
   driversLicenseNumber: '',
 }
 
-const EMPLOYMENT_STATUS_OPTIONS = [
-  { value: 'active', label: 'Activo' },
-  { value: 'on_leave', label: 'De licencia' },
-  { value: 'inactive', label: 'Inactivo' },
-]
-
 interface EmployeeDetailsFormProps {
   role: CompanyRole
   values: EmployeeDetailsValues
@@ -76,21 +71,28 @@ interface EmployeeDetailsFormProps {
 }
 
 export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsFormProps) {
+  const { t } = useLanguage()
+  const EMPLOYMENT_STATUS_OPTIONS = [
+    { value: 'active', label: t('employeeForm.statusActive') },
+    { value: 'on_leave', label: t('employeeForm.statusOnLeave') },
+    { value: 'inactive', label: t('employeeForm.statusInactive') },
+  ]
+
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">Empleo</p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.employmentHeading')}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <Label htmlFor="emp-code">ID de empleado</Label>
+            <Label htmlFor="emp-code">{t('employeeForm.employeeId')}</Label>
             <Input id="emp-code" value={values.employeeCode} onChange={(e) => onChange({ employeeCode: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-position">Puesto</Label>
+            <Label htmlFor="emp-position">{t('employeeForm.position')}</Label>
             <Input id="emp-position" value={values.position} onChange={(e) => onChange({ position: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-hired">Fecha de contratación</Label>
+            <Label htmlFor="emp-hired">{t('employeeForm.dateHired')}</Label>
             <Input
               id="emp-hired"
               type="date"
@@ -99,7 +101,7 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
             />
           </div>
           <div>
-            <Label>Estado</Label>
+            <Label>{t('employeeForm.status')}</Label>
             <Select value={values.employmentStatus} onValueChange={(v) => onChange({ employmentStatus: v })}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -114,11 +116,11 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
             </Select>
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="emp-store">Sucursal / ubicación (opcional)</Label>
+            <Label htmlFor="emp-store">{t('employeeForm.storeLocation')}</Label>
             <Input id="emp-store" value={values.storeLocation} onChange={(e) => onChange({ storeLocation: e.target.value })} />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="emp-notes">Notas internas (opcional)</Label>
+            <Label htmlFor="emp-notes">{t('employeeForm.internalNotes')}</Label>
             <Textarea
               id="emp-notes"
               rows={2}
@@ -131,18 +133,18 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
 
       {role === 'driver' && (
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">Datos de conductor</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.driverDataHeading')}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="emp-vehicle">Tipo de vehículo</Label>
+              <Label htmlFor="emp-vehicle">{t('employeeForm.vehicleType')}</Label>
               <Input id="emp-vehicle" value={values.vehicleType} onChange={(e) => onChange({ vehicleType: e.target.value })} />
             </div>
             <div>
-              <Label htmlFor="emp-plate">Placas</Label>
+              <Label htmlFor="emp-plate">{t('employeeForm.licensePlate')}</Label>
               <Input id="emp-plate" value={values.licensePlate} onChange={(e) => onChange({ licensePlate: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="emp-license">Número de licencia de conducir</Label>
+              <Label htmlFor="emp-license">{t('employeeForm.driversLicenseNumber')}</Label>
               <Input
                 id="emp-license"
                 value={values.driversLicenseNumber}
@@ -154,44 +156,40 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
       )}
 
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
-          Información personal (acceso restringido)
-        </p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.personalInfoHeading')}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <Label htmlFor="emp-street">Dirección</Label>
+            <Label htmlFor="emp-street">{t('employeeForm.address')}</Label>
             <Input id="emp-street" value={values.residentialStreet} onChange={(e) => onChange({ residentialStreet: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-city">Ciudad</Label>
+            <Label htmlFor="emp-city">{t('account.city')}</Label>
             <Input id="emp-city" value={values.residentialCity} onChange={(e) => onChange({ residentialCity: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-state">Estado</Label>
+            <Label htmlFor="emp-state">{t('account.state')}</Label>
             <Input id="emp-state" value={values.residentialState} onChange={(e) => onChange({ residentialState: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-zip">Código postal</Label>
+            <Label htmlFor="emp-zip">{t('account.zip')}</Label>
             <Input id="emp-zip" value={values.residentialZip} onChange={(e) => onChange({ residentialZip: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-secphone">Teléfono secundario (opcional)</Label>
+            <Label htmlFor="emp-secphone">{t('employeeForm.secondaryPhoneOptional')}</Label>
             <Input id="emp-secphone" value={values.secondaryPhone} onChange={(e) => onChange({ secondaryPhone: e.target.value })} />
           </div>
         </div>
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
-          Contacto de emergencia (acceso restringido)
-        </p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.emergencyContactHeading')}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <Label htmlFor="emp-ec-name">Nombre</Label>
+            <Label htmlFor="emp-ec-name">{t('menuMgmt.name')}</Label>
             <Input id="emp-ec-name" value={values.emergencyContactName} onChange={(e) => onChange({ emergencyContactName: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-ec-rel">Relación</Label>
+            <Label htmlFor="emp-ec-rel">{t('employeeForm.relationship')}</Label>
             <Input
               id="emp-ec-rel"
               value={values.emergencyContactRelationship}
@@ -199,11 +197,11 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
             />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="emp-ec-phone">Teléfono</Label>
+            <Label htmlFor="emp-ec-phone">{t('auth.phone')}</Label>
             <Input id="emp-ec-phone" value={values.emergencyContactPhone} onChange={(e) => onChange({ emergencyContactPhone: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="emp-ec2-name">Contacto secundario (opcional)</Label>
+            <Label htmlFor="emp-ec2-name">{t('employeeForm.secondaryContactOptional')}</Label>
             <Input
               id="emp-ec2-name"
               value={values.emergencyContactSecondaryName}
@@ -211,7 +209,7 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
             />
           </div>
           <div>
-            <Label htmlFor="emp-ec2-phone">Teléfono secundario</Label>
+            <Label htmlFor="emp-ec2-phone">{t('employeeForm.secondaryPhoneLabel')}</Label>
             <Input
               id="emp-ec2-phone"
               value={values.emergencyContactSecondaryPhone}
