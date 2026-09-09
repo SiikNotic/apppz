@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getLastOrderId, clearLastOrderId } from '@/lib/active-order'
+import { fetchOrderById } from '@/lib/data-access/orders'
 import { ORDER_CLOSED_STATUSES } from '@/lib/types'
 import type { Order, OrderStatus } from '@/lib/types'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -28,7 +29,7 @@ export function ActiveOrderBanner() {
     let active = true
 
     async function load() {
-      const { data } = await supabase.from('orders').select('*').eq('id', id).maybeSingle()
+      const data = await fetchOrderById(id)
       if (!active) return
       if (!data || ORDER_CLOSED_STATUSES.includes(data.status as OrderStatus)) {
         clearLastOrderId()

@@ -1750,7 +1750,41 @@ export type Database = {
         }
       }
       get_decrypted_secret: { Args: { secret_name: string }; Returns: string }
+      get_order_tracking: {
+        Args: { p_order_id: string }
+        Returns: {
+          address: string | null
+          address_id: string | null
+          created_at: string
+          customer_id: string | null
+          customer_name: string
+          delivery_fee: number
+          discount: number
+          id: string
+          idempotency_key: string | null
+          label_printed_at: string | null
+          notes: string | null
+          order_number: number
+          order_type: string
+          payment_method: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          phone: string | null
+          promotion_id: string | null
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_permission: { Args: { perm: string }; Returns: boolean }
+      is_driver_assigned_to_order: { Args: { p_order_id: string }; Returns: boolean }
       is_company_staff: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
       redeem_catalog_reward: {

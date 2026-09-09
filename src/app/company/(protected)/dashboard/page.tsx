@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { DollarSign, ClipboardList, AlertTriangle, TrendingUp } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { StatCard } from '@/components/ui/stat-card'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -29,12 +30,18 @@ const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'dan
 }
 
 export default function DashboardPage() {
+  const { can } = useAuth()
+  const canView = can('orders.view')
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
   const [lowStock, setLowStock] = useState<Ingredient[]>([])
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!canView) {
+      setLoading(false)
+      return
+    }
     let active = true
     async function load() {
       const [todayRes, ingredientsRes, recentRes] = await Promise.all([
@@ -52,13 +59,22 @@ export default function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [canView])
 
   const revenueToday = todayOrders.reduce((sum, o) => sum + o.total, 0)
   const activeOrders = todayOrders.filter((o) =>
     ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)
   ).length
   const avgTicket = todayOrders.length > 0 ? revenueToday / todayOrders.length : 0
+
+  if (!canView) {
+    return (
+      <Card className="flex flex-col items-center gap-2 p-10 text-center">
+        <AlertTriangle size={28} className="text-ink-200" aria-hidden="true" />
+        <p className="text-sm text-ink-400">No tienes permiso para ver esta sección.</p>
+      </Card>
+    )
+  }
 
   if (loading) return <p className="text-sm text-ink-400">Cargando dashboard…</p>
 

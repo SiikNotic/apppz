@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { DollarSign, ShoppingCart, Receipt, Trophy, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
@@ -47,12 +48,18 @@ const RANGES = [
 ] as const
 
 export default function ReportsPage() {
+  const { can } = useAuth()
+  const canView = can('analytics.view')
   const [rangeDays, setRangeDays] = useState<number>(7)
   const [orders, setOrders] = useState<Order[]>([])
   const [items, setItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!canView) {
+      setLoading(false)
+      return
+    }
     let active = true
     async function load() {
       setLoading(true)
@@ -82,7 +89,7 @@ export default function ReportsPage() {
     return () => {
       active = false
     }
-  }, [rangeDays])
+  }, [rangeDays, canView])
 
   const dailySeries = useMemo(() => {
     const buckets = new Map<string, number>()
@@ -141,6 +148,14 @@ export default function ReportsPage() {
       ['Producto', 'Unidades vendidas', 'Ingresos'],
       ...topItems.map(([name, data]) => [name, data.quantity, data.revenue]),
     ])
+  }
+
+  if (!canView) {
+    return (
+      <Card className="flex flex-col items-center gap-2 p-10 text-center">
+        <p className="text-sm text-ink-400">No tienes permiso para ver esta sección.</p>
+      </Card>
+    )
   }
 
   return (

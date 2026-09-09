@@ -41,6 +41,7 @@ const FILTERS: { key: 'active' | 'all' | OrderStatus; label: string }[] = [
 
 export default function OrdersPage() {
   const { can } = useAuth()
+  const canView = can('orders.view')
   const canUpdateStatus = can('orders.update_status')
   const canCancel = can('orders.cancel')
   const [orders, setOrders] = useState<Order[]>([])
@@ -58,6 +59,10 @@ export default function OrdersPage() {
   }
 
   useEffect(() => {
+    if (!canView) {
+      setLoading(false)
+      return
+    }
     load()
     const channel = supabase
       .channel('orders-admin')
@@ -66,7 +71,7 @@ export default function OrdersPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [canView])
 
   const filteredOrders = orders.filter((o) => {
     if (filter === 'all') return true
@@ -108,6 +113,14 @@ export default function OrdersPage() {
       .select('*, order_item_toppings(*)')
       .eq('order_id', order.id)
     setDetailItems(data ?? [])
+  }
+
+  if (!canView) {
+    return (
+      <Card className="flex flex-col items-center gap-2 p-10 text-center">
+        <p className="text-sm text-ink-400">No tienes permiso para ver esta sección.</p>
+      </Card>
+    )
   }
 
   return (

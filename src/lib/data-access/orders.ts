@@ -87,10 +87,18 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   return data as unknown as Order
 }
 
+/**
+ * Trae un pedido puntual por id — funciona con o sin sesión (seguimiento
+ * de pedido para invitados). Usa get_order_tracking() en vez de un select
+ * directo: la tabla orders ya no tiene lectura pública (era una fuga real
+ * de datos de todos los clientes) — la función solo permite consultar UN
+ * pedido a la vez, y el UUID en sí (nunca enumerable, solo llega por el
+ * link de confirmación) es la única "credencial" que hace falta.
+ */
 export async function fetchOrderById(id: string): Promise<Order | null> {
-  const { data, error } = await supabase.from('orders').select('*').eq('id', id).maybeSingle()
+  const { data, error } = await supabase.rpc('get_order_tracking', { p_order_id: id })
   if (error) throw error
-  return data
+  return data as unknown as Order | null
 }
 
 export async function fetchOrderItems(

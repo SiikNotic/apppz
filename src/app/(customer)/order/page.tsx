@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { CheckCircle2, Circle, RotateCcw, MessageCircleWarning } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useCart } from '@/contexts/CartContext'
+import { fetchOrderById } from '@/lib/data-access/orders'
 import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-order'
 import { Card } from '@/components/ui/card'
@@ -62,16 +63,16 @@ function OrderStatusContent() {
     }
 
     async function load() {
-      const [orderRes, itemsRes] = await Promise.all([
-        supabase.from('orders').select('*').eq('id', id).maybeSingle(),
+      const [orderData, itemsRes] = await Promise.all([
+        fetchOrderById(id),
         supabase.from('order_items').select('*').eq('order_id', id),
       ])
       if (!active) return
-      setOrder(orderRes.data)
-      syncLastOrder(orderRes.data)
+      setOrder(orderData)
+      syncLastOrder(orderData)
       setItems(itemsRes.data ?? [])
       setLoading(false)
-      if (orderRes.data?.order_type === 'delivery') loadAssignment()
+      if (orderData?.order_type === 'delivery') loadAssignment()
     }
     load()
 
