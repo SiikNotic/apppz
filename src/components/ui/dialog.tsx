@@ -51,14 +51,14 @@ function DialogContent({
           // `overflow-x-hidden` como parche — el contenido interno de cada
           // modal (grids de 2 columnas, etc.) se corrigió para apilarse en
           // Mobile en vez de depender de recortar el desborde.
-          'fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-0 rounded-3xl bg-cream-50 shadow-pop duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 max-h-[92vh] overflow-y-auto no-scrollbar',
+          'fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-0 rounded-3xl bg-card shadow-pop duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 max-h-[92vh] overflow-y-auto no-scrollbar',
           className
         )}
         {...props}
       >
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close className="absolute right-4 top-4 z-20 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow-card text-ink-600 hover:text-ink-900 focus:outline-none">
+          <DialogPrimitive.Close className="absolute right-4 top-4 z-20 grid h-9 w-9 place-items-center rounded-full bg-card/90 shadow-card text-muted-foreground hover:text-foreground focus:outline-none">
             <XIcon size={18} />
             <span className="sr-only">Cerrar</span>
           </DialogPrimitive.Close>
@@ -92,7 +92,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-lg font-extrabold text-ink-900', className)}
+      className={cn('text-lg font-extrabold text-foreground', className)}
       {...props}
     />
   )
