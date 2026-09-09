@@ -1191,6 +1191,84 @@ export type Database = {
           },
         ]
       }
+      reward_catalog: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          name: string
+          points_cost: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          points_cost: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          points_cost?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reward_redemptions: {
+        Row: {
+          id: string
+          points_spent: number
+          redeemed_at: string
+          reward_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          points_spent: number
+          redeemed_at?: string
+          reward_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          points_spent?: number
+          redeemed_at?: string
+          reward_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "reward_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reward_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reward_tiers: {
         Row: {
           active: boolean
@@ -1514,6 +1592,22 @@ export type Database = {
       has_permission: { Args: { perm: string }; Returns: boolean }
       is_company_staff: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      redeem_catalog_reward: {
+        Args: { p_reward_id: string }
+        Returns: {
+          lifetime_points: number
+          points_balance: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rewards_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       redeem_points: {
         Args: { p_points: number; p_reason: string }
         Returns: {

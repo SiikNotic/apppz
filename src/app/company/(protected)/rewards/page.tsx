@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { RewardCatalogManager } from '@/components/company/rewards/reward-catalog-manager'
 import type { RewardTier, Setting } from '@/lib/types'
 
 interface TierForm {
@@ -144,6 +145,8 @@ export default function RewardsSettingsPage() {
           </div>
         )}
       </Card>
+
+      <RewardCatalogManager canManage={canManage} />
 
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
