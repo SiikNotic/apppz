@@ -26,6 +26,7 @@ export type Promotion = Tables<'promotions'>
 export type PromoBanner = Tables<'promo_banners'>
 export type PromotionRedemption = Tables<'promotion_redemptions'>
 export type Driver = Tables<'drivers'>
+export type DriverShift = Tables<'driver_shifts'>
 export type EmployeeDetails = Tables<'employee_details'>
 export type EmployeeSensitiveInfo = Tables<'employee_sensitive_info'>
 export type DeliveryAssignment = Tables<'delivery_assignments'>

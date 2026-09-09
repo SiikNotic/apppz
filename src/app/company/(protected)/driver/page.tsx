@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { DeliveryChat } from '@/components/shared/delivery-chat'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
-import type { Address, DeliveryAssignment, Driver, Order } from '@/lib/types'
+import type { Address, DeliveryAssignment, Driver, DriverShift, Order } from '@/lib/types'
 
 type AssignmentWithOrder = DeliveryAssignment & { order: Order; address: Address | null }
 
@@ -93,18 +93,25 @@ export default function DriverPage() {
   const [togglingStatus, setTogglingStatus] = useState(false)
   const [routeCompletedFlash, setRouteCompletedFlash] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  // Registro de asistencia del turno — independiente del toggle Disponible/
+  // Offline (ese es "puedo recibir una entrega ahora"; esto es "estoy en
+  // mi turno de trabajo", para llevar la hora de entrada/salida).
+  const [openShift, setOpenShift] = useState<DriverShift | null>(null)
+  const [shiftBusy, setShiftBusy] = useState(false)
 
   async function loadAll() {
     if (!user) return
     const wasWorkingOnSomething = active.length > 0
-    const [{ data: driverRow }, activeRows, historyRows] = await Promise.all([
+    const [{ data: driverRow }, activeRows, historyRows, { data: shiftRow }] = await Promise.all([
       supabase.from('drivers').select('*').eq('user_id', user.id).maybeSingle(),
       fetchAssignmentsWithOrders(ACTIVE_STATUSES, user.id),
       fetchAssignmentsWithOrders(CLOSED_STATUSES, user.id),
+      supabase.from('driver_shifts').select('*').eq('driver_id', user.id).is('clock_out_at', null).maybeSingle(),
     ])
     setDriver(driverRow)
     setActive(activeRows)
     setHistory(historyRows.slice(0, 10))
+    setOpenShift(shiftRow)
     setLoading(false)
     // Si tenía entregas activas y ahora ya no, la ruta se acaba de
     // completar — se lo hacemos notar en vez de dejarlo caer en el mismo
@@ -138,6 +145,22 @@ export default function DriverPage() {
     const next = driver.status === 'available' ? 'offline' : 'available'
     await supabase.from('drivers').update({ status: next }).eq('user_id', user.id)
     setTogglingStatus(false)
+    loadAll()
+  }
+
+  async function clockIn() {
+    if (!user) return
+    setShiftBusy(true)
+    await supabase.from('driver_shifts').insert({ driver_id: user.id })
+    setShiftBusy(false)
+    loadAll()
+  }
+
+  async function clockOut() {
+    if (!user || !openShift) return
+    setShiftBusy(true)
+    await supabase.from('driver_shifts').update({ clock_out_at: new Date().toISOString() }).eq('id', openShift.id)
+    setShiftBusy(false)
     loadAll()
   }
 
@@ -222,6 +245,29 @@ export default function DriverPage() {
               : 'Desconectado'}
         </Button>
       </div>
+
+      {/* Registro de entrada/salida del turno — para llevar la hora
+          trabajada, independiente del toggle Disponible/Offline de
+          arriba (ese es solo "puedo recibir una entrega ahora mismo"). */}
+      <Card className="flex items-center justify-between p-4">
+        <div>
+          <p className="text-sm font-bold text-ink-900">
+            {openShift ? 'Turno activo' : 'Sin turno iniciado'}
+          </p>
+          {openShift && (
+            <p className="text-xs text-ink-400">Desde {formatDate(openShift.clock_in_at)}</p>
+          )}
+        </div>
+        {openShift ? (
+          <Button size="sm" variant="secondary" disabled={shiftBusy} onClick={clockOut}>
+            {shiftBusy ? 'Guardando…' : 'Marcar salida'}
+          </Button>
+        ) : (
+          <Button size="sm" disabled={shiftBusy} onClick={clockIn}>
+            {shiftBusy ? 'Guardando…' : 'Marcar entrada'}
+          </Button>
+        )}
+      </Card>
 
       {error && (
         <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-danger-500">

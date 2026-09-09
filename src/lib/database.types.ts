@@ -232,6 +232,38 @@ export type Database = {
           },
         ]
       }
+      driver_shifts: {
+        Row: {
+          clock_in_at: string
+          clock_out_at: string | null
+          created_at: string
+          driver_id: string
+          id: string
+        }
+        Insert: {
+          clock_in_at?: string
+          clock_out_at?: string | null
+          created_at?: string
+          driver_id: string
+          id?: string
+        }
+        Update: {
+          clock_in_at?: string
+          clock_out_at?: string | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_shifts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           current_lat: number | null

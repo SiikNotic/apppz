@@ -1,17 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Bike } from 'lucide-react'
+import { Bike, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { Driver, Profile } from '@/lib/types'
+import { formatDate } from '@/lib/format'
+import type { Driver, DriverShift, Profile } from '@/lib/types'
 
 const STATUS_VARIANT = { offline: 'neutral', available: 'success', on_delivery: 'brand' } as const
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [profilesByUser, setProfilesByUser] = useState<Record<string, Profile>>({})
+  const [openShiftsByDriver, setOpenShiftsByDriver] = useState<Record<string, DriverShift>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -21,13 +23,17 @@ export default function DriversPage() {
       setDrivers(list)
 
       if (list.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', list.map((d) => d.user_id))
+        const userIds = list.map((d) => d.user_id)
+        const [{ data: profiles }, { data: shifts }] = await Promise.all([
+          supabase.from('profiles').select('*').in('id', userIds),
+          supabase.from('driver_shifts').select('*').in('driver_id', userIds).is('clock_out_at', null),
+        ])
         const map: Record<string, Profile> = {}
         for (const p of profiles ?? []) map[p.id] = p
         setProfilesByUser(map)
+        const shiftMap: Record<string, DriverShift> = {}
+        for (const s of shifts ?? []) shiftMap[s.driver_id] = s
+        setOpenShiftsByDriver(shiftMap)
       }
       setLoading(false)
     }
@@ -53,17 +59,24 @@ export default function DriversPage() {
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {drivers.map((driver) => (
-            <Card key={driver.user_id} className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-sm font-bold text-ink-900">
-                  {profilesByUser[driver.user_id]?.full_name ?? 'Sin nombre'}
-                </p>
-                <p className="text-xs text-ink-400">{driver.vehicle_type ?? 'Vehículo no especificado'}</p>
-              </div>
-              <Badge variant={STATUS_VARIANT[driver.status]}>{driver.status}</Badge>
-            </Card>
-          ))}
+          {drivers.map((driver) => {
+            const shift = openShiftsByDriver[driver.user_id]
+            return (
+              <Card key={driver.user_id} className="flex items-center justify-between p-4">
+                <div>
+                  <p className="text-sm font-bold text-ink-900">
+                    {profilesByUser[driver.user_id]?.full_name ?? 'Sin nombre'}
+                  </p>
+                  <p className="text-xs text-ink-400">{driver.vehicle_type ?? 'Vehículo no especificado'}</p>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-ink-400">
+                    <Clock size={12} aria-hidden="true" />
+                    {shift ? `En turno desde ${formatDate(shift.clock_in_at)}` : 'Sin turno iniciado'}
+                  </p>
+                </div>
+                <Badge variant={STATUS_VARIANT[driver.status]}>{driver.status}</Badge>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
