@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Search, Truck, Store, MapPin } from 'lucide-react'
 import { useMenuData } from '@/hooks/useMenuData'
+import { usePromoBanner } from '@/hooks/usePromoBanner'
 import { MenuGrid } from '@/components/customer/menu-grid'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
 import { PromoBannerHero } from '@/components/customer/promo-banner-hero'
@@ -13,6 +14,7 @@ import { BRAND_TAGLINE } from '@/lib/config'
 
 export default function HomePage() {
   const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
+  const { banner } = usePromoBanner()
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery')
   const [search, setSearch] = useState('')
 
@@ -33,24 +35,35 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8">
-      {/* Hero */}
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-ink-900 sm:p-10">
-        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-ink-900/10 px-3 py-1 text-xs font-semibold">
-          <MapPin size={12} aria-hidden="true" /> Entregando en tu zona
-        </div>
-        <h1 className="max-w-md text-3xl font-extrabold leading-tight sm:text-4xl">
-          Pizza recién horneada, directo a tu puerta
-        </h1>
-        <p className="mt-2 max-w-sm text-sm text-ink-900/75">{BRAND_TAGLINE}</p>
-        <Link
-          href="/menu"
-          className="mt-5 inline-flex items-center rounded-full bg-ink-900 px-6 py-3 text-sm font-bold text-white shadow-pop hover:bg-ink-800"
-        >
-          Order Now
-        </Link>
-      </section>
-
-      <PromoBannerHero />
+      {/* Hero: la promoción activa manda cuando existe — es la que vende.
+          El mensaje de marca queda como línea secundaria, no como el
+          elemento visual principal. Sin promo configurada, se mantiene
+          el hero de marca de siempre (nunca se inventa una oferta). */}
+      {banner ? (
+        <>
+          <PromoBannerHero banner={banner} />
+          <section className="flex items-center gap-2 px-1 text-xs font-semibold text-ink-400">
+            <MapPin size={12} className="shrink-0" aria-hidden="true" />
+            Pizza recién horneada, directo a tu puerta · {BRAND_TAGLINE}
+          </section>
+        </>
+      ) : (
+        <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-ink-900 sm:p-10">
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-ink-900/10 px-3 py-1 text-xs font-semibold">
+            <MapPin size={12} aria-hidden="true" /> Entregando en tu zona
+          </div>
+          <h1 className="max-w-md text-3xl font-extrabold leading-tight sm:text-4xl">
+            Pizza recién horneada, directo a tu puerta
+          </h1>
+          <p className="mt-2 max-w-sm text-sm text-ink-900/75">{BRAND_TAGLINE}</p>
+          <Link
+            href="/menu"
+            className="mt-5 inline-flex items-center rounded-full bg-ink-900 px-6 py-3 text-sm font-bold text-white shadow-pop hover:bg-ink-800"
+          >
+            Order Now
+          </Link>
+        </section>
+      )}
 
       {/* Delivery/Pickup + búsqueda */}
       <section className="flex flex-col gap-3 sm:flex-row">

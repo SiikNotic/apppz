@@ -29,6 +29,9 @@ interface FormState {
   ctaLabel: string
   promotionId: string
   menuItemId: string
+  originalPrice: string
+  promoPrice: string
+  discountPercent: string
   startsAt: string
   endsAt: string
   active: boolean
@@ -41,6 +44,9 @@ const EMPTY: FormState = {
   ctaLabel: '',
   promotionId: '',
   menuItemId: '',
+  originalPrice: '',
+  promoPrice: '',
+  discountPercent: '',
   startsAt: '',
   endsAt: '',
   active: true,
@@ -92,6 +98,9 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
       ctaLabel: banner.cta_label ?? '',
       promotionId: banner.promotion_id ?? '',
       menuItemId: banner.menu_item_id ?? '',
+      originalPrice: banner.original_price != null ? String(banner.original_price) : '',
+      promoPrice: banner.promo_price != null ? String(banner.promo_price) : '',
+      discountPercent: banner.discount_percent != null ? String(banner.discount_percent) : '',
       startsAt: banner.starts_at?.slice(0, 10) ?? '',
       endsAt: banner.ends_at?.slice(0, 10) ?? '',
       active: banner.active,
@@ -130,6 +139,9 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
       cta_label: form.ctaLabel.trim() || null,
       promotion_id: form.promotionId || null,
       menu_item_id: form.menuItemId || null,
+      original_price: form.originalPrice.trim() ? Number(form.originalPrice) : null,
+      promo_price: form.promoPrice.trim() ? Number(form.promoPrice) : null,
+      discount_percent: form.discountPercent.trim() ? Number(form.discountPercent) : null,
       starts_at: form.startsAt || null,
       ends_at: form.endsAt || null,
       active: form.active,
@@ -294,6 +306,48 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   onChange={(e) => setForm({ ...form, ctaLabel: e.target.value })}
                   placeholder="Ver oferta"
                 />
+              </div>
+              {/* Precios de exhibición: solo se MUESTRAN en el banner, nunca
+                  aplican el descuento — eso sigue siendo exclusivo de
+                  calculate_cart_price() con el código de la promoción. */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="banner-original-price">Precio anterior (opcional)</Label>
+                  <Input
+                    id="banner-original-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.originalPrice}
+                    onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
+                    placeholder="299.00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="banner-promo-price">Precio promo (opcional)</Label>
+                  <Input
+                    id="banner-promo-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.promoPrice}
+                    onChange={(e) => setForm({ ...form, promoPrice: e.target.value })}
+                    placeholder="199.00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="banner-discount-percent">% de descuento (opcional)</Label>
+                  <Input
+                    id="banner-discount-percent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={form.discountPercent}
+                    onChange={(e) => setForm({ ...form, discountPercent: e.target.value })}
+                    placeholder="30"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>

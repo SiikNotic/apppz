@@ -939,10 +939,13 @@ export type Database = {
           created_at: string
           cta_label: string | null
           description: string | null
+          discount_percent: number | null
           ends_at: string | null
           id: string
           image_url: string | null
           menu_item_id: string | null
+          original_price: number | null
+          promo_price: number | null
           promotion_id: string | null
           sort_order: number
           starts_at: string | null
@@ -954,10 +957,13 @@ export type Database = {
           created_at?: string
           cta_label?: string | null
           description?: string | null
+          discount_percent?: number | null
           ends_at?: string | null
           id?: string
           image_url?: string | null
           menu_item_id?: string | null
+          original_price?: number | null
+          promo_price?: number | null
           promotion_id?: string | null
           sort_order?: number
           starts_at?: string | null
@@ -969,10 +975,13 @@ export type Database = {
           created_at?: string
           cta_label?: string | null
           description?: string | null
+          discount_percent?: number | null
           ends_at?: string | null
           id?: string
           image_url?: string | null
           menu_item_id?: string | null
+          original_price?: number | null
+          promo_price?: number | null
           promotion_id?: string | null
           sort_order?: number
           starts_at?: string | null
