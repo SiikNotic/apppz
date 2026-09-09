@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BannersManager } from '@/components/company/promotions/banners-manager'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { PageHeader } from '@/components/company/page-header'
 import type { Promotion } from '@/lib/types'
 
 const TYPE_KEYS: Record<string, string> = {
@@ -136,17 +137,17 @@ export default function PromotionsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">{t('promotionsAdmin.title')}</h1>
-          <p className="text-sm text-ink-400">{t('promotionsAdmin.subtitle')}</p>
-        </div>
-        {canManage && (
-          <Button onClick={openCreate}>
-            <Plus size={16} aria-hidden="true" /> {t('promotionsAdmin.newPromotion')}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('promotionsAdmin.title')}
+        subtitle={t('promotionsAdmin.subtitle')}
+        actions={
+          canManage && (
+            <Button onClick={openCreate}>
+              <Plus size={16} aria-hidden="true" /> {t('promotionsAdmin.newPromotion')}
+            </Button>
+          )
+        }
+      />
 
       <Card className="divide-y divide-ink-100 p-0">
         {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}

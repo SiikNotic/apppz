@@ -18,6 +18,8 @@ import {
 } from '@/components/company/team/employee-details-form'
 import { formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/company/page-header'
 import type { Profile } from '@/lib/types'
 import type { CompanyRole } from '@/lib/auth/permissions'
 
@@ -294,25 +296,20 @@ export default function TeamPage() {
   }
 
   if (!canManage) {
-    return (
-      <Card className="flex flex-col items-center gap-2 p-10 text-center">
-        <Users size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
-      </Card>
-    )
+    return <EmptyState icon={<Users size={28} aria-hidden="true" />} message={t('ordersAdmin.noPermission')} />
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">{t('teamAdmin.title')}</h1>
-          <p className="text-sm text-ink-400">{t('teamAdmin.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <UserPlus size={14} /> {t('teamAdmin.hire')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('teamAdmin.title')}
+        subtitle={t('teamAdmin.subtitle')}
+        actions={
+          <Button size="sm" onClick={openCreate}>
+            <UserPlus size={14} /> {t('teamAdmin.hire')}
+          </Button>
+        }
+      />
 
       <Card className="divide-y divide-ink-100 p-0">
         {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}

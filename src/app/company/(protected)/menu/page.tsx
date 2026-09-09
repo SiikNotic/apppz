@@ -7,6 +7,7 @@ import { CategoriesTab } from '@/components/company/menu/categories-tab'
 import { ToppingsTab } from '@/components/company/menu/toppings-tab'
 import { SimpleOptionsManager } from '@/components/company/menu/simple-options-manager'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { PageHeader } from '@/components/company/page-header'
 
 export default function MenuManagementPage() {
   const [tab, setTab] = useState('productos')
@@ -14,10 +15,7 @@ export default function MenuManagementPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('menuMgmt.title')}</h1>
-        <p className="text-sm text-ink-400">{t('menuMgmt.subtitle')}</p>
-      </div>
+      <PageHeader title={t('menuMgmt.title')} subtitle={t('menuMgmt.subtitle')} />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { PageHeader } from '@/components/company/page-header'
 import type { Profile, RewardsAccount } from '@/lib/types'
 
 export default function CustomersPage() {
@@ -42,10 +43,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('customersAdmin.title')}</h1>
-        <p className="text-sm text-ink-400">{t('customersAdmin.subtitle')}</p>
-      </div>
+      <PageHeader title={t('customersAdmin.title')} subtitle={t('customersAdmin.subtitle')} />
 
       <Card className="overflow-x-auto p-0">
         <Table className="min-w-[600px]">
