@@ -6,6 +6,7 @@ import { Search, Truck, Store, MapPin } from 'lucide-react'
 import { useMenuData } from '@/hooks/useMenuData'
 import { MenuGrid } from '@/components/customer/menu-grid'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
+import { PromoBannerHero } from '@/components/customer/promo-banner-hero'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { BRAND_TAGLINE } from '@/lib/config'
@@ -48,6 +49,8 @@ export default function HomePage() {
           Order Now
         </Link>
       </section>
+
+      <PromoBannerHero />
 
       {/* Delivery/Pickup + búsqueda */}
       <section className="flex flex-col gap-3 sm:flex-row">

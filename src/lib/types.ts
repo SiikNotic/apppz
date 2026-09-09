@@ -21,6 +21,7 @@ export type RewardsAccount = Tables<'rewards_accounts'>
 export type PointsLedgerEntry = Tables<'points_ledger'>
 export type RewardTier = Tables<'reward_tiers'>
 export type Promotion = Tables<'promotions'>
+export type PromoBanner = Tables<'promo_banners'>
 export type PromotionRedemption = Tables<'promotion_redemptions'>
 export type Driver = Tables<'drivers'>
 export type DeliveryAssignment = Tables<'delivery_assignments'>

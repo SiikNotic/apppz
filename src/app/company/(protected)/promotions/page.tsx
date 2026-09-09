@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { BannersManager } from '@/components/company/promotions/banners-manager'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { Promotion } from '@/lib/types'
 
@@ -198,6 +199,8 @@ export default function PromotionsPage() {
           </div>
         ))}
       </Card>
+
+      <BannersManager canManage={canManage} />
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
