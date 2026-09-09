@@ -9,21 +9,32 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SupportChatThread } from '@/components/shared/support-chat-thread'
 import { formatDate } from '@/lib/format'
-import { ISSUE_REPORT_CATEGORY_LABELS, type IssueReport, type Order } from '@/lib/types'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { type IssueReport, type Order } from '@/lib/types'
 
 type ReportWithRelations = IssueReport & {
   order: Pick<Order, 'order_number' | 'customer_name'> | null
   assignee: { full_name: string | null } | null
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  open: 'Abierto',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
+const STATUS_KEYS: Record<string, string> = {
+  open: 'support.statusOpen',
+  in_progress: 'support.statusInProgress',
+  resolved: 'support.statusResolved',
+}
+
+const CATEGORY_KEYS: Record<string, string> = {
+  wrong_order: 'support.categoryWrongOrder',
+  missing_item: 'support.categoryMissingItem',
+  damaged_order: 'support.categoryDamagedOrder',
+  delivery_issue: 'support.categoryDeliveryIssue',
+  payment_issue: 'support.categoryPaymentIssue',
+  other: 'support.categoryOther',
 }
 
 export default function SupportPage() {
   const { can, profile } = useAuth()
+  const { t } = useLanguage()
   const canManage = can('customers.view')
   const [reports, setReports] = useState<ReportWithRelations[]>([])
   const [loading, setLoading] = useState(true)
@@ -93,7 +104,7 @@ export default function SupportPage() {
     return (
       <Card className="flex flex-col items-center gap-2 p-10 text-center">
         <MessageCircleWarning size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">No tienes permiso para ver esta sección.</p>
+        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
       </Card>
     )
   }
@@ -104,21 +115,21 @@ export default function SupportPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">Soporte</h1>
-          <p className="text-sm text-ink-400">Reportes de clientes y conductores sobre sus pedidos.</p>
+          <h1 className="text-2xl font-extrabold text-ink-900">{t('support.title')}</h1>
+          <p className="text-sm text-ink-400">{t('support.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowResolved((v) => !v)}
           className="text-sm font-semibold text-brand-900 hover:underline"
         >
-          {showResolved ? 'Ocultar resueltos' : 'Mostrar resueltos'}
+          {showResolved ? t('support.hideResolved') : t('support.showResolved')}
         </button>
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && visible.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Sin reportes pendientes.</p>
+          <p className="p-5 text-sm text-ink-400">{t('support.noReports')}</p>
         )}
         {visible.map((report) => {
           const isMine = report.assigned_to === profile?.id
@@ -129,11 +140,13 @@ export default function SupportPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-bold text-ink-900">
-                      {report.order ? `Pedido #${report.order.order_number}` : 'Pedido eliminado'}
+                      {report.order ? `${t('ordersAdmin.orderLabel')} #${report.order.order_number}` : t('support.orderDeleted')}
                     </span>
-                    <Badge variant="brand">{ISSUE_REPORT_CATEGORY_LABELS[report.category] ?? report.category}</Badge>
+                    <Badge variant="brand">
+                      {CATEGORY_KEYS[report.category] ? t(CATEGORY_KEYS[report.category]) : report.category}
+                    </Badge>
                     <Badge variant={report.status === 'resolved' ? 'success' : report.status === 'in_progress' ? 'warning' : 'danger'}>
-                      {STATUS_LABELS[report.status] ?? report.status}
+                      {STATUS_KEYS[report.status] ? t(STATUS_KEYS[report.status]) : report.status}
                     </Badge>
                   </div>
                   {report.order?.customer_name && (
@@ -142,26 +155,28 @@ export default function SupportPage() {
                   {report.description && <p className="mt-1.5 text-sm text-ink-600">{report.description}</p>}
                   <p className="mt-1 text-xs text-ink-400">
                     {formatDate(report.created_at)} ·{' '}
-                    {report.assignee?.full_name ? `Asignado a ${report.assignee.full_name}` : 'Sin asignar'}
+                    {report.assignee?.full_name
+                      ? t('support.assignedTo', { name: report.assignee.full_name })
+                      : t('support.unassigned')}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
                   {!report.assigned_to || !isMine ? (
                     <Button size="sm" variant="secondary" disabled={busyId === report.id} onClick={() => claim(report)}>
-                      <UserCheck size={14} aria-hidden="true" /> {report.assigned_to ? 'Reasignarme' : 'Tomar'}
+                      <UserCheck size={14} aria-hidden="true" /> {report.assigned_to ? t('support.reassignMe') : t('support.claim')}
                     </Button>
                   ) : (
                     <Button size="sm" variant="secondary" onClick={() => setOpenChatId(chatOpen ? null : report.id)}>
-                      <MessageSquare size={14} aria-hidden="true" /> {chatOpen ? 'Cerrar chat' : 'Chat'}
+                      <MessageSquare size={14} aria-hidden="true" /> {chatOpen ? t('support.closeChat') : t('support.chat')}
                     </Button>
                   )}
                   {report.status !== 'resolved' ? (
                     <Button size="sm" variant="secondary" disabled={busyId === report.id} onClick={() => resolve(report)}>
-                      <CheckCircle2 size={14} aria-hidden="true" /> Resolver
+                      <CheckCircle2 size={14} aria-hidden="true" /> {t('support.resolveButton')}
                     </Button>
                   ) : (
                     <Button size="sm" variant="secondary" disabled={busyId === report.id} onClick={() => reopen(report)}>
-                      <RotateCcw size={14} aria-hidden="true" /> Reabrir
+                      <RotateCcw size={14} aria-hidden="true" /> {t('support.reopenButton')}
                     </Button>
                   )}
                 </div>

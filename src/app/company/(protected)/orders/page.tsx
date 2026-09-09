@@ -12,13 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency, formatDate } from '@/lib/format'
-import {
-  ORDER_STATUS_LABELS,
-  type Order,
-  type OrderItem,
-  type OrderItemTopping,
-  type OrderStatus,
-} from '@/lib/types'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { type Order, type OrderItem, type OrderItemTopping, type OrderStatus } from '@/lib/types'
 
 const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   pending: 'warning',
@@ -32,15 +27,15 @@ const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'dan
   failed: 'danger',
 }
 
-const FILTERS: { key: 'active' | 'all' | OrderStatus; label: string }[] = [
-  { key: 'active', label: 'En curso' },
-  { key: 'all', label: 'Todos' },
-  { key: 'delivered', label: 'Entregados' },
-  { key: 'cancelled', label: 'Cancelados' },
-]
-
 export default function OrdersPage() {
   const { can } = useAuth()
+  const { t } = useLanguage()
+  const FILTERS: { key: 'active' | 'all' | OrderStatus; label: string }[] = [
+    { key: 'active', label: t('ordersAdmin.filterActive') },
+    { key: 'all', label: t('ordersAdmin.filterAll') },
+    { key: 'delivered', label: t('ordersAdmin.filterDelivered') },
+    { key: 'cancelled', label: t('ordersAdmin.filterCancelled') },
+  ]
   const canView = can('orders.view')
   const canUpdateStatus = can('orders.update_status')
   const canCancel = can('orders.cancel')
@@ -93,13 +88,13 @@ export default function OrdersPage() {
     const { error } = await supabase.from('orders').update({ status: 'confirmed' }).eq('id', order.id)
     setBusyId(null)
     if (error) {
-      alert('No se pudo aceptar el pedido (puede que ya haya cambiado). Se recargó la lista.')
+      alert(t('ordersAdmin.acceptFailed'))
     }
     load()
   }
 
   async function cancelOrder(order: Order) {
-    if (!confirm(`¿Cancelar el pedido #${order.order_number}?`)) return
+    if (!confirm(t('ordersAdmin.confirmCancel', { number: order.order_number }))) return
     setBusyId(order.id)
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
     setBusyId(null)
@@ -118,7 +113,7 @@ export default function OrdersPage() {
   if (!canView) {
     return (
       <Card className="flex flex-col items-center gap-2 p-10 text-center">
-        <p className="text-sm text-ink-400">No tienes permiso para ver esta sección.</p>
+        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
       </Card>
     )
   }
@@ -126,10 +121,8 @@ export default function OrdersPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Pedidos</h1>
-        <p className="text-sm text-ink-400">
-          Da seguimiento a los pedidos y confirma para descontar inventario automáticamente.
-        </p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('ordersAdmin.title')}</h1>
+        <p className="text-sm text-ink-400">{t('ordersAdmin.subtitle')}</p>
       </div>
 
       <div className="flex gap-2 overflow-x-auto">
@@ -147,9 +140,9 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {loading && <p className="py-8 text-center text-sm text-ink-400">Cargando…</p>}
+      {loading && <p className="py-8 text-center text-sm text-ink-400">{t('common.loading')}</p>}
       {!loading && filteredOrders.length === 0 && (
-        <Card className="py-8 text-center text-sm text-ink-400">No hay pedidos en esta vista.</Card>
+        <Card className="py-8 text-center text-sm text-ink-400">{t('ordersAdmin.noOrdersInView')}</Card>
       )}
 
       {!loading && filteredOrders.length > 0 && (
@@ -168,23 +161,23 @@ export default function OrdersPage() {
                       <p className="font-semibold text-ink-900">#{order.order_number}</p>
                       <p className="text-xs text-ink-400">{formatDate(order.created_at)}</p>
                     </div>
-                    <Badge variant={STATUS_VARIANT[status]}>{ORDER_STATUS_LABELS[status]}</Badge>
+                    <Badge variant={STATUS_VARIANT[status]}>{t(`orderStatus.${status}`)}</Badge>
                   </div>
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm">
-                    <dt className="text-ink-400">Cliente</dt>
+                    <dt className="text-ink-400">{t('ordersAdmin.customer')}</dt>
                     <dd className="truncate text-right text-ink-600">{order.customer_name}</dd>
-                    <dt className="text-ink-400">Tipo</dt>
+                    <dt className="text-ink-400">{t('ordersAdmin.type')}</dt>
                     <dd className="text-right text-ink-600">
-                      {order.order_type === 'delivery' ? 'Domicilio' : 'Recoger'}
+                      {order.order_type === 'delivery' ? t('ordersAdmin.deliveryType') : t('ordersAdmin.pickupType')}
                     </dd>
-                    <dt className="text-ink-400">Total</dt>
+                    <dt className="text-ink-400">{t('checkout.total')}</dt>
                     <dd className="text-right font-semibold text-ink-900">
                       {formatCurrency(order.total)}
                     </dd>
                   </dl>
                   <div className="flex items-center gap-2 border-t border-ink-100 pt-3">
                     <Button size="sm" variant="secondary" onClick={() => openDetail(order)} className="flex-1">
-                      <Eye size={14} aria-hidden="true" /> Ver detalle
+                      <Eye size={14} aria-hidden="true" /> {t('ordersAdmin.viewDetail')}
                     </Button>
                     {status === 'pending' && canUpdateStatus && (
                       <Button
@@ -193,7 +186,7 @@ export default function OrdersPage() {
                         disabled={busyId === order.id}
                         className="flex-1"
                       >
-                        <Check size={14} aria-hidden="true" /> Aceptar pedido
+                        <Check size={14} aria-hidden="true" /> {t('ordersAdmin.acceptOrder')}
                       </Button>
                     )}
                     {notTerminal && canCancel && (
@@ -201,10 +194,10 @@ export default function OrdersPage() {
                         onClick={() => cancelOrder(order)}
                         disabled={busyId === order.id}
                         className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
-                        title="Cancelar"
+                        title={t('common.cancel')}
                       >
                         <Ban size={16} aria-hidden="true" />
-                        <span className="sr-only">Cancelar</span>
+                        <span className="sr-only">{t('common.cancel')}</span>
                       </button>
                     )}
                   </div>
@@ -219,12 +212,12 @@ export default function OrdersPage() {
             <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pedido</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>{t('ordersAdmin.orderLabel')}</TableHead>
+                  <TableHead>{t('ordersAdmin.customer')}</TableHead>
+                  <TableHead>{t('ordersAdmin.type')}</TableHead>
+                  <TableHead>{t('checkout.total')}</TableHead>
+                  <TableHead>{t('ordersAdmin.status')}</TableHead>
+                  <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -239,27 +232,27 @@ export default function OrdersPage() {
                       </TableCell>
                       <TableCell className="text-ink-600">{order.customer_name}</TableCell>
                       <TableCell className="text-ink-600">
-                        {order.order_type === 'delivery' ? 'Domicilio' : 'Recoger'}
+                        {order.order_type === 'delivery' ? t('ordersAdmin.deliveryType') : t('ordersAdmin.pickupType')}
                       </TableCell>
                       <TableCell className="font-semibold text-ink-900">
                         {formatCurrency(order.total)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={STATUS_VARIANT[status]}>{ORDER_STATUS_LABELS[status]}</Badge>
+                        <Badge variant={STATUS_VARIANT[status]}>{t(`orderStatus.${status}`)}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openDetail(order)}
                             className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                            title="Ver detalle"
+                            title={t('ordersAdmin.viewDetail')}
                           >
                             <Eye size={14} aria-hidden="true" />
-                            <span className="sr-only">Ver detalle</span>
+                            <span className="sr-only">{t('ordersAdmin.viewDetail')}</span>
                           </button>
                           {status === 'pending' && canUpdateStatus && (
                             <Button size="sm" onClick={() => acceptOrder(order)} disabled={busyId === order.id}>
-                              <Check size={14} aria-hidden="true" /> Aceptar
+                              <Check size={14} aria-hidden="true" /> {t('ordersAdmin.accept')}
                             </Button>
                           )}
                           {notTerminal && canCancel && (
@@ -267,10 +260,10 @@ export default function OrdersPage() {
                               onClick={() => cancelOrder(order)}
                               disabled={busyId === order.id}
                               className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
-                              title="Cancelar"
+                              title={t('common.cancel')}
                             >
                               <Ban size={14} aria-hidden="true" />
-                              <span className="sr-only">Cancelar</span>
+                              <span className="sr-only">{t('common.cancel')}</span>
                             </button>
                           )}
                         </div>
@@ -289,7 +282,7 @@ export default function OrdersPage() {
           {detailOrder && (
             <div className="p-6">
               <DialogTitle className="text-lg font-extrabold text-ink-900">
-                Pedido #{detailOrder.order_number}
+                {t('ordersAdmin.orderLabel')} #{detailOrder.order_number}
               </DialogTitle>
               <p className="mb-4 text-xs text-ink-400">
                 {detailOrder.customer_name} · {detailOrder.phone}
@@ -309,18 +302,18 @@ export default function OrdersPage() {
                     </p>
                     {item.order_item_toppings.length > 0 && (
                       <p className="text-xs text-ink-400">
-                        Toppings: {item.order_item_toppings.map((t) => t.topping_name).join(', ')}
+                        {t('ordersAdmin.toppingsPrefix')} {item.order_item_toppings.map((it) => it.topping_name).join(', ')}
                       </p>
                     )}
                   </div>
                 ))}
                 {detailOrder.notes && (
                   <p className="rounded-2xl bg-ink-50 p-3 text-xs text-ink-600">
-                    Notas: {detailOrder.notes}
+                    {t('ordersAdmin.notesLabel')} {detailOrder.notes}
                   </p>
                 )}
                 <div className="flex justify-between text-base font-extrabold text-ink-900">
-                  <span>Total</span>
+                  <span>{t('checkout.total')}</span>
                   <span>{formatCurrency(detailOrder.total)}</span>
                 </div>
               </div>

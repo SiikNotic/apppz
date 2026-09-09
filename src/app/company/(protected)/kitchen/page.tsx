@@ -11,22 +11,23 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@/lib/types'
 
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
 type AvailableDriver = { user_id: string; full_name: string }
-
-const COLUMNS: { status: OrderStatus; label: string; action: OrderStatus | null; actionLabel: string }[] = [
-  { status: 'confirmed', label: 'Nuevos', action: 'preparing', actionLabel: 'ACEPTAR' },
-  { status: 'preparing', label: 'Preparando', action: 'ready', actionLabel: 'LISTO' },
-  { status: 'ready', label: 'Listos', action: null, actionLabel: '' },
-]
 
 function minutesAgo(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
 }
 
 export default function KitchenViewPage() {
+  const { t } = useLanguage()
+  const COLUMNS: { status: OrderStatus; label: string; action: OrderStatus | null; actionLabel: string }[] = [
+    { status: 'confirmed', label: t('kitchen.colNew'), action: 'preparing', actionLabel: t('kitchen.accept') },
+    { status: 'preparing', label: t('kitchen.colPreparing'), action: 'ready', actionLabel: t('kitchen.ready') },
+    { status: 'ready', label: t('kitchen.colReady'), action: null, actionLabel: '' },
+  ]
   const [orders, setOrders] = useState<KitchenOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -163,13 +164,13 @@ export default function KitchenViewPage() {
     loadAvailableDrivers()
   }
 
-  if (loading) return <p className="text-sm text-ink-400">Cargando cocina…</p>
+  if (loading) return <p className="text-sm text-ink-400">{t('kitchen.loadingKitchen')}</p>
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Cocina</h1>
-        <p className="text-sm text-ink-400">Pedidos activos en tiempo real.</p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('kitchen.title')}</h1>
+        <p className="text-sm text-ink-400">{t('kitchen.subtitle')}</p>
       </div>
 
       {needsUnlock && (
@@ -178,7 +179,7 @@ export default function KitchenViewPage() {
           className="flex w-full items-center gap-2 rounded-2xl bg-ink-50 px-4 py-3 text-sm font-semibold text-ink-600 hover:bg-ink-100"
         >
           <Volume2 size={16} aria-hidden="true" />
-          Activar sonido de alerta para pedidos nuevos
+          {t('kitchen.enableAlertSound')}
         </button>
       )}
 
@@ -188,9 +189,9 @@ export default function KitchenViewPage() {
           className="flex items-center justify-between gap-3 rounded-2xl bg-brand-500 px-4 py-3 font-bold text-ink-900 shadow-pop"
         >
           <span className="flex items-center gap-2">
-            <BellRing size={18} aria-hidden="true" /> ¡Nuevo pedido! Revísalo en &quot;Nuevos&quot; abajo.
+            <BellRing size={18} aria-hidden="true" /> {t('kitchen.newOrderAlert')}
           </span>
-          <button onClick={dismiss} aria-label="Cerrar aviso" className="shrink-0 rounded-full p-1 hover:bg-ink-900/10">
+          <button onClick={dismiss} aria-label={t('kitchen.closeAlert')} className="shrink-0 rounded-full p-1 hover:bg-ink-900/10">
             <X size={16} aria-hidden="true" />
           </button>
         </div>
@@ -206,7 +207,7 @@ export default function KitchenViewPage() {
               </h2>
               <div className="space-y-3">
                 {columnOrders.length === 0 && (
-                  <p className="rounded-2xl bg-white p-4 text-center text-xs text-ink-400">Sin pedidos</p>
+                  <p className="rounded-2xl bg-white p-4 text-center text-xs text-ink-400">{t('kitchen.noOrders')}</p>
                 )}
                 {columnOrders.map((order) => {
                   const elapsed = minutesAgo(order.created_at)
@@ -224,7 +225,7 @@ export default function KitchenViewPage() {
                           </span>
                           <button
                             onClick={() => setLabelOrder(order)}
-                            aria-label={`Ver etiqueta del pedido #${order.order_number}`}
+                            aria-label={t('kitchen.viewLabel', { number: order.order_number })}
                             className="grid h-7 w-7 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
                           >
                             <Printer size={13} aria-hidden="true" />
@@ -269,13 +270,13 @@ export default function KitchenViewPage() {
                       )}
                       {col.status === 'ready' && order.order_type === 'delivery' && (
                         <Button fullWidth size="lg" className="mt-3" onClick={() => openAssign(order)}>
-                          <Send size={16} aria-hidden="true" /> Enviar a repartidor
+                          <Send size={16} aria-hidden="true" /> {t('kitchen.sendToDriver')}
                         </Button>
                       )}
                       {col.status === 'ready' && order.order_type === 'pickup' && (
                         <>
                           <p className="mt-3 rounded-xl bg-ink-50 p-2 text-center text-xs font-semibold text-ink-600">
-                            Para recoger en tienda — esperando al cliente.
+                            {t('kitchen.pickupWaiting')}
                           </p>
                           <Button
                             fullWidth
@@ -284,7 +285,7 @@ export default function KitchenViewPage() {
                             disabled={busyId === order.id}
                             onClick={() => advance(order, 'delivered')}
                           >
-                            Marcar como recogido
+                            {t('kitchen.markPickedUp')}
                           </Button>
                         </>
                       )}
@@ -304,15 +305,21 @@ export default function KitchenViewPage() {
             <div className="p-6">
               <div id="order-label-print" className="space-y-3 font-mono text-sm">
                 <div className="text-center">
-                  <p className="text-lg font-extrabold">PEDIDO #{labelOrder.order_number}</p>
+                  <p className="text-lg font-extrabold">
+                    {t('kitchen.orderWord')} #{labelOrder.order_number}
+                  </p>
                   <p className="text-xs">{formatDate(labelOrder.created_at)}</p>
                 </div>
                 <div className="border-t border-dashed border-ink-300 pt-2">
                   <p className="font-bold uppercase">
-                    {labelOrder.order_type === 'delivery' ? 'A domicilio' : 'Recoger en tienda'}
+                    {labelOrder.order_type === 'delivery' ? t('kitchen.deliveryLabel') : t('home.pickup')}
                   </p>
                   <p>{labelOrder.customer_name}</p>
-                  {labelOrder.phone && <p>Tel: {labelOrder.phone}</p>}
+                  {labelOrder.phone && (
+                    <p>
+                      {t('kitchen.phonePrefix')} {labelOrder.phone}
+                    </p>
+                  )}
                   {labelOrder.address && <p>{labelOrder.address}</p>}
                 </div>
                 <div className="border-t border-dashed border-ink-300 pt-2">
@@ -333,38 +340,40 @@ export default function KitchenViewPage() {
                 </div>
                 {labelOrder.notes && (
                   <div className="border-t border-dashed border-ink-300 pt-2">
-                    <p className="font-bold">Nota: {labelOrder.notes}</p>
+                    <p className="font-bold">
+                      {t('kitchen.noteLabel')} {labelOrder.notes}
+                    </p>
                   </div>
                 )}
                 <div className="border-t border-dashed border-ink-300 pt-2">
                   <div className="flex justify-between">
-                    <span>Subtotal</span>
+                    <span>{t('checkout.subtotal')}</span>
                     <span>{formatCurrency(labelOrder.subtotal)}</span>
                   </div>
                   {labelOrder.discount > 0 && (
                     <div className="flex justify-between">
-                      <span>Descuento</span>
+                      <span>{t('checkout.discount')}</span>
                       <span>-{formatCurrency(labelOrder.discount)}</span>
                     </div>
                   )}
                   {labelOrder.order_type === 'delivery' && labelOrder.delivery_fee > 0 && (
                     <div className="flex justify-between">
-                      <span>Envío</span>
+                      <span>{t('checkout.shipping')}</span>
                       <span>{formatCurrency(labelOrder.delivery_fee)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span>Impuesto</span>
+                    <span>{t('checkout.tax')}</span>
                     <span>{formatCurrency(labelOrder.tax)}</span>
                   </div>
                   <div className="flex justify-between text-base font-extrabold">
-                    <span>TOTAL</span>
+                    <span>{t('kitchen.totalUpper')}</span>
                     <span>{formatCurrency(labelOrder.total)}</span>
                   </div>
                 </div>
               </div>
               <Button fullWidth className="mt-4 print:hidden" onClick={() => window.print()}>
-                <Printer size={16} aria-hidden="true" /> Imprimir etiqueta
+                <Printer size={16} aria-hidden="true" /> {t('kitchen.printLabelButton')}
               </Button>
             </div>
           )}
@@ -377,18 +386,18 @@ export default function KitchenViewPage() {
           {assignOrder && (
             <div className="p-6">
               <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">
-                Enviar pedido #{assignOrder.order_number}
+                {t('kitchen.sendOrderTitle', { number: assignOrder.order_number })}
               </DialogTitle>
-              <p className="mb-4 text-sm text-ink-600">Elige quién va a entregarlo.</p>
+              <p className="mb-4 text-sm text-ink-600">{t('kitchen.chooseDriver')}</p>
 
               {drivers.length === 0 ? (
                 <p className="rounded-2xl bg-ink-50 p-4 text-center text-sm text-ink-400">
-                  No hay repartidores disponibles ahora mismo.
+                  {t('kitchen.noDriversAvailable')}
                 </p>
               ) : (
                 <Select value={selectedDriver} onValueChange={setSelectedDriver}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Elegir repartidor" />
+                    <SelectValue placeholder={t('kitchen.chooseDriverPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {drivers.map((d) => (
@@ -412,7 +421,7 @@ export default function KitchenViewPage() {
                 disabled={!selectedDriver || assigning}
                 onClick={handleAssign}
               >
-                {assigning ? 'Enviando…' : 'Confirmar y enviar'}
+                {assigning ? t('kitchen.sending') : t('kitchen.confirmAndSend')}
               </Button>
             </div>
           )}
