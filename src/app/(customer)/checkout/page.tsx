@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatCurrency } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { CartLine, Address } from '@/lib/types'
 
 const NEW_ADDRESS = '__new__'
@@ -43,6 +44,7 @@ function cartToRpcItems(lines: CartLine[]): CartRpcItem[] {
 export default function CheckoutPage() {
   const { lines, removeLine, updateQuantity, clear } = useCart()
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
 
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery')
@@ -108,9 +110,7 @@ export default function CheckoutPage() {
         })
         .catch((err) => {
           if (!active) return
-          setPricingError(
-            err instanceof Error ? err.message : 'No pudimos calcular el precio. Intenta de nuevo.'
-          )
+          setPricingError(err instanceof Error ? err.message : t('checkout.errorPricing'))
         })
         .finally(() => {
           if (active) setPricingLoading(false)
@@ -126,8 +126,8 @@ export default function CheckoutPage() {
 
   async function handleSubmit() {
     setFormError(null)
-    if (!customerName.trim()) return setFormError('Escribe tu nombre.')
-    if (!phone.trim()) return setFormError('Escribe un teléfono de contacto.')
+    if (!customerName.trim()) return setFormError(t('checkout.errorName'))
+    if (!phone.trim()) return setFormError(t('checkout.errorPhone'))
 
     const usingSavedAddress = selectedAddressId !== NEW_ADDRESS
     const addressText = usingSavedAddress
@@ -135,9 +135,9 @@ export default function CheckoutPage() {
       : manualAddress.trim()
 
     if (orderType === 'delivery' && !addressText) {
-      return setFormError('Escribe o selecciona la dirección de entrega.')
+      return setFormError(t('checkout.errorAddress'))
     }
-    if (lines.length === 0) return setFormError('Tu carrito está vacío.')
+    if (lines.length === 0) return setFormError(t('checkout.emptyCart'))
 
     setSubmitting(true)
     try {
@@ -161,11 +161,11 @@ export default function CheckoutPage() {
       // Mensaje accionable, nunca un genérico "algo salió mal".
       const message = err instanceof Error ? err.message : ''
       if (message.includes('ya no está disponible')) {
-        setFormError('Uno de los productos de tu carrito ya no está disponible. Quítalo para continuar.')
+        setFormError(t('checkout.errorItemUnavailable'))
       } else if (message.includes('carrito está vacío')) {
-        setFormError('Tu carrito está vacío.')
+        setFormError(t('checkout.emptyCart'))
       } else {
-        setFormError('Tu conexión se interrumpió y no pudimos confirmar el pedido. No se te cobró — intenta de nuevo.')
+        setFormError(t('checkout.errorConnection'))
       }
     } finally {
       setSubmitting(false)
@@ -178,8 +178,8 @@ export default function CheckoutPage() {
         <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-900">
           <ShoppingBag size={28} aria-hidden="true" />
         </div>
-        <p className="text-sm font-semibold text-ink-600">Tu carrito está vacío.</p>
-        <Button onClick={() => router.push('/menu')}>Ver el menú</Button>
+        <p className="text-sm font-semibold text-ink-600">{t('checkout.emptyCart')}</p>
+        <Button onClick={() => router.push('/menu')}>{t('checkout.seeMenu')}</Button>
       </div>
     )
   }
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
   return (
     <div className="grid gap-5 lg:grid-cols-[1.3fr,1fr]">
       <div className="space-y-3">
-        <h1 className="text-xl font-extrabold text-ink-900">Tu pedido</h1>
+        <h1 className="text-xl font-extrabold text-ink-900">{t('checkout.yourOrder')}</h1>
         {lines.map((line) => (
           <Card key={line.lineId} className="flex items-center gap-3 p-3.5">
             <ItemThumb name={line.name} imageUrl={line.imageUrl} size="sm" />
@@ -202,7 +202,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-1 rounded-full bg-ink-50 px-1.5 py-1">
                   <button
                     onClick={() => updateQuantity(line.lineId, line.quantity - 1)}
-                    aria-label={`Disminuir cantidad de ${line.name}`}
+                    aria-label={`${t('checkout.decreaseQty')} ${line.name}`}
                     className="grid h-6 w-6 place-items-center rounded-full bg-white text-ink-600 shadow-sm"
                   >
                     <Minus size={12} aria-hidden="true" />
@@ -212,7 +212,7 @@ export default function CheckoutPage() {
                   </span>
                   <button
                     onClick={() => updateQuantity(line.lineId, line.quantity + 1)}
-                    aria-label={`Aumentar cantidad de ${line.name}`}
+                    aria-label={`${t('checkout.increaseQty')} ${line.name}`}
                     className="grid h-6 w-6 place-items-center rounded-full bg-white text-ink-600 shadow-sm"
                   >
                     <Plus size={12} aria-hidden="true" />
@@ -225,7 +225,7 @@ export default function CheckoutPage() {
                   <button
                     onClick={() => removeLine(line.lineId)}
                     className="text-ink-400 hover:text-danger-500"
-                    aria-label={`Quitar ${line.name} del carrito`}
+                    aria-label={`${t('checkout.removeItem')} ${line.name} ${t('checkout.removeItemSuffix')}`}
                   >
                     <Trash2 size={16} aria-hidden="true" />
                   </button>
@@ -238,7 +238,7 @@ export default function CheckoutPage() {
 
       <div>
         <Card className="sticky top-24 space-y-4 p-5">
-          <h2 className="text-base font-extrabold text-ink-900">Datos de entrega</h2>
+          <h2 className="text-base font-extrabold text-ink-900">{t('checkout.deliveryDetails')}</h2>
 
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -248,7 +248,7 @@ export default function CheckoutPage() {
                 orderType === 'delivery' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
               }`}
             >
-              Entrega a domicilio
+              {t('home.delivery')}
             </button>
             <button
               onClick={() => setOrderType('pickup')}
@@ -257,22 +257,22 @@ export default function CheckoutPage() {
                 orderType === 'pickup' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
               }`}
             >
-              Recoger en tienda
+              {t('home.pickup')}
             </button>
           </div>
 
           <div>
-            <Label htmlFor="checkout-name">Nombre</Label>
-            <Input id="checkout-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Tu nombre" />
+            <Label htmlFor="checkout-name">{t('checkout.name')}</Label>
+            <Input id="checkout-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={t('checkout.namePlaceholder')} />
           </div>
           <div>
-            <Label htmlFor="checkout-phone">Teléfono</Label>
-            <Input id="checkout-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="55 1234 5678" />
+            <Label htmlFor="checkout-phone">{t('auth.phone')}</Label>
+            <Input id="checkout-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('checkout.phonePlaceholder')} />
           </div>
 
           {orderType === 'delivery' && (
             <div>
-              <Label>Dirección</Label>
+              <Label>{t('checkout.address')}</Label>
               {addresses.length > 0 && (
                 <Select value={selectedAddressId} onValueChange={setSelectedAddressId}>
                   <SelectTrigger className="w-full">
@@ -284,7 +284,7 @@ export default function CheckoutPage() {
                         {a.label} · {a.street}
                       </SelectItem>
                     ))}
-                    <SelectItem value={NEW_ADDRESS}>Otra dirección…</SelectItem>
+                    <SelectItem value={NEW_ADDRESS}>{t('checkout.otherAddress')}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -294,88 +294,88 @@ export default function CheckoutPage() {
                   rows={2}
                   value={manualAddress}
                   onChange={(e) => setManualAddress(e.target.value)}
-                  placeholder="Calle, número, referencias"
+                  placeholder={t('checkout.addressPlaceholder')}
                 />
               )}
             </div>
           )}
 
           <div>
-            <Label htmlFor="checkout-payment">Método de pago</Label>
+            <Label htmlFor="checkout-payment">{t('checkout.paymentMethod')}</Label>
             <Select value={paymentMethod} onValueChange={setPaymentMethod}>
               <SelectTrigger className="w-full" id="checkout-payment">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Efectivo">Efectivo</SelectItem>
-                <SelectItem value="Tarjeta contra entrega">Tarjeta contra entrega</SelectItem>
-                <SelectItem value="Transferencia">Transferencia</SelectItem>
+                <SelectItem value="Efectivo">{t('checkout.cash')}</SelectItem>
+                <SelectItem value="Tarjeta contra entrega">{t('checkout.cardOnDelivery')}</SelectItem>
+                <SelectItem value="Transferencia">{t('checkout.transfer')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="checkout-promo">Código de promoción (opcional)</Label>
+            <Label htmlFor="checkout-promo">{t('checkout.promoCode')}</Label>
             <div className="relative">
               <Tag size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden="true" />
               <Input
                 id="checkout-promo"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                placeholder="PIZZA10"
+                placeholder={t('checkout.promoPlaceholder')}
                 className="pl-9"
               />
             </div>
             {pricing?.promotion_code && (
               <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-success-500">
-                <Check size={12} aria-hidden="true" /> Código {pricing.promotion_code} aplicado
+                <Check size={12} aria-hidden="true" /> {t('checkout.promoApplied', { code: pricing.promotion_code })}
               </p>
             )}
             {!pricing?.promotion_code && promoCode && !pricingLoading && (
-              <p className="mt-1 text-xs text-ink-400">Ese código no aplica a tu pedido.</p>
+              <p className="mt-1 text-xs text-ink-400">{t('checkout.promoNotApplicable')}</p>
             )}
           </div>
 
           <div>
-            <Label htmlFor="checkout-notes">Notas (opcional)</Label>
+            <Label htmlFor="checkout-notes">{t('checkout.notes')}</Label>
             <Textarea
               id="checkout-notes"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Sin cebolla, tocar el timbre, etc."
+              placeholder={t('checkout.notesPlaceholder')}
             />
           </div>
 
           <div className="space-y-1.5 border-t border-ink-100 pt-3 text-sm">
             {pricingLoading ? (
-              <p className="text-ink-400">Calculando total…</p>
+              <p className="text-ink-400">{t('checkout.calculatingTotal')}</p>
             ) : pricingError ? (
               <p role="alert" className="text-xs font-semibold text-danger-500">{pricingError}</p>
             ) : pricing ? (
               <>
                 <div className="flex justify-between text-ink-600">
-                  <span>Subtotal</span>
+                  <span>{t('checkout.subtotal')}</span>
                   <span>{formatCurrency(pricing.subtotal)}</span>
                 </div>
                 {pricing.discount > 0 && (
                   <div className="flex justify-between text-success-500">
-                    <span>Descuento</span>
+                    <span>{t('checkout.discount')}</span>
                     <span>-{formatCurrency(pricing.discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-ink-600">
-                  <span>Envío</span>
-                  <span>{pricing.delivery_fee > 0 ? formatCurrency(pricing.delivery_fee) : 'Gratis'}</span>
+                  <span>{t('checkout.shipping')}</span>
+                  <span>{pricing.delivery_fee > 0 ? formatCurrency(pricing.delivery_fee) : t('checkout.free')}</span>
                 </div>
                 {pricing.tax > 0 && (
                   <div className="flex justify-between text-ink-600">
-                    <span>Impuesto</span>
+                    <span>{t('checkout.tax')}</span>
                     <span>{formatCurrency(pricing.tax)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-extrabold text-ink-900">
-                  <span>Total</span>
+                  <span>{t('checkout.total')}</span>
                   <span>{formatCurrency(pricing.total)}</span>
                 </div>
               </>
@@ -390,10 +390,10 @@ export default function CheckoutPage() {
 
           <Button fullWidth size="lg" variant="dark" onClick={handleSubmit} disabled={!canSubmit}>
             {submitting
-              ? 'Enviando pedido…'
+              ? t('checkout.submitting')
               : pricing
-                ? `Confirmar pedido · ${formatCurrency(pricing.total)}`
-                : 'Confirmar pedido'}
+                ? `${t('checkout.confirmOrder')} · ${formatCurrency(pricing.total)}`
+                : t('checkout.confirmOrder')}
           </Button>
         </Card>
       </div>

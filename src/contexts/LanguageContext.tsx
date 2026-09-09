@@ -14,8 +14,10 @@ interface LanguageContextValue {
   setLanguage: (lang: Language) => void
   /** Busca "namespace.key" en el diccionario activo; si falta, cae a
    *  español; si tampoco existe ahí, devuelve la clave cruda (nunca
-   *  revienta la UI por una traducción faltante). */
-  t: (path: string) => string
+   *  revienta la UI por una traducción faltante). `params` sustituye
+   *  tokens `{nombre}` dentro del string encontrado (p.ej. "Código
+   *  {code} aplicado" con { code: 'PIZZA10' }). */
+  t: (path: string, params?: Record<string, string | number>) => string
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null)
@@ -42,10 +44,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof document !== 'undefined') document.documentElement.lang = lang
   }
 
-  function t(path: string): string {
+  function t(path: string, params?: Record<string, string | number>): string {
     const parts = path.split('.')
     const value = getByPath(translations[language], parts) ?? getByPath(translations.es, parts)
-    return typeof value === 'string' ? value : path
+    const text = typeof value === 'string' ? value : path
+    if (!params) return text
+    return Object.entries(params).reduce((acc, [key, val]) => acc.replaceAll(`{${key}}`, String(val)), text)
   }
 
   return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>
