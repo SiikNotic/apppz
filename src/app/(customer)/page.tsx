@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Search, Truck, Store, MapPin } from 'lucide-react'
 import { useMenuData } from '@/hooks/useMenuData'
 import { MenuGrid } from '@/components/customer/menu-grid'
+import { MenuSkeleton } from '@/components/customer/menu-skeleton'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { BRAND_TAGLINE } from '@/lib/config'
@@ -26,7 +27,7 @@ export default function HomePage() {
 
   const popular = useMemo(() => allItems.slice(0, 4), [allItems])
 
-  if (loading) return <p className="py-16 text-center text-sm text-ink-400">Cargando…</p>
+  if (loading) return <MenuSkeleton withHero />
   if (error) return <p className="py-16 text-center text-sm text-danger-500">No pudimos cargar el menú: {error}</p>
 
   return (

@@ -3,6 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Scroll suave al navegar a un ancla o al hacer scrollIntoView; ya se
+   desactiva para quien prefiera menos movimiento (ver la media query de
+   prefers-reduced-motion más abajo en este archivo). */
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --radius: 1rem;
 

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useMenuData } from '@/hooks/useMenuData'
 import { MenuGrid } from '@/components/customer/menu-grid'
+import { MenuSkeleton } from '@/components/customer/menu-skeleton'
 
 export default function MenuPage() {
   const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
@@ -11,7 +12,7 @@ export default function MenuPage() {
 
   const currentCategory = activeCategory ?? categories[0]?.id ?? null
 
-  if (loading) return <p className="py-16 text-center text-sm text-ink-400">Cargando el menú…</p>
+  if (loading) return <MenuSkeleton />
   if (error) return <p className="py-16 text-center text-sm text-danger-500">No pudimos cargar el menú: {error}</p>
 
   return (

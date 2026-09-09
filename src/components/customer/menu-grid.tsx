@@ -39,7 +39,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
           <div
             key={item.id}
             className={cn(
-              'flex items-center gap-3 rounded-3xl border p-3.5 transition',
+              'flex items-center gap-3 rounded-3xl border p-3.5 transition duration-200 hover:-translate-y-0.5 hover:shadow-pop',
               isBuilder ? 'border-brand-300 bg-brand-50/60' : 'border-ink-100/60 bg-white shadow-card'
             )}
           >
@@ -77,7 +77,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
                         toppings: [],
                       })
                     }
-                    className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-white hover:bg-brand-600"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-white transition active:scale-90 hover:bg-brand-600"
                     aria-label={`Agregar ${item.name} al carrito`}
                   >
                     <Plus size={16} aria-hidden="true" />

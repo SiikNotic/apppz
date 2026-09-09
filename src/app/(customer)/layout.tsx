@@ -46,8 +46,9 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
               <ShoppingBag size={20} aria-hidden="true" />
               {itemCount > 0 && (
                 <span
+                  key={itemCount}
                   aria-hidden="true"
-                  className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-ink-900 px-1 text-[10px] font-bold"
+                  className="absolute -right-1 -top-1 grid h-5 min-w-5 animate-in place-items-center rounded-full bg-ink-900 px-1 text-[10px] font-bold zoom-in duration-200"
                 >
                   {itemCount}
                 </span>

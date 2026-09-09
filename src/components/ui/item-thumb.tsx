@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
 import { Pizza, Salad, CupSoda, IceCreamBowl, UtensilsCrossed } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -30,6 +33,8 @@ const pixelSizes = { sm: 48, md: 64, lg: 112 }
 const iconSizes = { sm: 18, md: 24, lg: 40 }
 
 export function ItemThumb({ name, imageUrl, size = 'md', className }: ItemThumbProps) {
+  const [loaded, setLoaded] = useState(false)
+
   if (imageUrl) {
     return (
       <Image
@@ -38,7 +43,13 @@ export function ItemThumb({ name, imageUrl, size = 'md', className }: ItemThumbP
         width={pixelSizes[size]}
         height={pixelSizes[size]}
         unoptimized
-        className={cn('rounded-2xl object-cover', sizeClasses[size], className)}
+        onLoad={() => setLoaded(true)}
+        className={cn(
+          'rounded-2xl object-cover transition-opacity duration-300',
+          loaded ? 'opacity-100' : 'opacity-0',
+          sizeClasses[size],
+          className
+        )}
       />
     )
   }
