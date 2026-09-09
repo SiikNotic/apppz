@@ -12,12 +12,14 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatCurrency } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Topping, Ingredient } from '@/lib/types'
 
 const EMPTY = { name: '', price: '0.55', ingredient_id: '', imageUrl: '' }
 const NONE = '__none__'
 
 export function ToppingsTab() {
+  const { t } = useLanguage()
   const [toppings, setToppings] = useState<Topping[]>([])
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,7 +47,7 @@ export function ToppingsTab() {
   }, [])
 
   function ingredientName(id: string | null) {
-    return ingredients.find((i) => i.id === id)?.name ?? '—'
+    return ingredients.find((i) => i.id === id)?.name ?? t('menuMgmt.noIngredientDash')
   }
 
   function openCreate() {
@@ -79,7 +81,7 @@ export function ToppingsTab() {
       .upload(path, file, { contentType: file.type, upsert: false })
     setUploading(false)
     if (uploadErr) {
-      setError('No se pudo subir la imagen. Verifica que sea JPG/PNG/WebP y pese menos de 5MB.')
+      setError(t('menuMgmt.uploadError'))
       return
     }
     const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
@@ -87,7 +89,7 @@ export function ToppingsTab() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     setSaving(true)
     const payload = {
       name: form.name.trim(),
@@ -110,7 +112,7 @@ export function ToppingsTab() {
   }
 
   async function handleDelete(topping: Topping) {
-    if (!confirm(`¿Eliminar "${topping.name}"?`)) return
+    if (!confirm(t('menuMgmt.confirmDeleteGeneric', { name: topping.name }))) return
     const { error } = await supabase.from('toppings').delete().eq('id', topping.id)
     if (!error) load()
   }
@@ -118,16 +120,16 @@ export function ToppingsTab() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-extrabold text-ink-900">Toppings</h2>
+        <h2 className="text-base font-extrabold text-ink-900">{t('menuMgmt.tabToppings')}</h2>
         <Button size="sm" onClick={openCreate}>
-          <Plus size={14} /> Topping
+          <Plus size={14} /> {t('menuMgmt.toppingWord')}
         </Button>
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && toppings.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Sin toppings todavía.</p>
+          <p className="p-5 text-sm text-ink-400">{t('menuMgmt.noToppings')}</p>
         )}
         {toppings.map((topping) => (
           <div key={topping.id} className="flex items-center justify-between gap-3 px-5 py-3">
@@ -136,11 +138,12 @@ export function ToppingsTab() {
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
                 <span className="text-sm font-semibold text-ink-900">{topping.name}</span>
                 <span className="text-xs font-semibold text-ink-400">
-                  +{formatCurrency(topping.price)} · consume {ingredientName(topping.ingredient_id)}
+                  +{formatCurrency(topping.price)} ·{' '}
+                  {t('menuMgmt.consumesIngredient', { ingredient: ingredientName(topping.ingredient_id) })}
                 </span>
                 <button onClick={() => toggleActive(topping)}>
                   <Badge variant={topping.active ? 'success' : 'neutral'}>
-                    {topping.active ? 'Activo' : 'Inactivo'}
+                    {topping.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
                   </Badge>
                 </button>
               </div>
@@ -167,15 +170,15 @@ export function ToppingsTab() {
         <DialogContent className="max-w-sm">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {editingId ? 'Editar topping' : 'Nuevo topping'}
+              {editingId ? t('menuMgmt.editToppingTitle') : t('menuMgmt.newToppingTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label>Nombre</Label>
+                <Label>{t('menuMgmt.name')}</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <Label>Precio extra</Label>
+                <Label>{t('menuMgmt.extraPrice')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -184,7 +187,7 @@ export function ToppingsTab() {
                 />
               </div>
               <div>
-                <Label>Ingrediente que consume (opcional)</Label>
+                <Label>{t('menuMgmt.ingredientOptional')}</Label>
                 <Select
                   value={form.ingredient_id || NONE}
                   onValueChange={(v) => setForm({ ...form, ingredient_id: v === NONE ? '' : v })}
@@ -193,7 +196,7 @@ export function ToppingsTab() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NONE}>Sin vincular</SelectItem>
+                    <SelectItem value={NONE}>{t('menuMgmt.noIngredientLink')}</SelectItem>
                     {ingredients.map((ing) => (
                       <SelectItem key={ing.id} value={ing.id}>
                         {ing.name}
@@ -203,9 +206,9 @@ export function ToppingsTab() {
                 </Select>
               </div>
               <div>
-                <Label>Imagen (opcional)</Label>
+                <Label>{t('menuMgmt.imageOptional')}</Label>
                 <div className="flex items-center gap-3">
-                  <ItemThumb name={form.name || 'Topping'} imageUrl={form.imageUrl} size="md" />
+                  <ItemThumb name={form.name || t('menuMgmt.toppingWord')} imageUrl={form.imageUrl} size="md" />
                   <div className="flex-1 space-y-1.5">
                     <input
                       ref={fileInputRef}
@@ -223,11 +226,11 @@ export function ToppingsTab() {
                     >
                       {uploading ? (
                         <>
-                          <Loader2 size={14} className="animate-spin" /> Subiendo…
+                          <Loader2 size={14} className="animate-spin" /> {t('menuMgmt.uploading')}
                         </>
                       ) : (
                         <>
-                          <Upload size={14} /> {form.imageUrl ? 'Cambiar foto' : 'Subir foto'}
+                          <Upload size={14} /> {form.imageUrl ? t('menuMgmt.changePhoto') : t('menuMgmt.uploadPhoto')}
                         </>
                       )}
                     </Button>
@@ -236,7 +239,7 @@ export function ToppingsTab() {
               </div>
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('menuMgmt.savingButton') : t('common.save')}
               </Button>
             </div>
           </div>

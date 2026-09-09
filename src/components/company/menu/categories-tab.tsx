@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Category } from '@/lib/types'
 
 const EMPTY = { name: '', sort_order: '0' }
 
 export function CategoriesTab() {
+  const { t } = useLanguage()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
@@ -48,7 +50,7 @@ export function CategoriesTab() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     setSaving(true)
     const payload = { name: form.name.trim(), sort_order: Number(form.sort_order) || 0 }
     const { error } = editingId
@@ -66,8 +68,7 @@ export function CategoriesTab() {
   }
 
   async function handleDelete(cat: Category) {
-    if (!confirm(`¿Eliminar la categoría "${cat.name}"? Los productos quedarán sin categoría.`))
-      return
+    if (!confirm(t('menuMgmt.confirmDeleteCategory', { name: cat.name }))) return
     const { error } = await supabase.from('categories').delete().eq('id', cat.id)
     if (!error) load()
   }
@@ -75,25 +76,27 @@ export function CategoriesTab() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-extrabold text-ink-900">Categorías</h2>
+        <h2 className="text-base font-extrabold text-ink-900">{t('menuMgmt.tabCategories')}</h2>
         <Button size="sm" onClick={openCreate}>
-          <Plus size={14} /> Categoría
+          <Plus size={14} /> {t('menuMgmt.newCategory')}
         </Button>
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && categories.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Sin categorías todavía.</p>
+          <p className="p-5 text-sm text-ink-400">{t('menuMgmt.noCategories')}</p>
         )}
         {categories.map((cat) => (
           <div key={cat.id} className="flex items-center justify-between gap-3 px-5 py-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
               <span className="text-sm font-semibold text-ink-900">{cat.name}</span>
-              <span className="text-xs text-ink-400">orden {cat.sort_order}</span>
+              <span className="text-xs text-ink-400">
+                {t('menuMgmt.orderPrefix')} {cat.sort_order}
+              </span>
               <button onClick={() => toggleActive(cat)}>
                 <Badge variant={cat.active ? 'success' : 'neutral'}>
-                  {cat.active ? 'Activa' : 'Inactiva'}
+                  {cat.active ? t('menuMgmt.activeF') : t('menuMgmt.inactiveF')}
                 </Badge>
               </button>
             </div>
@@ -119,15 +122,15 @@ export function CategoriesTab() {
         <DialogContent className="max-w-sm">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {editingId ? 'Editar categoría' : 'Nueva categoría'}
+              {editingId ? t('menuMgmt.editCategoryTitle') : t('menuMgmt.newCategoryTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label>Nombre</Label>
+                <Label>{t('menuMgmt.name')}</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <Label>Orden</Label>
+                <Label>{t('menuMgmt.sortOrder')}</Label>
                 <Input
                   type="number"
                   value={form.sort_order}
@@ -136,7 +139,7 @@ export function CategoriesTab() {
               </div>
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('menuMgmt.savingButton') : t('common.save')}
               </Button>
             </div>
           </div>

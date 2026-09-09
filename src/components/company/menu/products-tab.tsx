@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatCurrency } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Category, MenuItem, ItemSize } from '@/lib/types'
 
 const NONE = '__none__'
@@ -42,6 +43,7 @@ const EMPTY_FORM: ProductFormState = {
 }
 
 export function ProductsTab() {
+  const { t } = useLanguage()
   const [items, setItems] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,7 +80,7 @@ export function ProductsTab() {
   }, [])
 
   function categoryName(id: string | null) {
-    return categories.find((c) => c.id === id)?.name ?? 'Sin categoría'
+    return categories.find((c) => c.id === id)?.name ?? t('productForm.noCategoryFallback')
   }
 
   function resetAiPanel() {
@@ -164,7 +166,7 @@ export function ProductsTab() {
     })
     setUploading(false)
     if (uploadErr) {
-      setUploadError('No se pudo subir la imagen. Verifica que sea JPG/PNG/WebP y pese menos de 5MB.')
+      setUploadError(t('menuMgmt.uploadError'))
       return
     }
     const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
@@ -187,13 +189,11 @@ export function ProductsTab() {
     })
     setAiGenerating(false)
     if (fnError) {
-      setAiMessage('No se pudo generar la imagen. Intenta de nuevo más tarde.')
+      setAiMessage(t('productForm.generateImageFailed'))
       return
     }
     if (!data?.configured) {
-      setAiMessage(
-        data?.message ?? 'La generación de imágenes con IA todavía no está configurada.'
-      )
+      setAiMessage(data?.message ?? t('productForm.aiNotConfigured'))
       return
     }
     setAiPreviewUrl(data.url)
@@ -206,7 +206,7 @@ export function ProductsTab() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     setSaving(true)
     setError(null)
 
@@ -227,7 +227,7 @@ export function ProductsTab() {
 
     if (error || !saved) {
       setSaving(false)
-      return setError(error?.message ?? 'No se pudo guardar el producto')
+      return setError(error?.message ?? t('productForm.saveFailedGeneric'))
     }
 
     if (form.is_customizable_pizza) {
@@ -259,7 +259,7 @@ export function ProductsTab() {
   }
 
   async function handleDelete(item: MenuItem) {
-    if (!confirm(`¿Eliminar "${item.name}" del menú?`)) return
+    if (!confirm(t('productForm.confirmDeleteProduct', { name: item.name }))) return
     const { error } = await supabase.from('menu_items').delete().eq('id', item.id)
     if (!error) load()
   }
@@ -278,7 +278,7 @@ export function ProductsTab() {
     const { data: copy, error: copyError } = await supabase
       .from('menu_items')
       .insert({
-        name: `${item.name} (copia)`,
+        name: `${item.name} ${t('productForm.duplicateSuffix')}`,
         description: item.description,
         category_id: item.category_id,
         base_price: item.base_price,
@@ -292,7 +292,7 @@ export function ProductsTab() {
 
     if (copyError || !copy) {
       setDuplicatingId(null)
-      alert(copyError?.message ?? 'No se pudo duplicar el producto.')
+      alert(copyError?.message ?? t('productForm.duplicateFailedGeneric'))
       return
     }
 
@@ -324,16 +324,16 @@ export function ProductsTab() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-extrabold text-ink-900">Productos</h2>
+        <h2 className="text-base font-extrabold text-ink-900">{t('menuMgmt.tabProducts')}</h2>
         <Button size="sm" onClick={openCreate}>
-          <Plus size={14} /> Producto
+          <Plus size={14} /> {t('productForm.newProduct')}
         </Button>
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && items.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Sin productos todavía.</p>
+          <p className="p-5 text-sm text-ink-400">{t('productForm.noProducts')}</p>
         )}
         {items.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-3">
@@ -342,7 +342,7 @@ export function ProductsTab() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-semibold text-ink-900">{item.name}</span>
-                  {item.is_customizable_pizza && <Badge variant="brand">Personalizable</Badge>}
+                  {item.is_customizable_pizza && <Badge variant="brand">{t('productForm.customizableBadge')}</Badge>}
                 </div>
                 <p className="text-xs text-ink-400">
                   {categoryName(item.category_id)} · {formatCurrency(item.base_price)}
@@ -352,14 +352,14 @@ export function ProductsTab() {
             <div className="flex shrink-0 items-center gap-1.5">
               <button onClick={() => toggleActive(item)}>
                 <Badge variant={item.active ? 'success' : 'neutral'}>
-                  {item.active ? 'Activo' : 'Inactivo'}
+                  {item.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
                 </Badge>
               </button>
               <button
                 onClick={() => handleDuplicate(item)}
                 disabled={duplicatingId === item.id}
-                aria-label={`Duplicar ${item.name}`}
-                title="Duplicar"
+                aria-label={t('productForm.duplicateAria', { name: item.name })}
+                title={t('productForm.duplicateTitle')}
                 className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100 disabled:opacity-50"
               >
                 {duplicatingId === item.id ? (
@@ -370,16 +370,16 @@ export function ProductsTab() {
               </button>
               <button
                 onClick={() => openEdit(item)}
-                aria-label={`Editar ${item.name}`}
-                title="Editar"
+                aria-label={t('productForm.editAria', { name: item.name })}
+                title={t('common.edit')}
                 className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
               >
                 <Pencil size={14} />
               </button>
               <button
                 onClick={() => handleDelete(item)}
-                aria-label={`Eliminar ${item.name}`}
-                title="Eliminar"
+                aria-label={t('productForm.deleteAria', { name: item.name })}
+                title={t('common.delete')}
                 className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
               >
                 <Trash2 size={14} />
@@ -393,15 +393,15 @@ export function ProductsTab() {
         <DialogContent className="max-w-lg">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {form.id ? 'Editar producto' : 'Nuevo producto'}
+              {form.id ? t('productForm.editProductTitle') : t('productForm.newProductTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label>Nombre</Label>
+                <Label>{t('menuMgmt.name')}</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <Label>Descripción</Label>
+                <Label>{t('productForm.description')}</Label>
                 <Textarea
                   rows={2}
                   value={form.description}
@@ -410,7 +410,7 @@ export function ProductsTab() {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label>Categoría</Label>
+                  <Label>{t('productForm.category')}</Label>
                   <Select
                     value={form.category_id || NONE}
                     onValueChange={(v) => setForm({ ...form, category_id: v === NONE ? '' : v })}
@@ -419,7 +419,7 @@ export function ProductsTab() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>Sin categoría</SelectItem>
+                      <SelectItem value={NONE}>{t('productForm.noCategoryOption')}</SelectItem>
                       {categories.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name}
@@ -429,7 +429,7 @@ export function ProductsTab() {
                   </Select>
                 </div>
                 <div>
-                  <Label>{form.is_customizable_pizza ? 'Precio base (referencia)' : 'Precio'}</Label>
+                  <Label>{form.is_customizable_pizza ? t('productForm.basePriceRef') : t('productForm.price')}</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -439,9 +439,9 @@ export function ProductsTab() {
                 </div>
               </div>
               <div>
-                <Label>Foto del producto</Label>
+                <Label>{t('productForm.productPhoto')}</Label>
                 <div className="flex items-center gap-3">
-                  <ItemThumb name={form.name || 'Producto'} imageUrl={form.image_url} size="md" />
+                  <ItemThumb name={form.name || t('productForm.productWord')} imageUrl={form.image_url} size="md" />
                   <div className="flex-1 space-y-1.5">
                     <input
                       ref={fileInputRef}
@@ -460,11 +460,11 @@ export function ProductsTab() {
                       >
                         {uploading ? (
                           <>
-                            <Loader2 size={14} className="animate-spin" /> Subiendo…
+                            <Loader2 size={14} className="animate-spin" /> {t('menuMgmt.uploading')}
                           </>
                         ) : (
                           <>
-                            <Upload size={14} /> {form.image_url ? 'Cambiar foto' : 'Subir foto'}
+                            <Upload size={14} /> {form.image_url ? t('menuMgmt.changePhoto') : t('menuMgmt.uploadPhoto')}
                           </>
                         )}
                       </Button>
@@ -475,15 +475,13 @@ export function ProductsTab() {
                         onClick={() => {
                           resetAiPanel()
                           setAiPanelOpen(true)
-                          setAiPrompt(
-                            form.name ? `Foto de ${form.name} para el menú de una pizzería, fondo neutro, alta calidad` : ''
-                          )
+                          setAiPrompt(form.name ? t('productForm.aiImagePrompt', { name: form.name }) : '')
                         }}
                       >
-                        <Sparkles size={14} /> Generar con IA
+                        <Sparkles size={14} /> {t('productForm.generateWithAI')}
                       </Button>
                     </div>
-                    <p className="text-[11px] text-ink-400">JPG, PNG, WebP o GIF · máx. 5MB.</p>
+                    <p className="text-[11px] text-ink-400">{t('productForm.fileHint')}</p>
                     {uploadError && (
                       <p role="alert" className="text-xs font-semibold text-danger-500">
                         {uploadError}
@@ -495,11 +493,11 @@ export function ProductsTab() {
                 {aiPanelOpen && (
                   <div className="mt-3 space-y-2 rounded-xl border border-ink-100 bg-ink-50/50 p-3">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="ai-prompt">Describe la imagen a generar</Label>
+                      <Label htmlFor="ai-prompt">{t('productForm.describeImage')}</Label>
                       <button
                         type="button"
                         onClick={resetAiPanel}
-                        aria-label="Cerrar"
+                        aria-label={t('common.close')}
                         className="text-ink-400 hover:text-ink-600"
                       >
                         <X size={14} />
@@ -510,14 +508,14 @@ export function ProductsTab() {
                       rows={2}
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="Ej: Pizza pepperoni recién horneada, vista cenital, fondo de madera"
+                      placeholder={t('productForm.imagePromptPlaceholder')}
                     />
                     {aiPreviewUrl ? (
                       <div className="flex items-center gap-3">
-                        <ItemThumb name="Vista previa" imageUrl={aiPreviewUrl} size="md" />
+                        <ItemThumb name={t('productForm.previewLabel')} imageUrl={aiPreviewUrl} size="md" />
                         <div className="flex gap-1.5">
                           <Button type="button" size="sm" onClick={acceptAiImage}>
-                            Usar esta imagen
+                            {t('productForm.useThisImage')}
                           </Button>
                           <Button
                             type="button"
@@ -526,7 +524,7 @@ export function ProductsTab() {
                             onClick={handleGenerateImage}
                             disabled={aiGenerating}
                           >
-                            Regenerar
+                            {t('productForm.regenerate')}
                           </Button>
                         </div>
                       </div>
@@ -539,11 +537,11 @@ export function ProductsTab() {
                       >
                         {aiGenerating ? (
                           <>
-                            <Loader2 size={14} className="animate-spin" /> Generando…
+                            <Loader2 size={14} className="animate-spin" /> {t('productForm.generating')}
                           </>
                         ) : (
                           <>
-                            <Sparkles size={14} /> Generar
+                            <Sparkles size={14} /> {t('productForm.generate')}
                           </>
                         )}
                       </Button>
@@ -564,11 +562,11 @@ export function ProductsTab() {
                     setForm({ ...form, is_customizable_pizza: checked === true })
                   }
                 />
-                Es una pizza personalizable (tamaños, masa, salsa y toppings)
+                {t('productForm.isCustomizablePizza')}
               </label>
               {form.is_customizable_pizza && (
                 <div>
-                  <Label htmlFor="free-toppings-limit">Toppings gratis incluidos</Label>
+                  <Label htmlFor="free-toppings-limit">{t('productForm.freeToppingsIncluded')}</Label>
                   <Input
                     id="free-toppings-limit"
                     type="number"
@@ -576,10 +574,7 @@ export function ProductsTab() {
                     value={form.free_toppings_limit}
                     onChange={(e) => setForm({ ...form, free_toppings_limit: e.target.value })}
                   />
-                  <p className="mt-1 text-[11px] text-ink-400">
-                    Cuántos toppings puede elegir el cliente antes de que se le cobren extra — cada
-                    producto define el suyo, ya no hay un límite global.
-                  </p>
+                  <p className="mt-1 text-[11px] text-ink-400">{t('productForm.freeToppingsHint')}</p>
                 </div>
               )}
               <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
@@ -587,18 +582,18 @@ export function ProductsTab() {
                   checked={form.active}
                   onCheckedChange={(checked) => setForm({ ...form, active: checked === true })}
                 />
-                Visible en el menú de clientes
+                {t('productForm.visibleInMenu')}
               </label>
 
               {form.is_customizable_pizza && (
                 <div className="rounded-2xl bg-ink-50 p-3.5">
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wide text-ink-600">Tamaños</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-ink-600">{t('productForm.sizesHeading')}</p>
                     <button
                       onClick={addSizeRow}
                       className="text-xs font-bold text-brand-900 hover:underline"
                     >
-                      + Agregar tamaño
+                      {t('productForm.addSize')}
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -606,7 +601,7 @@ export function ProductsTab() {
                       <div key={i} className="rounded-xl bg-white p-2.5">
                         <div className="flex items-center gap-2">
                           <Input
-                            placeholder="Ej. Pequeña"
+                            placeholder={t('productForm.sizeNamePlaceholder')}
                             value={size.name}
                             onChange={(e) => updateSizeRow(i, { name: e.target.value })}
                             className="flex-1"
@@ -614,7 +609,7 @@ export function ProductsTab() {
                           <Input
                             type="number"
                             step="0.01"
-                            placeholder="Precio"
+                            placeholder={t('productForm.pricePlaceholder')}
                             value={size.price}
                             onChange={(e) => updateSizeRow(i, { price: e.target.value })}
                             className="w-24"
@@ -630,7 +625,7 @@ export function ProductsTab() {
                           <Input
                             type="number"
                             step="0.5"
-                            placeholder="Pulgadas (ej. 10)"
+                            placeholder={t('productForm.inchesPlaceholder')}
                             value={size.sizeInches}
                             onChange={(e) => updateSizeRow(i, { sizeInches: e.target.value })}
                             className="flex-1"
@@ -638,7 +633,7 @@ export function ProductsTab() {
                           <Input
                             type="number"
                             step="0.5"
-                            placeholder="Centímetros (ej. 25)"
+                            placeholder={t('productForm.cmPlaceholder')}
                             value={size.sizeCm}
                             onChange={(e) => updateSizeRow(i, { sizeCm: e.target.value })}
                             className="flex-1"
@@ -647,7 +642,7 @@ export function ProductsTab() {
                       </div>
                     ))}
                     {sizes.length === 0 && (
-                      <p className="text-xs text-ink-400">Agrega al menos un tamaño.</p>
+                      <p className="text-xs text-ink-400">{t('productForm.addAtLeastOneSize')}</p>
                     )}
                   </div>
                 </div>
@@ -655,7 +650,7 @@ export function ProductsTab() {
 
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('menuMgmt.savingButton') : t('common.save')}
               </Button>
             </div>
           </div>

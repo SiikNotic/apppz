@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatCurrency } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface SimpleOption {
   id: string
@@ -29,6 +30,7 @@ interface SimpleOptionsManagerProps {
 const EMPTY = { name: '', extra_price: '0', imageUrl: '' }
 
 export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsManagerProps) {
+  const { t } = useLanguage()
   const [items, setItems] = useState<SimpleOption[]>([])
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
@@ -77,7 +79,7 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
       .upload(path, file, { contentType: file.type, upsert: false })
     setUploading(false)
     if (uploadErr) {
-      setError('No se pudo subir la imagen. Verifica que sea JPG/PNG/WebP y pese menos de 5MB.')
+      setError(t('menuMgmt.uploadError'))
       return
     }
     const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
@@ -85,7 +87,7 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     setSaving(true)
     const payload = {
       name: form.name.trim(),
@@ -107,7 +109,7 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
   }
 
   async function handleDelete(item: SimpleOption) {
-    if (!confirm(`¿Eliminar "${item.name}"?`)) return
+    if (!confirm(t('menuMgmt.confirmDeleteGeneric', { name: item.name }))) return
     const { error } = await supabase.from(table).delete().eq('id', item.id)
     if (!error) load()
   }
@@ -122,9 +124,9 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && items.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Sin registros todavía.</p>
+          <p className="p-5 text-sm text-ink-400">{t('menuMgmt.noRecords')}</p>
         )}
         {items.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-3">
@@ -139,7 +141,7 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
                 )}
                 <button onClick={() => toggleActive(item)}>
                   <Badge variant={item.active ? 'success' : 'neutral'}>
-                    {item.active ? 'Activo' : 'Inactivo'}
+                    {item.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
                   </Badge>
                 </button>
               </div>
@@ -166,15 +168,15 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
         <DialogContent className="max-w-sm">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {editingId ? 'Editar' : itemLabel}
+              {editingId ? t('common.edit') : itemLabel}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label>Nombre</Label>
+                <Label>{t('menuMgmt.name')}</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <Label>Precio extra</Label>
+                <Label>{t('menuMgmt.extraPrice')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -183,7 +185,7 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
                 />
               </div>
               <div>
-                <Label>Imagen (opcional)</Label>
+                <Label>{t('menuMgmt.imageOptional')}</Label>
                 <div className="flex items-center gap-3">
                   <ItemThumb name={form.name || itemLabel} imageUrl={form.imageUrl} size="md" />
                   <div className="flex-1 space-y-1.5">
@@ -203,11 +205,11 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
                     >
                       {uploading ? (
                         <>
-                          <Loader2 size={14} className="animate-spin" /> Subiendo…
+                          <Loader2 size={14} className="animate-spin" /> {t('menuMgmt.uploading')}
                         </>
                       ) : (
                         <>
-                          <Upload size={14} /> {form.imageUrl ? 'Cambiar foto' : 'Subir foto'}
+                          <Upload size={14} /> {form.imageUrl ? t('menuMgmt.changePhoto') : t('menuMgmt.uploadPhoto')}
                         </>
                       )}
                     </Button>
@@ -216,7 +218,7 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
               </div>
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('menuMgmt.savingButton') : t('common.save')}
               </Button>
             </div>
           </div>
