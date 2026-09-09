@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency, formatNumber } from '@/lib/format'
 import type { Ingredient } from '@/lib/types'
 
@@ -162,91 +161,84 @@ export default function InventoryPage() {
         </Button>
       </div>
 
-      <Card className="overflow-x-auto p-0">
-        <Table className="min-w-[720px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ingrediente</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead>Mínimo</TableHead>
-              <TableHead>Costo/unidad</TableHead>
-              <TableHead>Proveedor</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-ink-400">
-                  Cargando…
-                </TableCell>
-              </TableRow>
-            )}
-            {!loading && ingredients.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-ink-400">
-                  No hay ingredientes registrados.
-                </TableCell>
-              </TableRow>
-            )}
-            {ingredients.map((ing) => {
-              const low = ing.stock_quantity <= ing.min_stock
-              return (
-                <TableRow key={ing.id}>
-                  <TableCell className="font-semibold text-ink-900">
-                    <div className="flex items-center gap-2">
-                      {low && <AlertTriangle size={14} className="text-danger-500" />}
-                      {ing.name}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={low ? 'danger' : 'success'}>
-                      {formatNumber(ing.stock_quantity)} {ing.unit}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-ink-600">
+      {loading && <p className="py-8 text-center text-sm text-ink-400">Cargando…</p>}
+      {!loading && ingredients.length === 0 && (
+        <Card className="py-8 text-center text-sm text-ink-400">No hay ingredientes registrados.</Card>
+      )}
+
+      {/* Cards en vez de tabla: en mobile una columna sin scroll horizontal,
+          en tablet dos, en desktop tres — nunca una tabla forzada a caber. */}
+      {!loading && ingredients.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {ingredients.map((ing) => {
+            const low = ing.stock_quantity <= ing.min_stock
+            return (
+              <Card key={ing.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 truncate text-sm font-bold text-ink-900">
+                      {low && <AlertTriangle size={14} className="shrink-0 text-danger-500" aria-hidden="true" />}
+                      <span className="truncate">{ing.name}</span>
+                    </p>
+                    <p className="text-xs text-ink-400">{ing.supplier || 'Sin proveedor registrado'}</p>
+                  </div>
+                  <Badge variant={low ? 'danger' : 'success'} className="shrink-0">
+                    {formatNumber(ing.stock_quantity)} {ing.unit}
+                  </Badge>
+                </div>
+
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <dt className="text-ink-400">Mínimo</dt>
+                  <dd className="text-right font-semibold text-ink-600">
                     {formatNumber(ing.min_stock)} {ing.unit}
-                  </TableCell>
-                  <TableCell className="text-ink-600">{formatCurrency(ing.cost_per_unit)}</TableCell>
-                  <TableCell className="text-ink-600">{ing.supplier || '—'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => openAdjust(ing, 'in')}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-green-50 text-success-500 hover:brightness-95"
-                        title="Registrar entrada"
-                      >
-                        <PackagePlus size={15} />
-                      </button>
-                      <button
-                        onClick={() => openAdjust(ing, 'out')}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-amber-50 text-warning-500 hover:brightness-95"
-                        title="Registrar salida"
-                      >
-                        <PackageMinus size={15} />
-                      </button>
-                      <button
-                        onClick={() => openEdit(ing)}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(ing)}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-                        title="Eliminar"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </Card>
+                  </dd>
+                  <dt className="text-ink-400">Costo/unidad</dt>
+                  <dd className="text-right font-semibold text-ink-600">{formatCurrency(ing.cost_per_unit)}</dd>
+                </dl>
+
+                <div className="mt-auto flex items-center justify-between gap-1.5 border-t border-ink-100 pt-3">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => openAdjust(ing, 'in')}
+                      className="grid h-9 w-9 place-items-center rounded-full bg-green-50 text-success-500 hover:brightness-95"
+                      aria-label={`Registrar entrada de ${ing.name}`}
+                      title="Registrar entrada"
+                    >
+                      <PackagePlus size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      onClick={() => openAdjust(ing, 'out')}
+                      className="grid h-9 w-9 place-items-center rounded-full bg-amber-50 text-warning-500 hover:brightness-95"
+                      aria-label={`Registrar salida de ${ing.name}`}
+                      title="Registrar salida"
+                    >
+                      <PackageMinus size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => openEdit(ing)}
+                      className="grid h-9 w-9 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                      aria-label={`Editar ${ing.name}`}
+                      title="Editar"
+                    >
+                      <Pencil size={14} aria-hidden="true" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(ing)}
+                      className="grid h-9 w-9 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                      aria-label={`Eliminar ${ing.name}`}
+                      title="Eliminar"
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
