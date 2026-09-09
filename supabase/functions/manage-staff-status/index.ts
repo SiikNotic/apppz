@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'No tienes permiso para administrar personal.' }, 403)
   }
 
-  let body: { user_id?: string; action?: 'terminate' | 'reactivate'; role?: string }
+  let body: { user_id?: string; action?: 'terminate' | 'reactivate' | 'change_role'; role?: string }
   try {
     body = await req.json()
   } catch {
@@ -78,7 +78,9 @@ Deno.serve(async (req: Request) => {
   const targetId = body.user_id
   const action = body.action
   if (!targetId) return json({ error: 'Falta user_id.' }, 400)
-  if (action !== 'terminate' && action !== 'reactivate') return json({ error: 'Acción inválida.' }, 400)
+  if (action !== 'terminate' && action !== 'reactivate' && action !== 'change_role') {
+    return json({ error: 'Acción inválida.' }, 400)
+  }
   if (targetId === caller.id) return json({ error: 'No puedes aplicarte esta acción a ti mismo.' }, 400)
 
   const adminClient = createClient(supabaseUrl, serviceKey)
@@ -89,6 +91,43 @@ Deno.serve(async (req: Request) => {
     .eq('id', targetId)
     .maybeSingle()
   if (targetError || !target) return json({ error: 'No se encontró esa cuenta.' }, 404)
+
+  if (action === 'change_role') {
+    // Cambia el rol de un empleado ACTIVO sin pasar por despedir+
+    // reactivar (que además banea/desbanea la cuenta de Auth — un
+    // efecto secundario que no tiene sentido para un simple ascenso o
+    // reasignación). Mismas protecciones que reactivate: nunca a/desde
+    // Owner por este camino, nunca sobre uno mismo (ya validado arriba).
+    if (target.company_role === 'owner') {
+      return json({ error: 'No se puede cambiar el rol de un Owner desde aquí.' }, 400)
+    }
+    if (!target.is_company_staff || target.company_role === null) {
+      return json({ error: 'Esa cuenta no está activa. Reactívala primero.' }, 400)
+    }
+    const role = body.role as AllowedRole
+    if (!ALLOWED_ROLES.includes(role)) return json({ error: 'Rol inválido.' }, 400)
+
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .update({ company_role: role })
+      .eq('id', targetId)
+    if (profileError) return json({ error: 'No se pudo actualizar el rol.' }, 500)
+
+    if (role === 'driver') {
+      await adminClient.from('drivers').upsert({ user_id: targetId, status: 'offline' })
+    }
+
+    await adminClient.from('audit_logs').insert({
+      actor_id: caller.id,
+      action: 'staff.change_role',
+      entity_type: 'profile',
+      entity_id: targetId,
+      before: { company_role: target.company_role },
+      after: { company_role: role },
+    })
+
+    return json({ changed: true, role })
+  }
 
   if (action === 'terminate') {
     if (target.company_role === 'owner') {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { UserPlus, Users, UserX, UserCheck } from 'lucide-react'
+import { UserPlus, Users, UserX, UserCheck, Repeat } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
@@ -57,9 +57,9 @@ export default function TeamPage() {
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ email: string; password: string } | null>(null)
 
-  // Despedir/reactivar
+  // Despedir/reactivar/cambiar rol
   const [statusTarget, setStatusTarget] = useState<Profile | null>(null)
-  const [statusAction, setStatusAction] = useState<'terminate' | 'reactivate'>('terminate')
+  const [statusAction, setStatusAction] = useState<'terminate' | 'reactivate' | 'change_role'>('terminate')
   const [reactivateRole, setReactivateRole] = useState<CompanyRole>('kitchen')
   const [statusError, setStatusError] = useState<string | null>(null)
   const [statusSaving, setStatusSaving] = useState(false)
@@ -143,6 +143,13 @@ export default function TeamPage() {
     setStatusError(null)
   }
 
+  function openChangeRole(member: Profile) {
+    setStatusTarget(member)
+    setStatusAction('change_role')
+    setReactivateRole((member.company_role as CompanyRole) ?? 'kitchen')
+    setStatusError(null)
+  }
+
   async function submitStatusChange() {
     if (!statusTarget) return
     setStatusSaving(true)
@@ -152,7 +159,7 @@ export default function TeamPage() {
       body:
         statusAction === 'terminate'
           ? { user_id: statusTarget.id, action: 'terminate' }
-          : { user_id: statusTarget.id, action: 'reactivate', role: reactivateRole },
+          : { user_id: statusTarget.id, action: statusAction, role: reactivateRole },
     })
 
     setStatusSaving(false)
@@ -236,14 +243,24 @@ export default function TeamPage() {
                       <UserCheck size={14} aria-hidden="true" />
                     </button>
                   ) : (
-                    <button
-                      onClick={() => openTerminate(member)}
-                      aria-label={`Despedir a ${member.full_name || 'este empleado'}`}
-                      title="Despedir"
-                      className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-                    >
-                      <UserX size={14} aria-hidden="true" />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => openChangeRole(member)}
+                        aria-label={`Cambiar rol de ${member.full_name || 'este empleado'}`}
+                        title="Cambiar rol"
+                        className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                      >
+                        <Repeat size={14} aria-hidden="true" />
+                      </button>
+                      <button
+                        onClick={() => openTerminate(member)}
+                        aria-label={`Despedir a ${member.full_name || 'este empleado'}`}
+                        title="Despedir"
+                        className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                      >
+                        <UserX size={14} aria-hidden="true" />
+                      </button>
+                    </>
                   ))}
               </div>
             </div>
@@ -376,10 +393,14 @@ export default function TeamPage() {
             ) : (
               <>
                 <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
-                  Reactivar a {statusTarget?.full_name || 'esta persona'}
+                  {statusAction === 'reactivate'
+                    ? `Reactivar a ${statusTarget?.full_name || 'esta persona'}`
+                    : `Cambiar rol de ${statusTarget?.full_name || 'esta persona'}`}
                 </DialogTitle>
                 <p className="mb-4 text-sm text-ink-600">
-                  Recupera acceso a la plataforma con el rol que elijas.
+                  {statusAction === 'reactivate'
+                    ? 'Recupera acceso a la plataforma con el rol que elijas.'
+                    : 'El cambio aplica de inmediato — no afecta su sesión activa ni su historial.'}
                 </p>
                 <div className="mb-4">
                   <Label>Rol</Label>
@@ -402,7 +423,11 @@ export default function TeamPage() {
                   </p>
                 )}
                 <Button fullWidth onClick={submitStatusChange} disabled={statusSaving}>
-                  {statusSaving ? 'Reactivando…' : 'Reactivar'}
+                  {statusSaving
+                    ? 'Guardando…'
+                    : statusAction === 'reactivate'
+                      ? 'Reactivar'
+                      : 'Guardar rol'}
                 </Button>
               </>
             )}
