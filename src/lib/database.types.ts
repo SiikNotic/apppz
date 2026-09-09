@@ -262,6 +262,109 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_details: {
+        Row: {
+          created_at: string
+          date_hired: string | null
+          employee_code: string | null
+          employment_status: string
+          internal_notes: string | null
+          position: string | null
+          store_location: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_hired?: string | null
+          employee_code?: string | null
+          employment_status?: string
+          internal_notes?: string | null
+          position?: string | null
+          store_location?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_hired?: string | null
+          employee_code?: string | null
+          employment_status?: string
+          internal_notes?: string | null
+          position?: string | null
+          store_location?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_details_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_sensitive_info: {
+        Row: {
+          created_at: string
+          drivers_license_number: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          emergency_contact_secondary_name: string | null
+          emergency_contact_secondary_phone: string | null
+          residential_city: string | null
+          residential_state: string | null
+          residential_street: string | null
+          residential_zip: string | null
+          secondary_phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          drivers_license_number?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          emergency_contact_secondary_name?: string | null
+          emergency_contact_secondary_phone?: string | null
+          residential_city?: string | null
+          residential_state?: string | null
+          residential_street?: string | null
+          residential_zip?: string | null
+          secondary_phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          drivers_license_number?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          emergency_contact_secondary_name?: string | null
+          emergency_contact_secondary_phone?: string | null
+          residential_city?: string | null
+          residential_state?: string | null
+          residential_street?: string | null
+          residential_zip?: string | null
+          secondary_phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_sensitive_info_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string

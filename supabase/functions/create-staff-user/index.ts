@@ -56,7 +56,14 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'No tienes permiso para administrar personal.' }, 403)
   }
 
-  let body: { email?: string; password?: string; full_name?: string; role?: string; vehicle_type?: string }
+  let body: {
+    email?: string
+    password?: string
+    full_name?: string
+    role?: string
+    vehicle_type?: string
+    license_plate?: string
+  }
   try {
     body = await req.json()
   } catch {
@@ -105,9 +112,12 @@ Deno.serve(async (req: Request) => {
   }
 
   if (role === 'driver') {
-    await adminClient
-      .from('drivers')
-      .upsert({ user_id: newUserId, vehicle_type: body.vehicle_type ?? null, status: 'offline' })
+    await adminClient.from('drivers').upsert({
+      user_id: newUserId,
+      vehicle_type: body.vehicle_type ?? null,
+      license_plate: body.license_plate ?? null,
+      status: 'offline',
+    })
   }
 
   await adminClient.from('audit_logs').insert({

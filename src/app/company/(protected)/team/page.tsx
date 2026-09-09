@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { UserPlus, Users, UserX, UserCheck, Repeat } from 'lucide-react'
+import { UserPlus, Users, UserX, UserCheck, Repeat, IdCard } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
@@ -11,6 +11,11 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  EmployeeDetailsForm,
+  EMPTY_EMPLOYEE_DETAILS,
+  type EmployeeDetailsValues,
+} from '@/components/company/team/employee-details-form'
 import { formatDate } from '@/lib/format'
 import type { Profile } from '@/lib/types'
 import type { CompanyRole } from '@/lib/auth/permissions'
@@ -56,6 +61,14 @@ export default function TeamPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ email: string; password: string } | null>(null)
+  const [extras, setExtras] = useState<EmployeeDetailsValues>(EMPTY_EMPLOYEE_DETAILS)
+
+  // Ver/editar detalles de un empleado activo ya existente.
+  const [detailsTarget, setDetailsTarget] = useState<Profile | null>(null)
+  const [detailsValues, setDetailsValues] = useState<EmployeeDetailsValues>(EMPTY_EMPLOYEE_DETAILS)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsSaving, setDetailsSaving] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
 
   // Despedir/reactivar/cambiar rol
   const [statusTarget, setStatusTarget] = useState<Profile | null>(null)
@@ -87,9 +100,45 @@ export default function TeamPage() {
     setEmail('')
     setPassword(generateTempPassword())
     setRole('kitchen')
+    setExtras(EMPTY_EMPLOYEE_DETAILS)
     setError(null)
     setCreated(null)
     setFormOpen(true)
+  }
+
+  /** employee_details/employee_sensitive_info son de solo staff.manage — no
+   *  pasan por ninguna Edge Function, un insert/update directo ya está
+   *  correctamente restringido por RLS. */
+  async function saveExtras(userId: string, values: EmployeeDetailsValues) {
+    await supabase.from('employee_details').upsert({
+      user_id: userId,
+      employee_code: values.employeeCode.trim() || null,
+      position: values.position.trim() || null,
+      date_hired: values.dateHired || null,
+      employment_status: values.employmentStatus,
+      store_location: values.storeLocation.trim() || null,
+      internal_notes: values.internalNotes.trim() || null,
+    })
+    await supabase.from('employee_sensitive_info').upsert({
+      user_id: userId,
+      residential_street: values.residentialStreet.trim() || null,
+      residential_city: values.residentialCity.trim() || null,
+      residential_state: values.residentialState.trim() || null,
+      residential_zip: values.residentialZip.trim() || null,
+      secondary_phone: values.secondaryPhone.trim() || null,
+      emergency_contact_name: values.emergencyContactName.trim() || null,
+      emergency_contact_relationship: values.emergencyContactRelationship.trim() || null,
+      emergency_contact_phone: values.emergencyContactPhone.trim() || null,
+      emergency_contact_secondary_name: values.emergencyContactSecondaryName.trim() || null,
+      emergency_contact_secondary_phone: values.emergencyContactSecondaryPhone.trim() || null,
+      drivers_license_number: values.driversLicenseNumber.trim() || null,
+    })
+    if (values.vehicleType.trim() || values.licensePlate.trim()) {
+      await supabase
+        .from('drivers')
+        .update({ vehicle_type: values.vehicleType.trim() || null, license_plate: values.licensePlate.trim() || null })
+        .eq('user_id', userId)
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -98,15 +147,21 @@ export default function TeamPage() {
     setSaving(true)
 
     const { data, error: fnError } = await supabase.functions.invoke('create-staff-user', {
-      body: { email: email.trim(), password, full_name: fullName.trim(), role },
+      body: {
+        email: email.trim(),
+        password,
+        full_name: fullName.trim(),
+        role,
+        vehicle_type: extras.vehicleType.trim() || undefined,
+        license_plate: extras.licensePlate.trim() || undefined,
+      },
     })
-
-    setSaving(false)
 
     // supabase-js reporta errores HTTP (4xx/5xx) de Edge Functions como
     // FunctionsHttpError sin exponer el body automáticamente — lo leemos
     // del contexto de la respuesta para mostrar el mensaje real.
     if (fnError) {
+      setSaving(false)
       let message = 'No se pudo crear la cuenta. Intenta de nuevo.'
       const ctx = (fnError as { context?: Response }).context
       if (ctx) {
@@ -122,12 +177,61 @@ export default function TeamPage() {
     }
 
     if (data?.error) {
+      setSaving(false)
       setError(data.error)
       return
     }
 
+    if (data?.id) await saveExtras(data.id, extras)
+    setSaving(false)
     setCreated({ email: email.trim(), password })
     load()
+  }
+
+  function openDetails(member: Profile) {
+    setDetailsTarget(member)
+    setDetailsError(null)
+    setDetailsLoading(true)
+    Promise.all([
+      supabase.from('employee_details').select('*').eq('user_id', member.id).maybeSingle(),
+      supabase.from('employee_sensitive_info').select('*').eq('user_id', member.id).maybeSingle(),
+      supabase.from('drivers').select('*').eq('user_id', member.id).maybeSingle(),
+    ]).then(([detailsRes, sensitiveRes, driverRes]) => {
+      const d = detailsRes.data
+      const s = sensitiveRes.data
+      const drv = driverRes.data
+      setDetailsValues({
+        employeeCode: d?.employee_code ?? '',
+        position: d?.position ?? '',
+        dateHired: d?.date_hired ?? '',
+        employmentStatus: d?.employment_status ?? 'active',
+        storeLocation: d?.store_location ?? '',
+        internalNotes: d?.internal_notes ?? '',
+        residentialStreet: s?.residential_street ?? '',
+        residentialCity: s?.residential_city ?? '',
+        residentialState: s?.residential_state ?? '',
+        residentialZip: s?.residential_zip ?? '',
+        secondaryPhone: s?.secondary_phone ?? '',
+        emergencyContactName: s?.emergency_contact_name ?? '',
+        emergencyContactRelationship: s?.emergency_contact_relationship ?? '',
+        emergencyContactPhone: s?.emergency_contact_phone ?? '',
+        emergencyContactSecondaryName: s?.emergency_contact_secondary_name ?? '',
+        emergencyContactSecondaryPhone: s?.emergency_contact_secondary_phone ?? '',
+        vehicleType: drv?.vehicle_type ?? '',
+        licensePlate: drv?.license_plate ?? '',
+        driversLicenseNumber: s?.drivers_license_number ?? '',
+      })
+      setDetailsLoading(false)
+    })
+  }
+
+  async function submitDetails() {
+    if (!detailsTarget) return
+    setDetailsSaving(true)
+    setDetailsError(null)
+    await saveExtras(detailsTarget.id, detailsValues)
+    setDetailsSaving(false)
+    setDetailsTarget(null)
   }
 
   function openTerminate(member: Profile) {
@@ -245,6 +349,14 @@ export default function TeamPage() {
                   ) : (
                     <>
                       <button
+                        onClick={() => openDetails(member)}
+                        aria-label={`Ver detalles de ${member.full_name || 'este empleado'}`}
+                        title="Detalles del empleado"
+                        className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                      >
+                        <IdCard size={14} aria-hidden="true" />
+                      </button>
+                      <button
                         onClick={() => openChangeRole(member)}
                         aria-label={`Cambiar rol de ${member.full_name || 'este empleado'}`}
                         title="Cambiar rol"
@@ -269,8 +381,8 @@ export default function TeamPage() {
       </Card>
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-sm">
-          <div className="p-6">
+        <DialogContent className="max-w-lg">
+          <div className="max-h-[85vh] overflow-y-auto p-6">
             {created ? (
               <>
                 <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
@@ -341,6 +453,10 @@ export default function TeamPage() {
                   <p className="mt-1 text-[11px] text-ink-400">
                     {ROLE_OPTIONS.find((r) => r.value === role)?.hint}
                   </p>
+                </div>
+
+                <div className="border-t border-ink-100 pt-3">
+                  <EmployeeDetailsForm role={role} values={extras} onChange={(patch) => setExtras((prev) => ({ ...prev, ...patch }))} />
                 </div>
 
                 {error && (
@@ -430,6 +546,35 @@ export default function TeamPage() {
                       : 'Guardar rol'}
                 </Button>
               </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!detailsTarget} onOpenChange={(open) => !open && setDetailsTarget(null)}>
+        <DialogContent className="max-w-lg">
+          <div className="max-h-[85vh] overflow-y-auto p-6">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+              Detalles de {detailsTarget?.full_name || 'este empleado'}
+            </DialogTitle>
+            {detailsLoading ? (
+              <p className="text-sm text-ink-400">Cargando…</p>
+            ) : (
+              <div className="space-y-4">
+                <EmployeeDetailsForm
+                  role={(detailsTarget?.company_role as CompanyRole) ?? 'kitchen'}
+                  values={detailsValues}
+                  onChange={(patch) => setDetailsValues((prev) => ({ ...prev, ...patch }))}
+                />
+                {detailsError && (
+                  <p role="alert" className="text-xs font-semibold text-danger-500">
+                    {detailsError}
+                  </p>
+                )}
+                <Button fullWidth onClick={submitDetails} disabled={detailsSaving}>
+                  {detailsSaving ? 'Guardando…' : 'Guardar detalles'}
+                </Button>
+              </div>
             )}
           </div>
         </DialogContent>
