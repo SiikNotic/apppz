@@ -19,6 +19,9 @@ export default function HomePage() {
   const { t } = useLanguage()
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery')
   const [search, setSearch] = useState('')
+  // Tocar una categoría filtra aquí mismo (igual que la búsqueda) — antes
+  // navegaba a /menu y sacaba al cliente de donde estaba.
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   const allItems = useMemo(() => Array.from(itemsByCategory.values()).flat(), [itemsByCategory])
 
@@ -122,31 +125,57 @@ export default function HomePage() {
         </section>
       ) : (
         <>
-          {/* Categorías */}
+          {/* Categorías: filtran aquí mismo, tocar de nuevo la activa la
+              quita y regresa a Populares — nunca navega a otra pantalla. */}
           <section>
             <h2 className="mb-4 text-lg font-extrabold text-ink-900">{t('home.categories')}</h2>
             <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/menu?category=${cat.id}`}
-                  className="shrink-0 rounded-2xl bg-white px-5 py-4 text-center shadow-card transition hover:shadow-pop"
-                >
-                  <span className="text-sm font-bold text-ink-900">{cat.name}</span>
-                </Link>
-              ))}
+              {categories.map((cat) => {
+                const isActive = activeCategory === cat.id
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setActiveCategory((prev) => (prev === cat.id ? null : cat.id))}
+                    className={cn(
+                      'shrink-0 rounded-2xl px-5 py-4 text-center shadow-card transition hover:shadow-pop',
+                      isActive ? 'bg-brand-500' : 'bg-white'
+                    )}
+                  >
+                    <span className="text-sm font-bold text-ink-900">{cat.name}</span>
+                  </button>
+                )
+              })}
             </div>
           </section>
 
-          {/* Populares */}
+          {/* Categoría activa, o Populares si no hay ninguna seleccionada */}
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-extrabold text-ink-900">{t('home.popular')}</h2>
-              <Link href="/menu" className="text-sm font-semibold text-brand-900 hover:underline">
-                {t('common.seeAll')}
-              </Link>
+              <h2 className="text-lg font-extrabold text-ink-900">
+                {activeCategory ? categories.find((c) => c.id === activeCategory)?.name : t('home.popular')}
+              </h2>
+              {activeCategory ? (
+                <button
+                  onClick={() => setActiveCategory(null)}
+                  className="text-sm font-semibold text-brand-900 hover:underline"
+                >
+                  {t('home.popular')}
+                </button>
+              ) : (
+                <Link href="/menu" className="text-sm font-semibold text-brand-900 hover:underline">
+                  {t('common.seeAll')}
+                </Link>
+              )}
             </div>
-            <MenuGrid items={popular} sizesByItem={sizesByItem} crusts={crusts} sauces={sauces} toppings={toppings} />
+            <MenuGrid
+              items={activeCategory ? itemsByCategory.get(activeCategory) ?? [] : popular}
+              sizesByItem={sizesByItem}
+              crusts={crusts}
+              sauces={sauces}
+              toppings={toppings}
+            />
           </section>
         </>
       )}
