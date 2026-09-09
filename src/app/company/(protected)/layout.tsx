@@ -100,6 +100,16 @@ const ROLE_KEYS: Record<string, string> = {
   staff: 'teamAdmin.roleStaff',
 }
 
+/** Iniciales para el avatar circular del sidebar — "Ana López" → "AL",
+ *  sin nombre cae al correo, sin ninguno de los dos cae a "?". */
+function initialsFor(name?: string | null, email?: string | null): string {
+  const source = name?.trim() || email || ''
+  if (!source) return '?'
+  const parts = source.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return source.slice(0, 2).toUpperCase()
+}
+
 function CompanyChrome({ children }: { children: ReactNode }) {
   const { profile, user, can, signOut } = useAuth()
   const { t } = useLanguage()
@@ -155,10 +165,10 @@ function CompanyChrome({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-cream-100 lg:flex">
+    <div className="min-h-screen bg-background lg:flex">
       <a
         href="#company-main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-pop"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-pop"
       >
         {t('common.skipToContent')}
       </a>
@@ -208,11 +218,16 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         </div>
 
         <div className="space-y-3 border-t border-white/10 pt-4">
-          <div className="px-1">
-            <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
-            <p className="text-[11px] uppercase tracking-wide text-white/40">
-              {profile?.company_role && ROLE_KEYS[profile.company_role] ? t(ROLE_KEYS[profile.company_role]) : t('teamAdmin.roleStaff')}
-            </p>
+          <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-xs font-extrabold text-ink-900">
+              {initialsFor(profile?.full_name, user?.email)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
+              <p className="truncate text-[11px] uppercase tracking-wide text-white/40">
+                {profile?.company_role && ROLE_KEYS[profile.company_role] ? t(ROLE_KEYS[profile.company_role]) : t('teamAdmin.roleStaff')}
+              </p>
+            </div>
           </div>
           <Link
             href="/"
@@ -309,11 +324,16 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="space-y-3 border-t border-white/10 px-4 py-4">
-            <div className="px-1">
-              <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
-              <p className="text-[11px] uppercase tracking-wide text-white/40">
-                {profile?.company_role && ROLE_KEYS[profile.company_role] ? t(ROLE_KEYS[profile.company_role]) : t('teamAdmin.roleStaff')}
-              </p>
+            <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-xs font-extrabold text-ink-900">
+                {initialsFor(profile?.full_name, user?.email)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
+                <p className="truncate text-[11px] uppercase tracking-wide text-white/40">
+                  {profile?.company_role && ROLE_KEYS[profile.company_role] ? t(ROLE_KEYS[profile.company_role]) : t('teamAdmin.roleStaff')}
+                </p>
+              </div>
             </div>
             <Link
               href="/"
@@ -343,7 +363,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         {pathname !== '/company/support' && needsUnlock && (
           <button
             onClick={unlock}
-            className="flex w-full items-center gap-2 rounded-2xl bg-ink-50 px-4 py-3 text-sm font-semibold text-ink-600 hover:bg-ink-100"
+            className="flex w-full items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-muted/70"
           >
             <Volume2 size={16} aria-hidden="true" />
             {t('support.enableAlertSound')}
