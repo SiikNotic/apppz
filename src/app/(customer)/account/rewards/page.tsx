@@ -46,7 +46,7 @@ export default function RewardsPage() {
 
       <Card className="p-6">
         <div className="flex items-center gap-4">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-600">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-900">
             <Gift size={26} aria-hidden="true" />
           </span>
           <div>

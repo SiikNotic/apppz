@@ -23,7 +23,7 @@ export default function AccessibilityPage() {
       <p>
         Si algo no funciona bien con tu lector de pantalla, teclado, o cualquier tecnología de
         asistencia, cuéntanos desde{' '}
-        <a href="/help" className="text-brand-500 underline">
+        <a href="/help" className="text-brand-900 underline">
           Ayuda
         </a>{' '}
         — lo tomamos como una prioridad real, no como una nota al pie.

@@ -357,7 +357,7 @@ export function ProductsTab() {
                     <p className="text-xs font-bold uppercase tracking-wide text-ink-600">Tamaños</p>
                     <button
                       onClick={addSizeRow}
-                      className="text-xs font-bold text-brand-500 hover:underline"
+                      className="text-xs font-bold text-brand-900 hover:underline"
                     >
                       + Agregar tamaño
                     </button>

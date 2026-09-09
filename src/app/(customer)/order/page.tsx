@@ -109,7 +109,7 @@ function OrderStatusContent() {
   return (
     <div className="mx-auto max-w-lg space-y-5">
       <div className="text-center">
-        <p className="text-xs font-bold uppercase tracking-wide text-brand-500">
+        <p className="text-xs font-bold uppercase tracking-wide text-brand-900">
           Pedido #{order.order_number}
         </p>
         <h1 className="mt-1 text-2xl font-extrabold text-ink-900">
@@ -126,7 +126,7 @@ function OrderStatusContent() {
               return (
                 <li key={step} className="flex items-center gap-3">
                   {done ? (
-                    <CheckCircle2 size={20} className="shrink-0 text-brand-500" />
+                    <CheckCircle2 size={20} className="shrink-0 text-brand-900" />
                   ) : (
                     <Circle size={20} className="shrink-0 text-ink-100" />
                   )}

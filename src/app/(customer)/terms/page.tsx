@@ -8,7 +8,7 @@ export default function TermsPage() {
     <LegalPage title="Términos de servicio" updated="8 de septiembre de 2026">
       <p>
         Al usar {BRAND_NAME} para ordenar comida aceptas estos términos. Léelos junto con nuestra{' '}
-        <a href="/privacy" className="text-brand-500 underline">
+        <a href="/privacy" className="text-brand-900 underline">
           Política de privacidad
         </a>
         .
@@ -29,7 +29,7 @@ export default function TermsPage() {
       <p>
         Puedes cancelar un pedido mientras esté en estado &quot;Pendiente&quot;. Una vez que la
         cocina lo confirma, contáctanos desde{' '}
-        <a href="/help" className="text-brand-500 underline">
+        <a href="/help" className="text-brand-900 underline">
           Ayuda
         </a>{' '}
         para resolver cualquier problema.
@@ -48,7 +48,7 @@ export default function TermsPage() {
       <h2>Contacto</h2>
       <p>
         Para dudas sobre estos términos, escríbenos desde la página de{' '}
-        <a href="/help" className="text-brand-500 underline">
+        <a href="/help" className="text-brand-900 underline">
           Ayuda
         </a>
         .

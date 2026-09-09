@@ -30,7 +30,7 @@ export function SizePicker({
             )}
           >
             <div className="text-sm font-bold text-ink-900">{size.name}</div>
-            <div className="mt-0.5 text-xs font-semibold text-brand-500">{formatCurrency(size.price)}</div>
+            <div className="mt-0.5 text-xs font-semibold text-brand-900">{formatCurrency(size.price)}</div>
           </button>
         ))}
       </div>
@@ -60,7 +60,7 @@ export function CrustPicker({
             className={cn(
               'rounded-full border-2 px-4 py-2 text-sm font-semibold transition',
               value === crust.id
-                ? 'border-brand-500 bg-brand-50 text-brand-600'
+                ? 'border-brand-500 bg-brand-50 text-brand-900'
                 : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
             )}
           >
@@ -97,7 +97,7 @@ export function SaucePicker({
             className={cn(
               'rounded-full border-2 px-4 py-2 text-sm font-semibold transition',
               value === sauce.id
-                ? 'border-brand-500 bg-brand-50 text-brand-600'
+                ? 'border-brand-500 bg-brand-50 text-brand-900'
                 : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
             )}
           >
@@ -139,7 +139,7 @@ export function ToppingPicker({
               className={cn(
                 'flex items-center justify-between gap-2 rounded-2xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition',
                 active
-                  ? 'border-brand-500 bg-brand-50 text-brand-600'
+                  ? 'border-brand-500 bg-brand-50 text-brand-900'
                   : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
               )}
             >

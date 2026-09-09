@@ -108,7 +108,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-ink-900 p-5 text-white lg:flex">
         <div>
           <div className="mb-8 flex items-center gap-2.5 px-1">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-500">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-500 text-ink-900">
               <ChefHat size={20} />
             </span>
             <div>
@@ -128,7 +128,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                   className={cn(
                     'flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition',
                     isActive
-                      ? 'bg-brand-500 text-white'
+                      ? 'bg-brand-500 text-ink-900'
                       : 'text-white/60 hover:bg-white/10 hover:text-white'
                   )}
                 >
@@ -162,7 +162,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           de pantalla completa (mismas secciones que el sidebar de escritorio). */}
       <header className="sticky top-0 z-30 flex items-center justify-between bg-ink-900 px-4 py-3 text-white lg:hidden">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500">
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <ChefHat size={18} />
           </span>
           <div className="min-w-0">
@@ -191,7 +191,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-40 flex flex-col bg-ink-900 text-white lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500">
+              <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-500 text-ink-900">
                 <ChefHat size={18} />
               </span>
               <p className="text-sm font-extrabold">{BRAND_NAME}</p>
@@ -217,7 +217,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                   onClick={() => setMobileNavOpen(false)}
                   className={cn(
                     'flex items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition',
-                    isActive ? 'bg-brand-500 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                    isActive ? 'bg-brand-500 text-ink-900' : 'text-white/70 hover:bg-white/10 hover:text-white'
                   )}
                 >
                   <Icon size={20} aria-hidden="true" />

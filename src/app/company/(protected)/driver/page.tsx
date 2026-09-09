@@ -185,7 +185,7 @@ export default function DriverPage() {
                   {a.order.phone && (
                     <a
                       href={`tel:${a.order.phone}`}
-                      className="flex items-center gap-2 font-semibold text-brand-600 hover:underline"
+                      className="flex items-center gap-2 font-semibold text-brand-900 hover:underline"
                     >
                       <Phone size={16} aria-hidden="true" /> {a.order.phone}
                     </a>

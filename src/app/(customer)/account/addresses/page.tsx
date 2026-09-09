@@ -130,7 +130,7 @@ export default function AddressesPage() {
               <Card key={address.id} className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <Icon size={16} className="text-brand-500" aria-hidden="true" />
+                    <Icon size={16} className="text-brand-900" aria-hidden="true" />
                     <span className="text-sm font-bold text-ink-900">{address.label}</span>
                     {address.is_default && <Badge variant="brand">Predeterminada</Badge>}
                     {address.dog_warning && <Dog size={14} className="text-warning-500" aria-label="Cuidado, perro" />}

@@ -49,7 +49,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
             <div className="min-w-0 flex-1">
               <Link href={`/product/${item.id}`} className="block">
                 <div className="flex items-center gap-1.5">
-                  {isBuilder && <Sparkles size={14} className="shrink-0 text-brand-500" aria-hidden="true" />}
+                  {isBuilder && <Sparkles size={14} className="shrink-0 text-brand-900" aria-hidden="true" />}
                   <h3 className="truncate text-sm font-bold text-ink-900 hover:underline">{item.name}</h3>
                 </div>
                 {item.description && (
@@ -57,7 +57,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
                 )}
               </Link>
               <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-sm font-extrabold text-brand-500">
+                <span className="text-sm font-extrabold text-brand-900">
                   {isBuilder ? 'Desde ' : ''}
                   {formatCurrency(displayPrice)}
                 </span>
@@ -77,7 +77,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
                         toppings: [],
                       })
                     }
-                    className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-white transition active:scale-90 hover:bg-brand-600"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-ink-900 transition active:scale-90 hover:bg-brand-600"
                     aria-label={`Agregar ${item.name} al carrito`}
                   >
                     <Plus size={16} aria-hidden="true" />

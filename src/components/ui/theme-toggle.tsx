@@ -32,7 +32,7 @@ export function ThemeToggle({ className }: { className?: string }) {
           onClick={() => setTheme(value)}
           className={cn(
             'grid h-7 w-7 place-items-center rounded-full transition',
-            theme === value ? 'bg-white text-brand-500 shadow-sm' : 'text-ink-400 hover:text-ink-600'
+            theme === value ? 'bg-white text-brand-900 shadow-sm' : 'text-ink-400 hover:text-ink-600'
           )}
         >
           <Icon size={14} aria-hidden="true" />

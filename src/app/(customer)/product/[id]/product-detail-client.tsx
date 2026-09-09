@@ -152,13 +152,13 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
               onClick={toggleFavorite}
               aria-pressed={isFavorite}
               aria-label={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white shadow-card text-ink-600 hover:text-brand-500"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white shadow-card text-ink-600 hover:text-brand-900"
             >
-              <Heart size={18} className={isFavorite ? 'fill-brand-500 text-brand-500' : ''} aria-hidden="true" />
+              <Heart size={18} className={isFavorite ? 'fill-brand-900 text-brand-900' : ''} aria-hidden="true" />
             </button>
           </div>
           {item.description && <p className="mt-1 text-sm text-ink-600">{item.description}</p>}
-          <p className="mt-2 text-lg font-extrabold text-brand-500">
+          <p className="mt-2 text-lg font-extrabold text-brand-900">
             {item.is_customizable_pizza ? 'Desde ' : ''}
             {formatCurrency(displayPrice)}
           </p>

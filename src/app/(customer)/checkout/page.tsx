@@ -175,7 +175,7 @@ export default function CheckoutPage() {
   if (lines.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-500">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-900">
           <ShoppingBag size={28} aria-hidden="true" />
         </div>
         <p className="text-sm font-semibold text-ink-600">Tu carrito está vacío.</p>
@@ -219,7 +219,7 @@ export default function CheckoutPage() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold text-brand-500">
+                  <span className="text-sm font-extrabold text-brand-900">
                     {formatCurrency(line.unitPrice * line.quantity)}
                   </span>
                   <button
@@ -245,7 +245,7 @@ export default function CheckoutPage() {
               onClick={() => setOrderType('delivery')}
               aria-pressed={orderType === 'delivery'}
               className={`rounded-2xl border-2 px-3 py-2 text-sm font-semibold transition ${
-                orderType === 'delivery' ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-ink-100 text-ink-600'
+                orderType === 'delivery' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
               }`}
             >
               Entrega a domicilio
@@ -254,7 +254,7 @@ export default function CheckoutPage() {
               onClick={() => setOrderType('pickup')}
               aria-pressed={orderType === 'pickup'}
               className={`rounded-2xl border-2 px-3 py-2 text-sm font-semibold transition ${
-                orderType === 'pickup' ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-ink-100 text-ink-600'
+                orderType === 'pickup' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
               }`}
             >
               Recoger en tienda

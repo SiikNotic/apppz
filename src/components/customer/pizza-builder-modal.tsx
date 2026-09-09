@@ -60,13 +60,13 @@ export function PizzaBuilderModal({
                 <ChevronLeft size={18} aria-hidden="true" />
               </button>
             )}
-            <span className="text-xs font-bold uppercase tracking-wide text-brand-500">
+            <span className="text-xs font-bold uppercase tracking-wide text-brand-900">
               Paso {step} de 2
             </span>
           </div>
 
           <div className="mb-5 flex items-center gap-4">
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 text-brand-600">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 text-brand-900">
               <PizzaIcon size={30} strokeWidth={1.75} aria-hidden="true" />
             </div>
             <div>

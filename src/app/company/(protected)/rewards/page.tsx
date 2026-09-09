@@ -158,7 +158,7 @@ export default function RewardsSettingsPage() {
           {tiers.map((tier) => (
             <div key={tier.id} className="flex items-center justify-between rounded-2xl bg-ink-50 p-4">
               <div className="flex items-center gap-3">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-900">
                   <Gift size={16} aria-hidden="true" />
                 </span>
                 <div>

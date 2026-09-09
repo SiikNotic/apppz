@@ -25,7 +25,7 @@ export function CategoryMenuClient({ categoryId }: { categoryId: string }) {
 
   return (
     <div>
-      <Link href="/menu" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-ink-600 hover:text-brand-500">
+      <Link href="/menu" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-ink-600 hover:text-brand-900">
         <ChevronLeft size={16} aria-hidden="true" /> Todo el menú
       </Link>
       <h1 className="mb-5 text-xl font-extrabold text-ink-900">{category.name}</h1>

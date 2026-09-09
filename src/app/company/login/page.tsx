@@ -53,7 +53,7 @@ export default function CompanyLoginPage() {
     <div className="grid min-h-screen place-items-center bg-ink-900 px-4">
       <Card className="w-full max-w-sm p-7">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-white">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <ChefHat size={24} aria-hidden="true" />
           </span>
           <h1 className="mt-3 text-lg font-extrabold text-ink-900">{BRAND_NAME}</h1>

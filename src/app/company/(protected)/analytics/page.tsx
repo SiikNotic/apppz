@@ -110,7 +110,7 @@ export default function ReportsPage() {
               key={r.key}
               onClick={() => setRangeDays(r.key)}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                rangeDays === r.key ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600'
+                rangeDays === r.key ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-white text-ink-600'
               }`}
             >
               {r.label}
@@ -163,7 +163,7 @@ export default function ReportsPage() {
               {topItems.map(([name, data], i) => (
                 <div key={name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2.5">
-                    <span className="grid h-6 w-6 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
+                    <span className="grid h-6 w-6 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-900">
                       {i + 1}
                     </span>
                     <span className="font-semibold text-ink-900">{name}</span>

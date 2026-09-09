@@ -33,21 +33,21 @@ export default function HelpPage() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card className="flex flex-col items-center gap-2 p-5 text-center">
-          <Phone size={20} className="text-brand-500" aria-hidden="true" />
+          <Phone size={20} className="text-brand-900" aria-hidden="true" />
           <p className="text-xs font-semibold text-ink-600">Llámanos</p>
           <a href="tel:+10000000000" className="text-sm font-bold text-ink-900">
             (000) 000-0000
           </a>
         </Card>
         <Card className="flex flex-col items-center gap-2 p-5 text-center">
-          <Mail size={20} className="text-brand-500" aria-hidden="true" />
+          <Mail size={20} className="text-brand-900" aria-hidden="true" />
           <p className="text-xs font-semibold text-ink-600">Escríbenos</p>
           <a href="mailto:ayuda@neropizza.co" className="text-sm font-bold text-ink-900">
             ayuda@neropizza.co
           </a>
         </Card>
         <Card className="flex flex-col items-center gap-2 p-5 text-center">
-          <MessageCircle size={20} className="text-brand-500" aria-hidden="true" />
+          <MessageCircle size={20} className="text-brand-900" aria-hidden="true" />
           <p className="text-xs font-semibold text-ink-600">Chat en vivo</p>
           <p className="text-sm font-bold text-ink-900">Próximamente</p>
         </Card>

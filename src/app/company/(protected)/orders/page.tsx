@@ -127,7 +127,7 @@ export default function OrdersPage() {
             onClick={() => setFilter(f.key)}
             className={cn(
               'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition',
-              filter === f.key ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600'
+              filter === f.key ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-white text-ink-600'
             )}
           >
             {f.label}
@@ -195,7 +195,7 @@ export default function OrdersPage() {
                         <button
                           onClick={() => advanceStatus(order)}
                           disabled={busyId === order.id}
-                          className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-600 hover:brightness-95 disabled:opacity-50"
+                          className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-900 hover:brightness-95 disabled:opacity-50"
                           title="Avanzar estado"
                         >
                           <ArrowRight size={14} aria-hidden="true" />

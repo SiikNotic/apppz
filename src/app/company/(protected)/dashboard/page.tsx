@@ -101,7 +101,7 @@ export default function DashboardPage() {
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-extrabold text-ink-900">Pedidos recientes</h2>
-            <Link href="/company/orders" className="text-xs font-bold text-brand-500">
+            <Link href="/company/orders" className="text-xs font-bold text-brand-900">
               Ver todos
             </Link>
           </div>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-extrabold text-ink-900">Alertas de stock</h2>
-            <Link href="/company/inventory" className="text-xs font-bold text-brand-500">
+            <Link href="/company/inventory" className="text-xs font-bold text-brand-900">
               Ver inventario
             </Link>
           </div>

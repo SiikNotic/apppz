@@ -19,28 +19,28 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-cream-100">
-      <header className="sticky top-0 z-30 bg-brand-500 text-white shadow-card">
+      <header className="sticky top-0 z-30 bg-brand-500 text-ink-900 shadow-card">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <button onClick={() => router.push('/')} className="flex items-center gap-2.5 text-left">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink-900/10">
               <ChefHat size={22} />
             </span>
             <span>
               <span className="block text-lg font-extrabold leading-tight">{BRAND_NAME}</span>
-              <span className="block text-[11px] font-medium text-white/80">{BRAND_TAGLINE}</span>
+              <span className="block text-[11px] font-medium text-ink-900/70">{BRAND_TAGLINE}</span>
             </span>
           </button>
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push(session ? '/account/profile' : '/login')}
-              className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15 hover:bg-white/25"
+              className="grid h-11 w-11 place-items-center rounded-2xl bg-ink-900/10 hover:bg-ink-900/20"
               aria-label={session ? 'Mi cuenta' : 'Iniciar sesión'}
             >
               <User size={20} aria-hidden="true" />
             </button>
             <button
               onClick={() => router.push('/checkout')}
-              className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15 hover:bg-white/25"
+              className="relative grid h-11 w-11 place-items-center rounded-2xl bg-ink-900/10 hover:bg-ink-900/20"
               aria-label={`Ver carrito${itemCount > 0 ? `, ${itemCount} ${itemCount === 1 ? 'artículo' : 'artículos'}` : ''}`}
             >
               <ShoppingBag size={20} aria-hidden="true" />
@@ -48,7 +48,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
                 <span
                   key={itemCount}
                   aria-hidden="true"
-                  className="absolute -right-1 -top-1 grid h-5 min-w-5 animate-in place-items-center rounded-full bg-ink-900 px-1 text-[10px] font-bold zoom-in duration-200"
+                  className="absolute -right-1 -top-1 grid h-5 min-w-5 animate-in place-items-center rounded-full bg-ink-900 px-1 text-[10px] font-bold text-white zoom-in duration-200"
                 >
                   {itemCount}
                 </span>

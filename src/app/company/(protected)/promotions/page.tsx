@@ -156,7 +156,7 @@ export default function PromotionsPage() {
         {promotions.map((promo) => (
           <div key={promo.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
             <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-900">
                 <Tag size={16} aria-hidden="true" />
               </span>
               <div>

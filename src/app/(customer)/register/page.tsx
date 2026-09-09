@@ -49,7 +49,7 @@ export default function RegisterPage() {
     <div className="grid min-h-[calc(100vh-72px)] place-items-center px-4 py-10">
       <Card className="w-full max-w-sm p-7">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-white">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <ChefHat size={24} aria-hidden="true" />
           </span>
           <h1 className="mt-3 text-lg font-extrabold text-ink-900">Crea tu cuenta</h1>
@@ -136,7 +136,7 @@ export default function RegisterPage() {
 
         <p className="mt-5 text-center text-sm text-ink-600">
           ¿Ya tienes cuenta?{' '}
-          <Link href="/login" className="font-semibold text-brand-500 hover:underline">
+          <Link href="/login" className="font-semibold text-brand-900 hover:underline">
             Inicia sesión
           </Link>
         </p>

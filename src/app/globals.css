@@ -13,31 +13,35 @@ html {
 :root {
   --radius: 1rem;
 
-  /* Paleta inspirada en el Figma: naranja tomate cálido sobre crema */
-  --brand-50: #fff4ec;
-  --brand-100: #ffe4cf;
-  --brand-200: #ffc79a;
-  --brand-300: #ffa563;
-  --brand-400: #fd8138;
-  --brand-500: #f2601c;
-  --brand-600: #e04a12;
-  --brand-700: #b93810;
-  --brand-800: #942e14;
-  --brand-900: #792814;
+  /* Paleta calcada del Design Style Guide de referencia ("Uncle John's
+     Pizzas"): amarillo + negro como primarios, crema cálido de fondo,
+     verde menta como acento/éxito. Los nombres de variable (brand-*,
+     cream-*, ink-*) se conservan tal cual para no tener que tocar cada
+     className del proyecto — solo cambian los valores hex. */
+  --brand-50: #fffbea;
+  --brand-100: #fff3c4;
+  --brand-200: #ffe58a;
+  --brand-300: #ffd65c;
+  --brand-400: #ffcb3d;
+  --brand-500: #ffc830;
+  --brand-600: #e6ad1a;
+  --brand-700: #c4930f;
+  --brand-800: #9c740c;
+  --brand-900: #7a5a0a;
 
-  --cream-50: #fffdfa;
-  --cream-100: #fdf6ec;
-  --cream-200: #f8ead6;
-  --cream-300: #f1dcbe;
+  --cream-50: #fffdfb;
+  --cream-100: #fff7f3;
+  --cream-200: #fcebe3;
+  --cream-300: #f6dcd0;
 
-  --ink-50: #f6f5f3;
-  --ink-100: #e7e4df;
-  --ink-400: #7a746b;
-  --ink-600: #4a453f;
-  --ink-800: #2b2621;
-  --ink-900: #1c1815;
+  --ink-50: #f7f7f8;
+  --ink-100: #e6e8f0;
+  --ink-400: #8a8a88;
+  --ink-600: #55534f;
+  --ink-800: #403f3c;
+  --ink-900: #353532;
 
-  --success-500: #2fa76a;
+  --success-500: #16c79a;
   --warning-500: #e0a800;
   --danger-500: #e0402e;
 
@@ -49,18 +53,21 @@ html {
   --popover: #ffffff;
   --popover-foreground: var(--ink-900);
   --primary: var(--brand-500);
-  --primary-foreground: #ffffff;
+  /* El amarillo es demasiado claro para texto blanco (falla contraste) —
+     en la referencia todos los botones amarillos llevan texto oscuro; el
+     texto blanco queda para los botones negros ("dark" variant). */
+  --primary-foreground: var(--ink-900);
   --secondary: var(--ink-50);
   --secondary-foreground: var(--ink-900);
   --muted: var(--ink-50);
   --muted-foreground: var(--ink-400);
   --accent: var(--brand-50);
-  --accent-foreground: var(--brand-600);
+  --accent-foreground: var(--ink-900);
   --destructive: var(--danger-500);
   --destructive-foreground: #ffffff;
   --border: var(--ink-100);
   --input: var(--ink-100);
-  --ring: var(--brand-400);
+  --ring: var(--brand-600);
 }
 
 .dark {
@@ -71,7 +78,7 @@ html {
   --popover: var(--ink-800);
   --popover-foreground: var(--cream-50);
   --primary: var(--brand-500);
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--ink-900);
   --secondary: rgb(255 255 255 / 10%);
   --secondary-foreground: var(--cream-50);
   --muted: rgb(255 255 255 / 8%);
@@ -82,11 +89,11 @@ html {
   --destructive-foreground: #ffffff;
   --border: rgb(255 255 255 / 12%);
   --input: rgb(255 255 255 / 12%);
-  --ring: var(--brand-400);
+  --ring: var(--brand-600);
 }
 
 @theme inline {
-  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Noto Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);
@@ -135,8 +142,8 @@ html {
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --shadow-card: 0 8px 24px -12px rgb(28 24 21 / 0.18);
-  --shadow-pop: 0 16px 40px -16px rgb(28 24 21 / 0.28);
+  --shadow-card: 0 8px 24px -12px rgb(53 53 50 / 0.18);
+  --shadow-pop: 0 16px 40px -16px rgb(53 53 50 / 0.28);
 
   --radius-sm: calc(var(--radius) - 8px);
   --radius-md: calc(var(--radius) - 4px);

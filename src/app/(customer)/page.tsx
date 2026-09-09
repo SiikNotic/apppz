@@ -33,14 +33,14 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-white sm:p-10">
-        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-ink-900 sm:p-10">
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-ink-900/10 px-3 py-1 text-xs font-semibold">
           <MapPin size={12} aria-hidden="true" /> Entregando en tu zona
         </div>
         <h1 className="max-w-md text-3xl font-extrabold leading-tight sm:text-4xl">
           Pizza recién horneada, directo a tu puerta
         </h1>
-        <p className="mt-2 max-w-sm text-sm text-white/85">{BRAND_TAGLINE}</p>
+        <p className="mt-2 max-w-sm text-sm text-ink-900/75">{BRAND_TAGLINE}</p>
         <Link
           href="/menu"
           className="mt-5 inline-flex items-center rounded-full bg-ink-900 px-6 py-3 text-sm font-bold text-white shadow-pop hover:bg-ink-800"
@@ -57,7 +57,7 @@ export default function HomePage() {
             aria-pressed={orderType === 'delivery'}
             className={cn(
               'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition',
-              orderType === 'delivery' ? 'bg-brand-500 text-white' : 'text-ink-600'
+              orderType === 'delivery' ? 'bg-brand-500 text-ink-900' : 'text-ink-600'
             )}
           >
             <Truck size={15} aria-hidden="true" /> Delivery
@@ -67,7 +67,7 @@ export default function HomePage() {
             aria-pressed={orderType === 'pickup'}
             className={cn(
               'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition',
-              orderType === 'pickup' ? 'bg-brand-500 text-white' : 'text-ink-600'
+              orderType === 'pickup' ? 'bg-brand-500 text-ink-900' : 'text-ink-600'
             )}
           >
             <Store size={15} aria-hidden="true" /> Pickup
@@ -119,7 +119,7 @@ export default function HomePage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-extrabold text-ink-900">Populares</h2>
-              <Link href="/menu" className="text-sm font-semibold text-brand-500 hover:underline">
+              <Link href="/menu" className="text-sm font-semibold text-brand-900 hover:underline">
                 Ver todo
               </Link>
             </div>

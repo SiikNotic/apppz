@@ -45,7 +45,7 @@ export function ItemThumb({ name, imageUrl, size = 'md', className }: ItemThumbP
         unoptimized
         onLoad={() => setLoaded(true)}
         className={cn(
-          'rounded-2xl object-cover transition-opacity duration-300',
+          'rounded-full object-cover transition-opacity duration-300',
           loaded ? 'opacity-100' : 'opacity-0',
           sizeClasses[size],
           className
@@ -57,7 +57,7 @@ export function ItemThumb({ name, imageUrl, size = 'md', className }: ItemThumbP
   return (
     <div
       className={cn(
-        'grid shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 text-brand-600',
+        'grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-100 to-brand-200 text-brand-700',
         sizeClasses[size],
         className
       )}

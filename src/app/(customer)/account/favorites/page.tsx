@@ -77,7 +77,7 @@ export default function FavoritesPage() {
                 <ItemThumb name={item.name} imageUrl={item.image_url} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-ink-900">{item.name}</p>
-                  <p className="text-sm font-semibold text-brand-500">{formatCurrency(item.base_price)}</p>
+                  <p className="text-sm font-semibold text-brand-900">{formatCurrency(item.base_price)}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => removeFavorite(fav.id)}>
                   Quitar

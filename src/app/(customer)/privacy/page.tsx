@@ -34,7 +34,7 @@ export default function PrivacyPage() {
       <p>
         Puedes ver y editar tus datos desde tu perfil en cualquier momento, y solicitar la
         eliminación completa de tu cuenta desde{' '}
-        <a href="/account/profile" className="text-brand-500 underline">
+        <a href="/account/profile" className="text-brand-900 underline">
           Mi perfil
         </a>
         .
