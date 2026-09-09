@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Pencil, Trash2, X, Upload, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Upload, Loader2, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -53,6 +53,11 @@ export function ProductsTab() {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null)
+  const [aiMessage, setAiMessage] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -73,11 +78,20 @@ export function ProductsTab() {
     return categories.find((c) => c.id === id)?.name ?? 'Sin categoría'
   }
 
+  function resetAiPanel() {
+    setAiPanelOpen(false)
+    setAiPrompt('')
+    setAiGenerating(false)
+    setAiPreviewUrl(null)
+    setAiMessage(null)
+  }
+
   function openCreate() {
     setForm({ ...EMPTY_FORM, category_id: categories[0]?.id ?? '' })
     setSizes([])
     setError(null)
     setUploadError(null)
+    resetAiPanel()
     setFormOpen(true)
   }
 
@@ -94,6 +108,7 @@ export function ProductsTab() {
     })
     setError(null)
     setUploadError(null)
+    resetAiPanel()
     if (item.is_customizable_pizza) {
       const { data } = await supabase
         .from('item_sizes')
@@ -150,6 +165,40 @@ export function ProductsTab() {
     }
     const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
     setForm((prev) => ({ ...prev, image_url: data.publicUrl }))
+  }
+
+  // Backend real (Edge Function generate-product-image), gateado por el
+  // permiso media.manage — nunca finge una generación en el cliente. Hoy
+  // el proyecto no tiene ninguna clave de proveedor de IA configurada,
+  // así que la función siempre responde configured:false; esta interfaz
+  // ya queda lista (prompt → generando → preview → aceptar/regenerar)
+  // para cuando el negocio provea una clave real.
+  async function handleGenerateImage() {
+    if (!aiPrompt.trim()) return
+    setAiGenerating(true)
+    setAiMessage(null)
+    setAiPreviewUrl(null)
+    const { data, error: fnError } = await supabase.functions.invoke('generate-product-image', {
+      body: { prompt: aiPrompt.trim() },
+    })
+    setAiGenerating(false)
+    if (fnError) {
+      setAiMessage('No se pudo generar la imagen. Intenta de nuevo más tarde.')
+      return
+    }
+    if (!data?.configured) {
+      setAiMessage(
+        data?.message ?? 'La generación de imágenes con IA todavía no está configurada.'
+      )
+      return
+    }
+    setAiPreviewUrl(data.url)
+  }
+
+  function acceptAiImage() {
+    if (!aiPreviewUrl) return
+    setForm((prev) => ({ ...prev, image_url: aiPreviewUrl }))
+    resetAiPanel()
   }
 
   async function handleSave() {
@@ -322,23 +371,39 @@ export function ProductsTab() {
                       className="hidden"
                       onChange={handleImageSelected}
                     />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                    >
-                      {uploading ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin" /> Subiendo…
-                        </>
-                      ) : (
-                        <>
-                          <Upload size={14} /> {form.image_url ? 'Cambiar foto' : 'Subir foto'}
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                      >
+                        {uploading ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" /> Subiendo…
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={14} /> {form.image_url ? 'Cambiar foto' : 'Subir foto'}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          resetAiPanel()
+                          setAiPanelOpen(true)
+                          setAiPrompt(
+                            form.name ? `Foto de ${form.name} para el menú de una pizzería, fondo neutro, alta calidad` : ''
+                          )
+                        }}
+                      >
+                        <Sparkles size={14} /> Generar con IA
+                      </Button>
+                    </div>
                     <p className="text-[11px] text-ink-400">JPG, PNG, WebP o GIF · máx. 5MB.</p>
                     {uploadError && (
                       <p role="alert" className="text-xs font-semibold text-danger-500">
@@ -347,6 +412,70 @@ export function ProductsTab() {
                     )}
                   </div>
                 </div>
+
+                {aiPanelOpen && (
+                  <div className="mt-3 space-y-2 rounded-xl border border-ink-100 bg-ink-50/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="ai-prompt">Describe la imagen a generar</Label>
+                      <button
+                        type="button"
+                        onClick={resetAiPanel}
+                        aria-label="Cerrar"
+                        className="text-ink-400 hover:text-ink-600"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <Textarea
+                      id="ai-prompt"
+                      rows={2}
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="Ej: Pizza pepperoni recién horneada, vista cenital, fondo de madera"
+                    />
+                    {aiPreviewUrl ? (
+                      <div className="flex items-center gap-3">
+                        <ItemThumb name="Vista previa" imageUrl={aiPreviewUrl} size="md" />
+                        <div className="flex gap-1.5">
+                          <Button type="button" size="sm" onClick={acceptAiImage}>
+                            Usar esta imagen
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleGenerateImage}
+                            disabled={aiGenerating}
+                          >
+                            Regenerar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleGenerateImage}
+                        disabled={aiGenerating || !aiPrompt.trim()}
+                      >
+                        {aiGenerating ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" /> Generando…
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={14} /> Generar
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {aiMessage && (
+                      <p role="status" className="text-xs font-semibold text-ink-500">
+                        {aiMessage}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
