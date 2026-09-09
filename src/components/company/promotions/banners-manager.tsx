@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { PromoBanner, Promotion, MenuItem } from '@/lib/types'
 
 const NONE = '__none__'
@@ -53,6 +54,7 @@ const EMPTY: FormState = {
 }
 
 export function BannersManager({ canManage }: { canManage: boolean }) {
+  const { t } = useLanguage()
   const [banners, setBanners] = useState<PromoBanner[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -121,7 +123,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
       .upload(path, file, { contentType: file.type, upsert: false })
     setUploading(false)
     if (uploadErr) {
-      setError('No se pudo subir la imagen. Verifica que sea JPG/PNG/WebP y pese menos de 5MB.')
+      setError(t('menuMgmt.uploadError'))
       return
     }
     const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
@@ -129,7 +131,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
   }
 
   async function handleSave() {
-    if (!form.title.trim()) return setError('El título es obligatorio.')
+    if (!form.title.trim()) return setError(t('promotionsAdmin.titleRequired'))
     setSaving(true)
     setError(null)
     const payload = {
@@ -161,7 +163,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
   }
 
   async function handleDelete(banner: PromoBanner) {
-    if (!confirm(`¿Eliminar el banner "${banner.title}"?`)) return
+    if (!confirm(t('promotionsAdmin.confirmDeleteBanner', { title: banner.title }))) return
     await supabase.from('promo_banners').delete().eq('id', banner.id)
     load()
   }
@@ -170,23 +172,20 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-extrabold text-ink-900">Banner del inicio</h2>
-          <p className="text-xs text-ink-400">
-            Lo que ve el cliente arriba del menú — solo contenido visual, el descuento real lo
-            sigue validando el servidor cuando se usa un código.
-          </p>
+          <h2 className="text-base font-extrabold text-ink-900">{t('promotionsAdmin.bannerHeading')}</h2>
+          <p className="text-xs text-ink-400">{t('promotionsAdmin.bannerSubtitle')}</p>
         </div>
         {canManage && (
           <Button size="sm" onClick={openCreate}>
-            <Plus size={14} /> Banner
+            <Plus size={14} /> {t('promotionsAdmin.newBanner')}
           </Button>
         )}
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && banners.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Sin banners todavía.</p>
+          <p className="p-5 text-sm text-ink-400">{t('promotionsAdmin.noBanners')}</p>
         )}
         {banners.map((banner) => (
           <div key={banner.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
@@ -204,12 +203,12 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   <span className="truncate text-sm font-bold text-ink-900">{banner.title}</span>
                   <button onClick={() => canManage && toggleActive(banner)} disabled={!canManage}>
                     <Badge variant={banner.active ? 'success' : 'neutral'}>
-                      {banner.active ? 'Activo' : 'Inactivo'}
+                      {banner.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
                     </Badge>
                   </button>
                 </div>
                 <p className="truncate text-xs text-ink-400">
-                  {banner.ends_at ? `Vence ${formatDate(banner.ends_at)}` : 'Sin fecha de vencimiento'}
+                  {banner.ends_at ? t('promotionsAdmin.expiresOnly', { date: formatDate(banner.ends_at) }) : t('promotionsAdmin.noExpiryDate')}
                 </p>
               </div>
             </div>
@@ -217,14 +216,14 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
               <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   onClick={() => openEdit(banner)}
-                  aria-label={`Editar ${banner.title}`}
+                  aria-label={t('promotionsAdmin.editAria', { name: banner.title })}
                   className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
                 >
                   <Pencil size={14} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleDelete(banner)}
-                  aria-label={`Eliminar ${banner.title}`}
+                  aria-label={t('promotionsAdmin.deleteAria', { name: banner.title })}
                   className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
                 >
                   <Trash2 size={14} aria-hidden="true" />
@@ -239,11 +238,11 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
         <DialogContent className="max-w-md">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {editingId ? 'Editar banner' : 'Nuevo banner'}
+              {editingId ? t('promotionsAdmin.editBannerTitle') : t('promotionsAdmin.newBannerTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label htmlFor="banner-title">Título</Label>
+                <Label htmlFor="banner-title">{t('promotionsAdmin.bannerTitleLabel')}</Label>
                 <Input
                   id="banner-title"
                   value={form.title}
@@ -251,7 +250,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                 />
               </div>
               <div>
-                <Label htmlFor="banner-desc">Descripción (opcional)</Label>
+                <Label htmlFor="banner-desc">{t('rewardsAdmin.descriptionOptional')}</Label>
                 <Textarea
                   id="banner-desc"
                   rows={2}
@@ -260,7 +259,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                 />
               </div>
               <div>
-                <Label>Imagen (opcional)</Label>
+                <Label>{t('menuMgmt.imageOptional')}</Label>
                 <div className="flex items-center gap-3">
                   <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-ink-50 text-ink-400">
                     {form.imageUrl ? (
@@ -287,11 +286,11 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                     >
                       {uploading ? (
                         <>
-                          <Loader2 size={14} className="animate-spin" /> Subiendo…
+                          <Loader2 size={14} className="animate-spin" /> {t('menuMgmt.uploading')}
                         </>
                       ) : (
                         <>
-                          <Upload size={14} /> {form.imageUrl ? 'Cambiar' : 'Subir'}
+                          <Upload size={14} /> {form.imageUrl ? t('rewardsAdmin.changePhotoShort') : t('rewardsAdmin.uploadPhotoShort')}
                         </>
                       )}
                     </Button>
@@ -299,12 +298,12 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                 </div>
               </div>
               <div>
-                <Label htmlFor="banner-cta">Texto del botón (opcional)</Label>
+                <Label htmlFor="banner-cta">{t('promotionsAdmin.ctaLabel')}</Label>
                 <Input
                   id="banner-cta"
                   value={form.ctaLabel}
                   onChange={(e) => setForm({ ...form, ctaLabel: e.target.value })}
-                  placeholder="Ver oferta"
+                  placeholder={t('promotionsAdmin.ctaPlaceholder')}
                 />
               </div>
               {/* Precios de exhibición: solo se MUESTRAN en el banner, nunca
@@ -312,7 +311,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   calculate_cart_price() con el código de la promoción. */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
-                  <Label htmlFor="banner-original-price">Precio anterior (opcional)</Label>
+                  <Label htmlFor="banner-original-price">{t('promotionsAdmin.originalPrice')}</Label>
                   <Input
                     id="banner-original-price"
                     type="number"
@@ -324,7 +323,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="banner-promo-price">Precio promo (opcional)</Label>
+                  <Label htmlFor="banner-promo-price">{t('promotionsAdmin.promoPrice')}</Label>
                   <Input
                     id="banner-promo-price"
                     type="number"
@@ -336,7 +335,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="banner-discount-percent">% de descuento (opcional)</Label>
+                  <Label htmlFor="banner-discount-percent">{t('promotionsAdmin.discountPercentLabel')}</Label>
                   <Input
                     id="banner-discount-percent"
                     type="number"
@@ -351,7 +350,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label>Promoción asociada (opcional)</Label>
+                  <Label>{t('promotionsAdmin.associatedPromo')}</Label>
                   <Select
                     value={form.promotionId || NONE}
                     onValueChange={(v) => setForm({ ...form, promotionId: v === NONE ? '' : v })}
@@ -360,7 +359,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>Ninguna</SelectItem>
+                      <SelectItem value={NONE}>{t('promotionsAdmin.none')}</SelectItem>
                       {promotions.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}
@@ -371,7 +370,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   </Select>
                 </div>
                 <div>
-                  <Label>Producto destacado (opcional)</Label>
+                  <Label>{t('promotionsAdmin.featuredProduct')}</Label>
                   <Select
                     value={form.menuItemId || NONE}
                     onValueChange={(v) => setForm({ ...form, menuItemId: v === NONE ? '' : v })}
@@ -380,7 +379,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>Ninguno</SelectItem>
+                      <SelectItem value={NONE}>{t('promotionsAdmin.noneM')}</SelectItem>
                       {menuItems.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.name}
@@ -392,7 +391,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="banner-starts">Empieza (opcional)</Label>
+                  <Label htmlFor="banner-starts">{t('promotionsAdmin.startsOptional')}</Label>
                   <Input
                     id="banner-starts"
                     type="date"
@@ -401,7 +400,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="banner-ends">Termina (opcional)</Label>
+                  <Label htmlFor="banner-ends">{t('promotionsAdmin.endsOptional')}</Label>
                   <Input
                     id="banner-ends"
                     type="date"
@@ -417,12 +416,12 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                   className="h-4 w-4 rounded border-ink-200"
                 />
-                Visible en el inicio
+                {t('promotionsAdmin.visibleOnHome')}
               </label>
 
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('menuMgmt.savingButton') : t('common.save')}
               </Button>
             </div>
           </div>

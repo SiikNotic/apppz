@@ -13,15 +13,16 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { BannersManager } from '@/components/company/promotions/banners-manager'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Promotion } from '@/lib/types'
 
-const TYPE_LABELS: Record<string, string> = {
-  percentage: 'Porcentaje',
-  fixed_amount: 'Monto fijo',
-  free_item: 'Producto gratis',
-  free_delivery: 'Envío gratis',
-  bonus_points: 'Puntos extra',
-  buy_x_get_y: 'Compra X lleva Y',
+const TYPE_KEYS: Record<string, string> = {
+  percentage: 'promotionsAdmin.typePercentage',
+  fixed_amount: 'promotionsAdmin.typeFixedAmount',
+  free_item: 'promotionsAdmin.typeFreeItem',
+  free_delivery: 'promotionsAdmin.typeFreeDelivery',
+  bonus_points: 'promotionsAdmin.typeBonusPoints',
+  buy_x_get_y: 'promotionsAdmin.typeBuyXGetY',
 }
 
 interface FormState {
@@ -52,6 +53,7 @@ const EMPTY: FormState = {
 
 export default function PromotionsPage() {
   const { can } = useAuth()
+  const { t } = useLanguage()
   const canManage = can('promotions.manage')
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,7 +100,7 @@ export default function PromotionsPage() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     setSaving(true)
     const payload = {
       code: form.code.trim().toUpperCase() || null,
@@ -127,7 +129,7 @@ export default function PromotionsPage() {
   }
 
   async function handleDelete(promo: Promotion) {
-    if (!confirm(`¿Eliminar la promoción "${promo.name}"?`)) return
+    if (!confirm(t('promotionsAdmin.confirmDeletePromo', { name: promo.name }))) return
     await supabase.from('promotions').delete().eq('id', promo.id)
     load()
   }
@@ -136,23 +138,20 @@ export default function PromotionsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">Promociones</h1>
-          <p className="text-sm text-ink-400">
-            Se validan y aplican automáticamente en el checkout — restricciones de fecha, monto
-            mínimo y límites de uso se hacen cumplir en el servidor.
-          </p>
+          <h1 className="text-2xl font-extrabold text-ink-900">{t('promotionsAdmin.title')}</h1>
+          <p className="text-sm text-ink-400">{t('promotionsAdmin.subtitle')}</p>
         </div>
         {canManage && (
           <Button onClick={openCreate}>
-            <Plus size={16} aria-hidden="true" /> Nueva promoción
+            <Plus size={16} aria-hidden="true" /> {t('promotionsAdmin.newPromotion')}
           </Button>
         )}
       </div>
 
       <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">Cargando…</p>}
+        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
         {!loading && promotions.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">Sin promociones todavía.</p>
+          <p className="p-5 text-sm text-ink-400">{t('promotionsAdmin.noPromotions')}</p>
         )}
         {promotions.map((promo) => (
           <div key={promo.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
@@ -166,15 +165,17 @@ export default function PromotionsPage() {
                   {promo.code && <Badge variant="brand">{promo.code}</Badge>}
                   <button onClick={() => canManage && toggleActive(promo)} disabled={!canManage}>
                     <Badge variant={promo.active ? 'success' : 'neutral'}>
-                      {promo.active ? 'Activa' : 'Inactiva'}
+                      {promo.active ? t('menuMgmt.activeF') : t('menuMgmt.inactiveF')}
                     </Badge>
                   </button>
                 </div>
                 <p className="text-xs text-ink-400">
-                  {TYPE_LABELS[promo.type]} ·{' '}
+                  {t(TYPE_KEYS[promo.type])} ·{' '}
                   {promo.type === 'percentage' ? `${promo.value}%` : formatCurrency(promo.value)}
-                  {promo.min_order_amount ? ` · mín. ${formatCurrency(promo.min_order_amount)}` : ''}
-                  {promo.ends_at ? ` · vence ${formatDate(promo.ends_at)}` : ''}
+                  {promo.min_order_amount
+                    ? ` · ${t('promotionsAdmin.minPrefix', { amount: formatCurrency(promo.min_order_amount) })}`
+                    : ''}
+                  {promo.ends_at ? ` · ${t('promotionsAdmin.expiresPrefix', { date: formatDate(promo.ends_at) })}` : ''}
                 </p>
               </div>
             </div>
@@ -182,14 +183,14 @@ export default function PromotionsPage() {
               <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   onClick={() => openEdit(promo)}
-                  aria-label={`Editar ${promo.name}`}
+                  aria-label={t('promotionsAdmin.editAria', { name: promo.name })}
                   className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
                 >
                   <Pencil size={14} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => handleDelete(promo)}
-                  aria-label={`Eliminar ${promo.name}`}
+                  aria-label={t('promotionsAdmin.deleteAria', { name: promo.name })}
                   className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
                 >
                   <Trash2 size={14} aria-hidden="true" />
@@ -206,15 +207,15 @@ export default function PromotionsPage() {
         <DialogContent className="max-w-md">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {editingId ? 'Editar promoción' : 'Nueva promoción'}
+              {editingId ? t('promotionsAdmin.editPromoTitle') : t('promotionsAdmin.newPromoTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label htmlFor="promo-name">Nombre</Label>
+                <Label htmlFor="promo-name">{t('menuMgmt.name')}</Label>
                 <Input id="promo-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <Label htmlFor="promo-code">Código (opcional, para que el cliente lo escriba)</Label>
+                <Label htmlFor="promo-code">{t('promotionsAdmin.codeLabel')}</Label>
                 <Input
                   id="promo-code"
                   value={form.code}
@@ -224,21 +225,21 @@ export default function PromotionsPage() {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label>Tipo</Label>
+                  <Label>{t('promotionsAdmin.type')}</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as Promotion['type'] })}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="percentage">Porcentaje</SelectItem>
-                      <SelectItem value="fixed_amount">Monto fijo</SelectItem>
-                      <SelectItem value="free_delivery">Envío gratis</SelectItem>
+                      <SelectItem value="percentage">{t('promotionsAdmin.typePercentage')}</SelectItem>
+                      <SelectItem value="fixed_amount">{t('promotionsAdmin.typeFixedAmount')}</SelectItem>
+                      <SelectItem value="free_delivery">{t('promotionsAdmin.typeFreeDelivery')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="promo-value">
-                    {form.type === 'percentage' ? 'Porcentaje (%)' : 'Monto ($)'}
+                    {form.type === 'percentage' ? t('promotionsAdmin.percentageValue') : t('promotionsAdmin.amountValue')}
                   </Label>
                   <Input
                     id="promo-value"
@@ -251,7 +252,7 @@ export default function PromotionsPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="promo-min">Monto mínimo de compra (opcional)</Label>
+                <Label htmlFor="promo-min">{t('promotionsAdmin.minOrderAmount')}</Label>
                 <Input
                   id="promo-min"
                   type="number"
@@ -262,21 +263,21 @@ export default function PromotionsPage() {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="promo-starts">Empieza</Label>
+                  <Label htmlFor="promo-starts">{t('promotionsAdmin.starts')}</Label>
                   <Input id="promo-starts" type="date" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />
                 </div>
                 <div>
-                  <Label htmlFor="promo-ends">Termina</Label>
+                  <Label htmlFor="promo-ends">{t('promotionsAdmin.ends')}</Label>
                   <Input id="promo-ends" type="date" value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="promo-limit">Límite de usos totales (opcional)</Label>
+                  <Label htmlFor="promo-limit">{t('promotionsAdmin.totalUsageLimit')}</Label>
                   <Input id="promo-limit" type="number" value={form.usageLimit} onChange={(e) => setForm({ ...form, usageLimit: e.target.value })} />
                 </div>
                 <div>
-                  <Label htmlFor="promo-limit-customer">Límite por cliente</Label>
+                  <Label htmlFor="promo-limit-customer">{t('promotionsAdmin.perCustomerLimit')}</Label>
                   <Input
                     id="promo-limit-customer"
                     type="number"
@@ -288,7 +289,7 @@ export default function PromotionsPage() {
 
               {error && <p role="alert" className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar promoción'}
+                {saving ? t('menuMgmt.savingButton') : t('promotionsAdmin.savePromo')}
               </Button>
             </div>
           </div>
