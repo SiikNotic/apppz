@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { StatCard } from '@/components/ui/stat-card'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/company/page-header'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { type Ingredient, type Order, type OrderStatus } from '@/lib/types'
@@ -70,22 +72,14 @@ export default function DashboardPage() {
   const avgTicket = todayOrders.length > 0 ? revenueToday / todayOrders.length : 0
 
   if (!canView) {
-    return (
-      <Card className="flex flex-col items-center gap-2 p-10 text-center">
-        <AlertTriangle size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
-      </Card>
-    )
+    return <EmptyState icon={<AlertTriangle size={28} aria-hidden="true" />} message={t('ordersAdmin.noPermission')} />
   }
 
-  if (loading) return <p className="text-sm text-ink-400">{t('dashboardHome.loadingDashboard')}</p>
+  if (loading) return <p className="text-sm text-muted-foreground">{t('dashboardHome.loadingDashboard')}</p>
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('dashboardHome.title')}</h1>
-        <p className="text-sm text-ink-400">{t('dashboardHome.subtitle')}</p>
-      </div>
+      <PageHeader title={t('dashboardHome.title')} subtitle={t('dashboardHome.subtitle')} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard

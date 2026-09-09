@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SupportChatThread } from '@/components/shared/support-chat-thread'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/company/page-header'
 import { formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { type IssueReport, type Order } from '@/lib/types'
@@ -101,30 +103,25 @@ export default function SupportPage() {
   }
 
   if (!canManage) {
-    return (
-      <Card className="flex flex-col items-center gap-2 p-10 text-center">
-        <MessageCircleWarning size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
-      </Card>
-    )
+    return <EmptyState icon={<MessageCircleWarning size={28} aria-hidden="true" />} message={t('ordersAdmin.noPermission')} />
   }
 
   const visible = reports.filter((r) => showResolved || r.status !== 'resolved')
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">{t('support.title')}</h1>
-          <p className="text-sm text-ink-400">{t('support.subtitle')}</p>
-        </div>
-        <button
-          onClick={() => setShowResolved((v) => !v)}
-          className="text-sm font-semibold text-brand-900 hover:underline"
-        >
-          {showResolved ? t('support.hideResolved') : t('support.showResolved')}
-        </button>
-      </div>
+      <PageHeader
+        title={t('support.title')}
+        subtitle={t('support.subtitle')}
+        actions={
+          <button
+            onClick={() => setShowResolved((v) => !v)}
+            className="text-sm font-semibold text-brand-900 hover:underline"
+          >
+            {showResolved ? t('support.hideResolved') : t('support.showResolved')}
+          </button>
+        }
+      />
 
       <Card className="divide-y divide-ink-100 p-0">
         {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}

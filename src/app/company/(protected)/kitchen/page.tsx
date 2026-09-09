@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { PageHeader } from '@/components/company/page-header'
 import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@/lib/types'
 
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
@@ -168,15 +169,12 @@ export default function KitchenViewPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('kitchen.title')}</h1>
-        <p className="text-sm text-ink-400">{t('kitchen.subtitle')}</p>
-      </div>
+      <PageHeader title={t('kitchen.title')} subtitle={t('kitchen.subtitle')} />
 
       {needsUnlock && (
         <button
           onClick={unlock}
-          className="flex w-full items-center gap-2 rounded-2xl bg-ink-50 px-4 py-3 text-sm font-semibold text-ink-600 hover:bg-ink-100"
+          className="flex w-full items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-muted/70"
         >
           <Volume2 size={16} aria-hidden="true" />
           {t('kitchen.enableAlertSound')}
@@ -207,7 +205,7 @@ export default function KitchenViewPage() {
               </h2>
               <div className="space-y-3">
                 {columnOrders.length === 0 && (
-                  <p className="rounded-2xl bg-white p-4 text-center text-xs text-ink-400">{t('kitchen.noOrders')}</p>
+                  <p className="rounded-2xl bg-card p-4 text-center text-xs text-muted-foreground">{t('kitchen.noOrders')}</p>
                 )}
                 {columnOrders.map((order) => {
                   const elapsed = minutesAgo(order.created_at)

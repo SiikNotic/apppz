@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/company/page-header'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { type Order, type OrderItem, type OrderItemTopping, type OrderStatus } from '@/lib/types'
@@ -111,19 +113,12 @@ export default function OrdersPage() {
   }
 
   if (!canView) {
-    return (
-      <Card className="flex flex-col items-center gap-2 p-10 text-center">
-        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
-      </Card>
-    )
+    return <EmptyState icon={<Eye size={28} aria-hidden="true" />} message={t('ordersAdmin.noPermission')} />
   }
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('ordersAdmin.title')}</h1>
-        <p className="text-sm text-ink-400">{t('ordersAdmin.subtitle')}</p>
-      </div>
+      <PageHeader title={t('ordersAdmin.title')} subtitle={t('ordersAdmin.subtitle')} />
 
       <div className="flex gap-2 overflow-x-auto">
         {FILTERS.map((f) => (
@@ -132,7 +127,7 @@ export default function OrdersPage() {
             onClick={() => setFilter(f.key)}
             className={cn(
               'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition',
-              filter === f.key ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-white text-ink-600'
+              filter === f.key ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-card text-muted-foreground'
             )}
           >
             {f.label}
@@ -140,9 +135,9 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {loading && <p className="py-8 text-center text-sm text-ink-400">{t('common.loading')}</p>}
+      {loading && <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>}
       {!loading && filteredOrders.length === 0 && (
-        <Card className="py-8 text-center text-sm text-ink-400">{t('ordersAdmin.noOrdersInView')}</Card>
+        <EmptyState icon={<Eye size={28} aria-hidden="true" />} message={t('ordersAdmin.noOrdersInView')} />
       )}
 
       {!loading && filteredOrders.length > 0 && (
