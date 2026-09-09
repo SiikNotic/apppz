@@ -42,6 +42,7 @@ export default function CompanySettingsPage() {
       const raw = draft[setting.key]
       let value: Json = raw
       if (raw === '' || raw === 'null') value = null
+      else if (raw === 'true' || raw === 'false') value = raw === 'true'
       else {
         const numeric = Number(raw)
         value = Number.isNaN(numeric) ? raw : numeric
@@ -66,18 +67,35 @@ export default function CompanySettingsPage() {
       </div>
 
       <Card className="max-w-lg space-y-4 p-6">
-        {settings.map((setting) => (
-          <div key={setting.key}>
-            <Label htmlFor={setting.key}>{setting.description ?? setting.key}</Label>
-            <Input
-              id={setting.key}
-              value={draft[setting.key] ?? ''}
-              onChange={(e) => setDraft({ ...draft, [setting.key]: e.target.value })}
-              disabled={!canManage}
-              placeholder={setting.key.includes('threshold') ? 'null = desactivado' : undefined}
-            />
-          </div>
-        ))}
+        {settings.map((setting) => {
+          const isBoolean = typeof setting.value === 'boolean'
+          if (isBoolean) {
+            return (
+              <label key={setting.key} className="flex items-center gap-2.5 text-sm font-semibold text-ink-600">
+                <input
+                  type="checkbox"
+                  checked={draft[setting.key] === 'true'}
+                  onChange={(e) => setDraft({ ...draft, [setting.key]: String(e.target.checked) })}
+                  disabled={!canManage}
+                  className="h-4 w-4 rounded border-ink-200"
+                />
+                {setting.description ?? setting.key}
+              </label>
+            )
+          }
+          return (
+            <div key={setting.key}>
+              <Label htmlFor={setting.key}>{setting.description ?? setting.key}</Label>
+              <Input
+                id={setting.key}
+                value={draft[setting.key] ?? ''}
+                onChange={(e) => setDraft({ ...draft, [setting.key]: e.target.value })}
+                disabled={!canManage}
+                placeholder={setting.key.includes('threshold') ? 'null = desactivado' : undefined}
+              />
+            </div>
+          )
+        })}
 
         {canManage && (
           <div className="flex items-center gap-3 pt-2">

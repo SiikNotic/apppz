@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Flame, Clock, Printer, Send } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Flame, Clock, Printer, Send, BellRing, Volume2, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { deductInventoryForOrder } from '@/lib/inventoryDeduction'
+import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { formatDate } from '@/lib/format'
+import { formatCurrency, formatDate } from '@/lib/format'
 import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@/lib/types'
 
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
@@ -38,6 +39,7 @@ export default function KitchenViewPage() {
   const [selectedDriver, setSelectedDriver] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
+  const autoPrintRef = useRef(false)
 
   async function load() {
     const { data } = await supabase
@@ -48,6 +50,22 @@ export default function KitchenViewPage() {
     setOrders((data ?? []) as KitchenOrder[])
     setLoading(false)
   }
+
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'kitchen.auto_print')
+      .maybeSingle()
+      .then(({ data }) => {
+        autoPrintRef.current = data?.value === true || data?.value === 'true'
+      })
+  }, [])
+
+  // Suena y avisa en cuanto un pedido entra a "Nuevos" (confirmed) — es
+  // justo cuando Cocina tiene que enterarse de que hay algo que aceptar.
+  const newOrderIds = orders.filter((o) => o.status === 'confirmed').map((o) => o.id)
+  const { alertActive, needsUnlock, unlock, dismiss } = useNewOrderAlert(newOrderIds)
 
   async function loadAvailableDrivers() {
     const { data: driverRows } = await supabase.from('drivers').select('user_id').eq('status', 'available')
@@ -92,8 +110,31 @@ export default function KitchenViewPage() {
     if (order.status === 'preparing' && next === 'ready') {
       await deductInventoryForOrder(order.id)
     }
-    await supabase.from('orders').update({ status: next }).eq('id', order.id)
+    const { error } = await supabase.from('orders').update({ status: next }).eq('id', order.id)
     setBusyId(null)
+    // La orden YA avanzó de estado sin importar lo que pase con la
+    // impresión — imprimir es best-effort y nunca debe bloquearla.
+    if (!error && next === 'ready' && autoPrintRef.current && !order.label_printed_at) {
+      printLabel(order)
+    }
+  }
+
+  function printLabel(order: KitchenOrder) {
+    setLabelOrder(order)
+    // Le da un tick al Dialog para montar #order-label-print antes de
+    // llamar a print() — si la ventana de impresión no aparece o el
+    // usuario la cancela, no hay forma confiable de saberlo desde JS, así
+    // que esto es "mejor esfuerzo": se marca como impreso de todas formas
+    // para no reintentar en cada actualización futura del mismo pedido.
+    setTimeout(() => {
+      try {
+        window.print()
+      } catch {
+        // Sin impresora configurada o el navegador la bloqueó — no debe
+        // bloquear la orden, que ya avanzó de estado antes de esto.
+      }
+      supabase.from('orders').update({ label_printed_at: new Date().toISOString() }).eq('id', order.id)
+    }, 50)
   }
 
   function openAssign(order: KitchenOrder) {
@@ -130,6 +171,30 @@ export default function KitchenViewPage() {
         <h1 className="text-2xl font-extrabold text-ink-900">Cocina</h1>
         <p className="text-sm text-ink-400">Pedidos activos en tiempo real.</p>
       </div>
+
+      {needsUnlock && (
+        <button
+          onClick={unlock}
+          className="flex w-full items-center gap-2 rounded-2xl bg-ink-50 px-4 py-3 text-sm font-semibold text-ink-600 hover:bg-ink-100"
+        >
+          <Volume2 size={16} aria-hidden="true" />
+          Activar sonido de alerta para pedidos nuevos
+        </button>
+      )}
+
+      {alertActive && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 rounded-2xl bg-brand-500 px-4 py-3 font-bold text-ink-900 shadow-pop"
+        >
+          <span className="flex items-center gap-2">
+            <BellRing size={18} aria-hidden="true" /> ¡Nuevo pedido! Revísalo en &quot;Nuevos&quot; abajo.
+          </span>
+          <button onClick={dismiss} aria-label="Cerrar aviso" className="shrink-0 rounded-full p-1 hover:bg-ink-900/10">
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {COLUMNS.map((col) => {
@@ -260,6 +325,32 @@ export default function KitchenViewPage() {
                     <p className="font-bold">Nota: {labelOrder.notes}</p>
                   </div>
                 )}
+                <div className="border-t border-dashed border-ink-300 pt-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(labelOrder.subtotal)}</span>
+                  </div>
+                  {labelOrder.discount > 0 && (
+                    <div className="flex justify-between">
+                      <span>Descuento</span>
+                      <span>-{formatCurrency(labelOrder.discount)}</span>
+                    </div>
+                  )}
+                  {labelOrder.order_type === 'delivery' && labelOrder.delivery_fee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Envío</span>
+                      <span>{formatCurrency(labelOrder.delivery_fee)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Impuesto</span>
+                    <span>{formatCurrency(labelOrder.tax)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-extrabold">
+                    <span>TOTAL</span>
+                    <span>{formatCurrency(labelOrder.total)}</span>
+                  </div>
+                </div>
               </div>
               <Button fullWidth className="mt-4 print:hidden" onClick={() => window.print()}>
                 <Printer size={16} aria-hidden="true" /> Imprimir etiqueta

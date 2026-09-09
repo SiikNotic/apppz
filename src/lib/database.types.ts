@@ -653,6 +653,7 @@ export type Database = {
           discount: number
           id: string
           idempotency_key: string | null
+          label_printed_at: string | null
           notes: string | null
           order_number: number
           order_type: string
@@ -676,6 +677,7 @@ export type Database = {
           discount?: number
           id?: string
           idempotency_key?: string | null
+          label_printed_at?: string | null
           notes?: string | null
           order_number?: number
           order_type?: string
@@ -699,6 +701,7 @@ export type Database = {
           discount?: number
           id?: string
           idempotency_key?: string | null
+          label_printed_at?: string | null
           notes?: string | null
           order_number?: number
           order_type?: string
