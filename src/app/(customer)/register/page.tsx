@@ -10,9 +10,11 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { registerSchema, firstFieldErrors, type RegisterInput } from '@/lib/validation/auth.schema'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function RegisterPage() {
   const { signUp } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
 
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '' })
@@ -52,13 +54,13 @@ export default function RegisterPage() {
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <ChefHat size={24} aria-hidden="true" />
           </span>
-          <h1 className="mt-3 text-lg font-extrabold text-ink-900">Crea tu cuenta</h1>
-          <p className="text-sm text-ink-400">Pedidos más rápidos, puntos y favoritos guardados</p>
+          <h1 className="mt-3 text-lg font-extrabold text-ink-900">{t('auth.registerTitle')}</h1>
+          <p className="text-sm text-ink-400">{t('auth.registerSubtitle')}</p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
-            <Label htmlFor="fullName">Nombre completo</Label>
+            <Label htmlFor="fullName">{t('auth.fullName')}</Label>
             <Input
               id="fullName"
               autoComplete="name"
@@ -69,7 +71,7 @@ export default function RegisterPage() {
             {fieldErrors.fullName && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.fullName}</p>}
           </div>
           <div>
-            <Label htmlFor="email">Correo</Label>
+            <Label htmlFor="email">{t('auth.email')}</Label>
             <Input
               id="email"
               type="email"
@@ -81,7 +83,7 @@ export default function RegisterPage() {
             {fieldErrors.email && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.email}</p>}
           </div>
           <div>
-            <Label htmlFor="phone">Teléfono</Label>
+            <Label htmlFor="phone">{t('auth.phone')}</Label>
             <Input
               id="phone"
               type="tel"
@@ -93,7 +95,7 @@ export default function RegisterPage() {
             {fieldErrors.phone && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.phone}</p>}
           </div>
           <div>
-            <Label htmlFor="password">Contraseña</Label>
+            <Label htmlFor="password">{t('auth.password')}</Label>
             <Input
               id="password"
               type="password"
@@ -104,12 +106,12 @@ export default function RegisterPage() {
               aria-describedby="password-hint"
             />
             <p id="password-hint" className="mt-1 text-[11px] text-ink-400">
-              Mínimo 8 caracteres, con una mayúscula y un número.
+              {t('auth.passwordHint')}
             </p>
             {fieldErrors.password && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.password}</p>}
           </div>
           <div>
-            <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
+            <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -130,21 +132,21 @@ export default function RegisterPage() {
           )}
 
           <Button type="submit" fullWidth size="lg" disabled={loading}>
-            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+            {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
           </Button>
         </form>
 
         <p className="mt-5 text-center text-sm text-ink-600">
-          ¿Ya tienes cuenta?{' '}
+          {t('auth.haveAccount')}{' '}
           <Link href="/login" className="font-semibold text-brand-900 hover:underline">
-            Inicia sesión
+            {t('auth.signInLink')}
           </Link>
         </p>
 
         <p className="mt-4 text-center text-[11px] text-ink-400">
-          Al crear tu cuenta aceptas nuestros{' '}
-          <Link href="/terms" className="underline">Términos</Link> y{' '}
-          <Link href="/privacy" className="underline">Política de privacidad</Link>.
+          {t('auth.agreeToTerms')}{' '}
+          <Link href="/terms" className="underline">{t('nav.terms')}</Link> {t('auth.and')}{' '}
+          <Link href="/privacy" className="underline">{t('auth.privacyPolicy')}</Link>.
         </p>
       </Card>
     </div>

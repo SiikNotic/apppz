@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { forgotPasswordSchema, firstFieldErrors } from '@/lib/validation/auth.schema'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function ForgotPasswordPage() {
   const { resetPassword } = useAuth()
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
@@ -23,7 +25,7 @@ export default function ForgotPasswordPage() {
 
     const result = forgotPasswordSchema.safeParse({ email })
     if (!result.success) {
-      setError(firstFieldErrors(result.error).email ?? 'Correo inválido')
+      setError(firstFieldErrors(result.error).email ?? t('auth.invalidEmail'))
       return
     }
 
@@ -42,31 +44,30 @@ export default function ForgotPasswordPage() {
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <KeyRound size={24} aria-hidden="true" />
           </span>
-          <h1 className="mt-3 text-lg font-extrabold text-ink-900">Recupera tu contraseña</h1>
-          <p className="text-sm text-ink-400">Te enviamos un enlace para crear una nueva</p>
+          <h1 className="mt-3 text-lg font-extrabold text-ink-900">{t('auth.forgotTitle')}</h1>
+          <p className="text-sm text-ink-400">{t('auth.forgotSubtitle')}</p>
         </div>
 
         {sent ? (
           <div role="status" className="rounded-2xl bg-green-50 p-4 text-center text-sm text-success-500">
-            Si existe una cuenta con ese correo, te enviamos un enlace para restablecer tu
-            contraseña. Revisa tu bandeja de entrada.
+            {t('auth.forgotSuccess')}
           </div>
         ) : (
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             <div>
-              <Label htmlFor="email">Correo</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               {error && <p role="alert" className="mt-1 text-xs text-danger-500">{error}</p>}
             </div>
             <Button type="submit" fullWidth size="lg" disabled={loading}>
-              {loading ? 'Enviando…' : 'Enviar enlace'}
+              {loading ? t('auth.sending') : t('auth.sendLink')}
             </Button>
           </form>
         )}
 
         <p className="mt-5 text-center text-sm text-ink-600">
           <Link href="/login" className="font-semibold text-brand-900 hover:underline">
-            Volver a iniciar sesión
+            {t('auth.backToLogin')}
           </Link>
         </p>
       </Card>

@@ -13,9 +13,11 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { loginSchema, firstFieldErrors } from '@/lib/validation/auth.schema'
 import { BRAND_NAME } from '@/lib/config'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 function LoginForm() {
   const { signIn } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/'
@@ -43,7 +45,7 @@ function LoginForm() {
     setLoading(false)
     if (error) {
       // Nunca revelar si el correo existe o no.
-      setFormError('Correo o contraseña incorrectos.')
+      setFormError(t('auth.invalidCredentials'))
       return
     }
     router.push(redirectTo)
@@ -56,13 +58,15 @@ function LoginForm() {
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-ink-900">
             <ChefHat size={24} aria-hidden="true" />
           </span>
-          <h1 className="mt-3 text-lg font-extrabold text-ink-900">Inicia sesión</h1>
-          <p className="text-sm text-ink-400">Entra a tu cuenta de {BRAND_NAME}</p>
+          <h1 className="mt-3 text-lg font-extrabold text-ink-900">{t('auth.loginTitle')}</h1>
+          <p className="text-sm text-ink-400">
+            {t('auth.loginSubtitle')} {BRAND_NAME}
+          </p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
-            <Label htmlFor="email">Correo</Label>
+            <Label htmlFor="email">{t('auth.email')}</Label>
             <Input
               id="email"
               type="email"
@@ -80,9 +84,9 @@ function LoginForm() {
           </div>
           <div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Link href="/forgot-password" className="text-xs font-semibold text-brand-900 hover:underline">
-                ¿La olvidaste?
+                {t('auth.forgotPassword')}
               </Link>
             </div>
             <Input
@@ -96,7 +100,7 @@ function LoginForm() {
           </div>
           <label className="flex items-center gap-2 text-sm text-ink-600">
             <Checkbox checked={rememberMe} onCheckedChange={(c) => setRememberMe(c === true)} />
-            Recordarme
+            {t('auth.rememberMe')}
           </label>
 
           {formError && (
@@ -106,14 +110,14 @@ function LoginForm() {
           )}
 
           <Button type="submit" fullWidth size="lg" disabled={loading}>
-            {loading ? 'Entrando…' : 'Entrar'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
         </form>
 
         <p className="mt-5 text-center text-sm text-ink-600">
-          ¿No tienes cuenta?{' '}
+          {t('auth.noAccount')}{' '}
           <Link href="/register" className="font-semibold text-brand-900 hover:underline">
-            Crear cuenta
+            {t('auth.createAccount')}
           </Link>
         </p>
       </Card>
