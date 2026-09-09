@@ -8,6 +8,7 @@ import { deductInventoryForOrder } from '@/lib/inventoryDeduction'
 import { useAuth } from '@/contexts/AuthContext'
 import { nextHappyPathStatus } from '@/lib/business-logic/order-state-machine'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -135,92 +136,149 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      <Card className="overflow-x-auto p-0">
-        <Table className="min-w-[760px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Pedido</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-ink-400">
-                  Cargando…
-                </TableCell>
-              </TableRow>
-            )}
-            {!loading && filteredOrders.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-ink-400">
-                  No hay pedidos en esta vista.
-                </TableCell>
-              </TableRow>
-            )}
+      {loading && <p className="py-8 text-center text-sm text-ink-400">Cargando…</p>}
+      {!loading && filteredOrders.length === 0 && (
+        <Card className="py-8 text-center text-sm text-ink-400">No hay pedidos en esta vista.</Card>
+      )}
+
+      {!loading && filteredOrders.length > 0 && (
+        <>
+          {/* Mobile (< md): una tarjeta por pedido — la tabla de abajo
+              necesitaba scroll horizontal para ver Tipo/Cliente/Total/Estado,
+              exactamente lo que no queremos en el teléfono. */}
+          <div className="space-y-3 md:hidden">
             {filteredOrders.map((order) => {
               const status = order.status as OrderStatus
               const notTerminal = !['delivered', 'cancelled', 'refunded', 'failed'].includes(status)
               return (
-                <TableRow key={order.id}>
-                  <TableCell>
-                    <p className="font-semibold text-ink-900">#{order.order_number}</p>
-                    <p className="text-xs text-ink-400">{formatDate(order.created_at)}</p>
-                  </TableCell>
-                  <TableCell className="text-ink-600">{order.customer_name}</TableCell>
-                  <TableCell className="text-ink-600">
-                    {order.order_type === 'delivery' ? 'Domicilio' : 'Recoger'}
-                  </TableCell>
-                  <TableCell className="font-semibold text-ink-900">
-                    {formatCurrency(order.total)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANT[status]}>{ORDER_STATUS_LABELS[status]}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => openDetail(order)}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                        title="Ver detalle"
-                      >
-                        <Eye size={14} aria-hidden="true" />
-                        <span className="sr-only">Ver detalle</span>
-                      </button>
-                      {notTerminal && canUpdateStatus && (
-                        <button
-                          onClick={() => advanceStatus(order)}
-                          disabled={busyId === order.id}
-                          className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-900 hover:brightness-95 disabled:opacity-50"
-                          title="Avanzar estado"
-                        >
-                          <ArrowRight size={14} aria-hidden="true" />
-                          <span className="sr-only">Avanzar estado</span>
-                        </button>
-                      )}
-                      {notTerminal && canCancel && (
-                        <button
-                          onClick={() => cancelOrder(order)}
-                          disabled={busyId === order.id}
-                          className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
-                          title="Cancelar"
-                        >
-                          <Ban size={14} aria-hidden="true" />
-                          <span className="sr-only">Cancelar</span>
-                        </button>
-                      )}
+                <Card key={order.id} className="space-y-3 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-ink-900">#{order.order_number}</p>
+                      <p className="text-xs text-ink-400">{formatDate(order.created_at)}</p>
                     </div>
-                  </TableCell>
-                </TableRow>
+                    <Badge variant={STATUS_VARIANT[status]}>{ORDER_STATUS_LABELS[status]}</Badge>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm">
+                    <dt className="text-ink-400">Cliente</dt>
+                    <dd className="truncate text-right text-ink-600">{order.customer_name}</dd>
+                    <dt className="text-ink-400">Tipo</dt>
+                    <dd className="text-right text-ink-600">
+                      {order.order_type === 'delivery' ? 'Domicilio' : 'Recoger'}
+                    </dd>
+                    <dt className="text-ink-400">Total</dt>
+                    <dd className="text-right font-semibold text-ink-900">
+                      {formatCurrency(order.total)}
+                    </dd>
+                  </dl>
+                  <div className="flex items-center gap-2 border-t border-ink-100 pt-3">
+                    <Button size="sm" variant="secondary" onClick={() => openDetail(order)} className="flex-1">
+                      <Eye size={14} aria-hidden="true" /> Ver detalle
+                    </Button>
+                    {notTerminal && canUpdateStatus && (
+                      <button
+                        onClick={() => advanceStatus(order)}
+                        disabled={busyId === order.id}
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-900 hover:brightness-95 disabled:opacity-50"
+                        title="Avanzar estado"
+                      >
+                        <ArrowRight size={16} aria-hidden="true" />
+                        <span className="sr-only">Avanzar estado</span>
+                      </button>
+                    )}
+                    {notTerminal && canCancel && (
+                      <button
+                        onClick={() => cancelOrder(order)}
+                        disabled={busyId === order.id}
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
+                        title="Cancelar"
+                      >
+                        <Ban size={16} aria-hidden="true" />
+                        <span className="sr-only">Cancelar</span>
+                      </button>
+                    )}
+                  </div>
+                </Card>
               )
             })}
-          </TableBody>
-        </Table>
-      </Card>
+          </div>
+
+          {/* Tablet/Desktop (>= md): tabla completa, sigue siendo la mejor
+              forma de comparar muchos pedidos de un vistazo. */}
+          <Card className="hidden overflow-x-auto p-0 md:block">
+            <Table className="min-w-[760px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Pedido</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((order) => {
+                  const status = order.status as OrderStatus
+                  const notTerminal = !['delivered', 'cancelled', 'refunded', 'failed'].includes(status)
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        <p className="font-semibold text-ink-900">#{order.order_number}</p>
+                        <p className="text-xs text-ink-400">{formatDate(order.created_at)}</p>
+                      </TableCell>
+                      <TableCell className="text-ink-600">{order.customer_name}</TableCell>
+                      <TableCell className="text-ink-600">
+                        {order.order_type === 'delivery' ? 'Domicilio' : 'Recoger'}
+                      </TableCell>
+                      <TableCell className="font-semibold text-ink-900">
+                        {formatCurrency(order.total)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANT[status]}>{ORDER_STATUS_LABELS[status]}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openDetail(order)}
+                            className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                            title="Ver detalle"
+                          >
+                            <Eye size={14} aria-hidden="true" />
+                            <span className="sr-only">Ver detalle</span>
+                          </button>
+                          {notTerminal && canUpdateStatus && (
+                            <button
+                              onClick={() => advanceStatus(order)}
+                              disabled={busyId === order.id}
+                              className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-900 hover:brightness-95 disabled:opacity-50"
+                              title="Avanzar estado"
+                            >
+                              <ArrowRight size={14} aria-hidden="true" />
+                              <span className="sr-only">Avanzar estado</span>
+                            </button>
+                          )}
+                          {notTerminal && canCancel && (
+                            <button
+                              onClick={() => cancelOrder(order)}
+                              disabled={busyId === order.id}
+                              className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
+                              title="Cancelar"
+                            >
+                              <Ban size={14} aria-hidden="true" />
+                              <span className="sr-only">Cancelar</span>
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
 
       <Dialog open={!!detailOrder} onOpenChange={(open) => !open && setDetailOrder(null)}>
         <DialogContent className="max-w-md">

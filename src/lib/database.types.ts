@@ -820,6 +820,8 @@ export type Database = {
           is_company_staff: boolean
           phone: string | null
           role: Database["public"]["Enums"]["app_role"] | null
+          terminated_at: string | null
+          terminated_by: string | null
           updated_at: string
         }
         Insert: {
@@ -831,6 +833,8 @@ export type Database = {
           is_company_staff?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
+          terminated_at?: string | null
+          terminated_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -842,9 +846,19 @@ export type Database = {
           is_company_staff?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
+          terminated_at?: string | null
+          terminated_by?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_terminated_by_fkey"
+            columns: ["terminated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       promotion_redemptions: {
         Row: {

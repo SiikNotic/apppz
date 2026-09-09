@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { UserPlus, Users } from 'lucide-react'
+import { UserPlus, Users, UserX, UserCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
@@ -57,8 +57,18 @@ export default function TeamPage() {
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ email: string; password: string } | null>(null)
 
+  // Despedir/reactivar
+  const [statusTarget, setStatusTarget] = useState<Profile | null>(null)
+  const [statusAction, setStatusAction] = useState<'terminate' | 'reactivate'>('terminate')
+  const [reactivateRole, setReactivateRole] = useState<CompanyRole>('kitchen')
+  const [statusError, setStatusError] = useState<string | null>(null)
+  const [statusSaving, setStatusSaving] = useState(false)
+
   async function load() {
     setLoading(true)
+    // Se listan también los despedidos (terminated_at no es null) — es el
+    // roster histórico del equipo, no solo el activo; el badge "Despedido"
+    // los distingue y desde ahí se pueden reactivar.
     const { data } = await supabase
       .from('profiles')
       .select('*')
@@ -120,6 +130,56 @@ export default function TeamPage() {
     load()
   }
 
+  function openTerminate(member: Profile) {
+    setStatusTarget(member)
+    setStatusAction('terminate')
+    setStatusError(null)
+  }
+
+  function openReactivate(member: Profile) {
+    setStatusTarget(member)
+    setStatusAction('reactivate')
+    setReactivateRole('kitchen')
+    setStatusError(null)
+  }
+
+  async function submitStatusChange() {
+    if (!statusTarget) return
+    setStatusSaving(true)
+    setStatusError(null)
+
+    const { data, error: fnError } = await supabase.functions.invoke('manage-staff-status', {
+      body:
+        statusAction === 'terminate'
+          ? { user_id: statusTarget.id, action: 'terminate' }
+          : { user_id: statusTarget.id, action: 'reactivate', role: reactivateRole },
+    })
+
+    setStatusSaving(false)
+
+    if (fnError) {
+      let message = 'No se pudo completar la acción. Intenta de nuevo.'
+      const ctx = (fnError as { context?: Response }).context
+      if (ctx) {
+        try {
+          const responseBody = await ctx.clone().json()
+          if (responseBody?.error) message = responseBody.error
+        } catch {
+          // deja el mensaje genérico
+        }
+      }
+      setStatusError(message)
+      return
+    }
+    if (data?.error) {
+      setStatusError(data.error)
+      return
+    }
+
+    setStatusTarget(null)
+    load()
+  }
+
   if (!canManage) {
     return (
       <Card className="flex flex-col items-center gap-2 p-10 text-center">
@@ -146,19 +206,49 @@ export default function TeamPage() {
         {!loading && staff.length === 0 && (
           <p className="p-5 text-sm text-ink-400">Solo estás tú por ahora.</p>
         )}
-        {staff.map((member) => (
-          <div key={member.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ink-900">
-                {member.full_name || 'Sin nombre'}
-              </p>
-              <p className="text-xs text-ink-400">Desde {formatDate(member.created_at)}</p>
+        {staff.map((member) => {
+          const isTerminated = !!member.terminated_at
+          const isOwner = member.company_role === 'owner'
+          return (
+            <div key={member.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-ink-900">
+                  {member.full_name || 'Sin nombre'}
+                </p>
+                <p className="text-xs text-ink-400">
+                  {isTerminated
+                    ? `Despedido ${formatDate(member.terminated_at!)}`
+                    : `Desde ${formatDate(member.created_at)}`}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge variant={isTerminated ? 'danger' : isOwner ? 'brand' : 'neutral'}>
+                  {isTerminated ? 'Despedido' : member.company_role ? ROLE_LABELS[member.company_role] : 'Staff'}
+                </Badge>
+                {!isOwner &&
+                  (isTerminated ? (
+                    <button
+                      onClick={() => openReactivate(member)}
+                      aria-label={`Reactivar a ${member.full_name || 'este empleado'}`}
+                      title="Reactivar"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-success-500/10 text-success-500 hover:brightness-95"
+                    >
+                      <UserCheck size={14} aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openTerminate(member)}
+                      aria-label={`Despedir a ${member.full_name || 'este empleado'}`}
+                      title="Despedir"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                    >
+                      <UserX size={14} aria-hidden="true" />
+                    </button>
+                  ))}
+              </div>
             </div>
-            <Badge variant={member.company_role === 'owner' ? 'brand' : 'neutral'}>
-              {member.company_role ? ROLE_LABELS[member.company_role] : 'Staff'}
-            </Badge>
-          </div>
-        ))}
+          )
+        })}
       </Card>
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
@@ -246,6 +336,75 @@ export default function TeamPage() {
                   {saving ? 'Creando…' : 'Crear cuenta'}
                 </Button>
               </form>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!statusTarget} onOpenChange={(open) => !open && setStatusTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <div className="p-6">
+            {statusAction === 'terminate' ? (
+              <>
+                <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
+                  ¿Despedir a {statusTarget?.full_name || 'esta persona'}?
+                </DialogTitle>
+                <p className="mb-4 text-sm text-ink-600">
+                  Perderá acceso a la plataforma de inmediato: no podrá iniciar sesión ni realizar
+                  ninguna acción protegida. Su historial (pedidos, entregas, auditoría) se conserva —
+                  puedes reactivar la cuenta más adelante si hace falta.
+                </p>
+                {statusError && (
+                  <p role="alert" className="mb-3 text-xs font-semibold text-danger-500">
+                    {statusError}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button fullWidth variant="secondary" onClick={() => setStatusTarget(null)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="destructive"
+                    onClick={submitStatusChange}
+                    disabled={statusSaving}
+                  >
+                    {statusSaving ? 'Despidiendo…' : 'Sí, despedir'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
+                  Reactivar a {statusTarget?.full_name || 'esta persona'}
+                </DialogTitle>
+                <p className="mb-4 text-sm text-ink-600">
+                  Recupera acceso a la plataforma con el rol que elijas.
+                </p>
+                <div className="mb-4">
+                  <Label>Rol</Label>
+                  <Select value={reactivateRole} onValueChange={(v) => setReactivateRole(v as CompanyRole)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLE_OPTIONS.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>
+                          {r.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {statusError && (
+                  <p role="alert" className="mb-3 text-xs font-semibold text-danger-500">
+                    {statusError}
+                  </p>
+                )}
+                <Button fullWidth onClick={submitStatusChange} disabled={statusSaving}>
+                  {statusSaving ? 'Reactivando…' : 'Reactivar'}
+                </Button>
+              </>
             )}
           </div>
         </DialogContent>

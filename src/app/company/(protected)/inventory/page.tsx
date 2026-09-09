@@ -259,7 +259,7 @@ export default function InventoryPage() {
                 <Label>Nombre</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label>Unidad</Label>
                   <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v })}>
@@ -285,7 +285,7 @@ export default function InventoryPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label>Stock actual</Label>
                   <Input

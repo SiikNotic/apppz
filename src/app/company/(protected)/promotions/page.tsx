@@ -155,13 +155,13 @@ export default function PromotionsPage() {
         )}
         {promotions.map((promo) => (
           <div key={promo.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-900">
                 <Tag size={16} aria-hidden="true" />
               </span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-ink-900">{promo.name}</span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="truncate text-sm font-bold text-ink-900">{promo.name}</span>
                   {promo.code && <Badge variant="brand">{promo.code}</Badge>}
                   <button onClick={() => canManage && toggleActive(promo)} disabled={!canManage}>
                     <Badge variant={promo.active ? 'success' : 'neutral'}>
@@ -178,7 +178,7 @@ export default function PromotionsPage() {
               </div>
             </div>
             {canManage && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   onClick={() => openEdit(promo)}
                   aria-label={`Editar ${promo.name}`}
@@ -219,7 +219,7 @@ export default function PromotionsPage() {
                   placeholder="PIZZA10"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label>Tipo</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as Promotion['type'] })}>
@@ -257,7 +257,7 @@ export default function PromotionsPage() {
                   onChange={(e) => setForm({ ...form, minOrderAmount: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="promo-starts">Empieza</Label>
                   <Input id="promo-starts" type="date" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />
@@ -267,7 +267,7 @@ export default function PromotionsPage() {
                   <Input id="promo-ends" type="date" value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="promo-limit">Límite de usos totales (opcional)</Label>
                   <Input id="promo-limit" type="number" value={form.usageLimit} onChange={(e) => setForm({ ...form, usageLimit: e.target.value })} />

@@ -88,7 +88,7 @@ export function CategoriesTab() {
         )}
         {categories.map((cat) => (
           <div key={cat.id} className="flex items-center justify-between gap-3 px-5 py-3">
-            <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
               <span className="text-sm font-semibold text-ink-900">{cat.name}</span>
               <span className="text-xs text-ink-400">orden {cat.sort_order}</span>
               <button onClick={() => toggleActive(cat)}>
@@ -97,7 +97,7 @@ export function CategoriesTab() {
                 </Badge>
               </button>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
               <button
                 onClick={() => openEdit(cat)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"

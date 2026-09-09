@@ -43,7 +43,15 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-0 rounded-3xl bg-cream-50 shadow-pop duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 max-h-[92vh] overflow-y-auto no-scrollbar',
+          // `w-[calc(100%-2rem)]` en vez de `w-full`: garantiza 1rem de
+          // margen a cada lado en cualquier pantalla más angosta que el
+          // max-w del modal (nunca toca los bordes ni queda cortado en
+          // Mobile), y sigue respetando el `max-w-*` que cada modal pase
+          // (sm/md/lg/xl) en pantallas más anchas. No se usa
+          // `overflow-x-hidden` como parche — el contenido interno de cada
+          // modal (grids de 2 columnas, etc.) se corrigió para apilarse en
+          // Mobile en vez de depender de recortar el desborde.
+          'fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-0 rounded-3xl bg-cream-50 shadow-pop duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 max-h-[92vh] overflow-y-auto no-scrollbar',
           className
         )}
         {...props}

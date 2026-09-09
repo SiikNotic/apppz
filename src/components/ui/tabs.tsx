@@ -20,7 +20,12 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        'no-scrollbar inline-flex w-fit items-center gap-2 overflow-x-auto',
+        // `flex` (no `inline-flex`/`w-fit`) para que el elemento se acote al
+        // ancho del contenedor en vez de crecer con su contenido — así
+        // `overflow-x-auto` puede recortar/scrollear internamente los tabs
+        // que no caben, en lugar de empujar el ancho de toda la página
+        // (el bug de "Producto/Categoría/Topping/Masa" se saliendo en Mobile).
+        'no-scrollbar flex max-w-full items-center gap-2 overflow-x-auto',
         className
       )}
       {...props}

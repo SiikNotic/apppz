@@ -10,12 +10,35 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { DollarSign, ShoppingCart, Receipt, Trophy } from 'lucide-react'
+import { DollarSign, ShoppingCart, Receipt, Trophy, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, formatDate } from '@/lib/format'
 import type { Order, OrderItem } from '@/lib/types'
+
+// Convierte un valor de celda a texto seguro para CSV: si contiene coma,
+// comilla o salto de línea hay que envolverlo en comillas y duplicar las
+// comillas internas (RFC 4180) — si no, un nombre de cliente con coma
+// rompería las columnas al abrir el archivo en Excel/Sheets.
+function csvCell(value: string | number): string {
+  const str = String(value)
+  if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`
+  return str
+}
+
+function downloadCsv(filename: string, rows: (string | number)[][]) {
+  // ﻿ (BOM) al inicio para que Excel detecte UTF-8 y no rompa acentos.
+  const csv = '﻿' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
 
 const RANGES = [
   { key: 7, label: '7 días' },
@@ -97,6 +120,29 @@ export default function ReportsPage() {
   const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0
   const itemsSold = items.reduce((sum, i) => sum + i.quantity, 0)
 
+  function exportOrdersCsv() {
+    downloadCsv(`pedidos_${rangeDays}dias_${new Date().toISOString().slice(0, 10)}.csv`, [
+      ['Pedido', 'Fecha', 'Cliente', 'Tipo', 'Estado', 'Subtotal', 'Envío', 'Total'],
+      ...orders.map((o) => [
+        o.order_number,
+        formatDate(o.created_at),
+        o.customer_name,
+        o.order_type === 'delivery' ? 'Domicilio' : 'Recoger',
+        o.status,
+        o.subtotal,
+        o.delivery_fee,
+        o.total,
+      ]),
+    ])
+  }
+
+  function exportTopItemsCsv() {
+    downloadCsv(`productos_mas_vendidos_${rangeDays}dias_${new Date().toISOString().slice(0, 10)}.csv`, [
+      ['Producto', 'Unidades vendidas', 'Ingresos'],
+      ...topItems.map(([name, data]) => [name, data.quantity, data.revenue]),
+    ])
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -104,7 +150,7 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-extrabold text-ink-900">Reportes de ventas</h1>
           <p className="text-sm text-ink-400">Analiza el desempeño de tu dark kitchen.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {RANGES.map((r) => (
             <button
               key={r.key}
@@ -116,6 +162,9 @@ export default function ReportsPage() {
               {r.label}
             </button>
           ))}
+          <Button size="sm" variant="secondary" onClick={exportOrdersCsv} disabled={loading || orders.length === 0}>
+            <Download size={14} aria-hidden="true" /> Descargar pedidos (CSV)
+          </Button>
         </div>
       </div>
 
@@ -155,7 +204,14 @@ export default function ReportsPage() {
           </Card>
 
           <Card className="p-5">
-            <h2 className="mb-4 text-base font-extrabold text-ink-900">Productos más vendidos</h2>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-extrabold text-ink-900">Productos más vendidos</h2>
+              {topItems.length > 0 && (
+                <Button size="sm" variant="secondary" onClick={exportTopItemsCsv}>
+                  <Download size={14} aria-hidden="true" /> CSV
+                </Button>
+              )}
+            </div>
             <div className="space-y-3">
               {topItems.length === 0 && (
                 <p className="text-sm text-ink-400">Sin ventas en este periodo.</p>
