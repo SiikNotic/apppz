@@ -163,18 +163,21 @@ export type Database = {
           active: boolean
           extra_price: number
           id: string
+          image_url: string | null
           name: string
         }
         Insert: {
           active?: boolean
           extra_price?: number
           id?: string
+          image_url?: string | null
           name: string
         }
         Update: {
           active?: boolean
           extra_price?: number
           id?: string
+          image_url?: string | null
           name?: string
         }
         Relationships: []
@@ -438,6 +441,8 @@ export type Database = {
           menu_item_id: string
           name: string
           price: number
+          size_cm: number | null
+          size_inches: number | null
           sort_order: number
         }
         Insert: {
@@ -445,6 +450,8 @@ export type Database = {
           menu_item_id: string
           name: string
           price: number
+          size_cm?: number | null
+          size_inches?: number | null
           sort_order?: number
         }
         Update: {
@@ -452,6 +459,8 @@ export type Database = {
           menu_item_id?: string
           name?: string
           price?: number
+          size_cm?: number | null
+          size_inches?: number | null
           sort_order?: number
         }
         Relationships: [
@@ -1260,18 +1269,21 @@ export type Database = {
           active: boolean
           extra_price: number
           id: string
+          image_url: string | null
           name: string
         }
         Insert: {
           active?: boolean
           extra_price?: number
           id?: string
+          image_url?: string | null
           name: string
         }
         Update: {
           active?: boolean
           extra_price?: number
           id?: string
+          image_url?: string | null
           name?: string
         }
         Relationships: []
@@ -1337,6 +1349,7 @@ export type Database = {
         Row: {
           active: boolean
           id: string
+          image_url: string | null
           ingredient_id: string | null
           name: string
           price: number
@@ -1344,6 +1357,7 @@ export type Database = {
         Insert: {
           active?: boolean
           id?: string
+          image_url?: string | null
           ingredient_id?: string | null
           name: string
           price?: number
@@ -1351,6 +1365,7 @@ export type Database = {
         Update: {
           active?: boolean
           id?: string
+          image_url?: string | null
           ingredient_id?: string | null
           name?: string
           price?: number

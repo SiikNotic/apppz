@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Plus, Pencil, Trash2, Upload, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,10 +10,11 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatCurrency } from '@/lib/format'
 import type { Topping, Ingredient } from '@/lib/types'
 
-const EMPTY = { name: '', price: '0.55', ingredient_id: '' }
+const EMPTY = { name: '', price: '0.55', ingredient_id: '', imageUrl: '' }
 const NONE = '__none__'
 
 export function ToppingsTab() {
@@ -25,6 +26,8 @@ export function ToppingsTab() {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     setLoading(true)
@@ -58,9 +61,29 @@ export function ToppingsTab() {
       name: topping.name,
       price: String(topping.price),
       ingredient_id: topping.ingredient_id ?? '',
+      imageUrl: topping.image_url ?? '',
     })
     setError(null)
     setFormOpen(true)
+  }
+
+  async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `toppings/${crypto.randomUUID()}.${ext}`
+    const { error: uploadErr } = await supabase.storage
+      .from('menu-images')
+      .upload(path, file, { contentType: file.type, upsert: false })
+    setUploading(false)
+    if (uploadErr) {
+      setError('No se pudo subir la imagen. Verifica que sea JPG/PNG/WebP y pese menos de 5MB.')
+      return
+    }
+    const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
+    setForm((prev) => ({ ...prev, imageUrl: data.publicUrl }))
   }
 
   async function handleSave() {
@@ -70,6 +93,7 @@ export function ToppingsTab() {
       name: form.name.trim(),
       price: Number(form.price) || 0,
       ingredient_id: form.ingredient_id || null,
+      image_url: form.imageUrl.trim() || null,
     }
     const { error } = editingId
       ? await supabase.from('toppings').update(payload).eq('id', editingId)
@@ -107,16 +131,19 @@ export function ToppingsTab() {
         )}
         {toppings.map((topping) => (
           <div key={topping.id} className="flex items-center justify-between gap-3 px-5 py-3">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
-              <span className="text-sm font-semibold text-ink-900">{topping.name}</span>
-              <span className="text-xs font-semibold text-ink-400">
-                +{formatCurrency(topping.price)} · consume {ingredientName(topping.ingredient_id)}
-              </span>
-              <button onClick={() => toggleActive(topping)}>
-                <Badge variant={topping.active ? 'success' : 'neutral'}>
-                  {topping.active ? 'Activo' : 'Inactivo'}
-                </Badge>
-              </button>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <ItemThumb name={topping.name} imageUrl={topping.image_url} size="sm" />
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+                <span className="text-sm font-semibold text-ink-900">{topping.name}</span>
+                <span className="text-xs font-semibold text-ink-400">
+                  +{formatCurrency(topping.price)} · consume {ingredientName(topping.ingredient_id)}
+                </span>
+                <button onClick={() => toggleActive(topping)}>
+                  <Badge variant={topping.active ? 'success' : 'neutral'}>
+                    {topping.active ? 'Activo' : 'Inactivo'}
+                  </Badge>
+                </button>
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <button
@@ -174,6 +201,38 @@ export function ToppingsTab() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Imagen (opcional)</Label>
+                <div className="flex items-center gap-3">
+                  <ItemThumb name={form.name || 'Topping'} imageUrl={form.imageUrl} size="md" />
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleImageSelected}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" /> Subiendo…
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={14} /> {form.imageUrl ? 'Cambiar foto' : 'Subir foto'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>

@@ -3,7 +3,16 @@
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/format'
+import { ItemThumb } from '@/components/ui/item-thumb'
 import type { ItemSize, Crust, Sauce, Topping } from '@/lib/types'
+
+/** "10"" si hay pulgadas, si no "25 cm" si hay centímetros, si no nada —
+ * la dimensión es opcional y configurable por el negocio, nunca inventada. */
+function sizeDimensionLabel(size: ItemSize): string | null {
+  if (size.size_inches != null) return `${size.size_inches}"`
+  if (size.size_cm != null) return `${size.size_cm} cm`
+  return null
+}
 
 export function SizePicker({
   sizes,
@@ -17,22 +26,26 @@ export function SizePicker({
   return (
     <section>
       <h3 className="mb-2.5 text-sm font-bold text-ink-900">Tamaño</h3>
-      <div role="radiogroup" aria-label="Tamaño" className="grid grid-cols-4 gap-2">
-        {sizes.map((size) => (
-          <button
-            key={size.id}
-            role="radio"
-            aria-checked={value === size.id}
-            onClick={() => onChange(size.id)}
-            className={cn(
-              'rounded-2xl border-2 px-2 py-3 text-center transition',
-              value === size.id ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white hover:border-brand-200'
-            )}
-          >
-            <div className="text-sm font-bold text-ink-900">{size.name}</div>
-            <div className="mt-0.5 text-xs font-semibold text-brand-900">{formatCurrency(size.price)}</div>
-          </button>
-        ))}
+      <div role="radiogroup" aria-label="Tamaño" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {sizes.map((size) => {
+          const dimension = sizeDimensionLabel(size)
+          return (
+            <button
+              key={size.id}
+              role="radio"
+              aria-checked={value === size.id}
+              onClick={() => onChange(size.id)}
+              className={cn(
+                'rounded-2xl border-2 px-2 py-3 text-center transition',
+                value === size.id ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white hover:border-brand-200'
+              )}
+            >
+              <div className="text-sm font-bold text-ink-900">{size.name}</div>
+              {dimension && <div className="mt-0.5 text-xs text-ink-400">{dimension}</div>}
+              <div className="mt-0.5 text-xs font-semibold text-brand-900">{formatCurrency(size.price)}</div>
+            </button>
+          )
+        })}
       </div>
     </section>
   )
@@ -50,7 +63,7 @@ export function CrustPicker({
   return (
     <section>
       <h3 className="mb-2.5 text-sm font-bold text-ink-900">Masa</h3>
-      <div role="radiogroup" aria-label="Masa" className="flex flex-wrap gap-2">
+      <div role="radiogroup" aria-label="Masa" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {crusts.map((crust) => (
           <button
             key={crust.id}
@@ -58,15 +71,16 @@ export function CrustPicker({
             aria-checked={value === crust.id}
             onClick={() => onChange(crust.id)}
             className={cn(
-              'rounded-full border-2 px-4 py-2 text-sm font-semibold transition',
+              'flex flex-col items-center gap-1.5 rounded-2xl border-2 p-3 text-center transition',
               value === crust.id
                 ? 'border-brand-500 bg-brand-50 text-brand-900'
                 : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
             )}
           >
-            {crust.name}
+            <ItemThumb name={crust.name} imageUrl={crust.image_url} size="sm" />
+            <span className="text-sm font-semibold">{crust.name}</span>
             {crust.extra_price > 0 && (
-              <span className="ml-1 text-xs text-ink-400">+{formatCurrency(crust.extra_price)}</span>
+              <span className="text-xs text-ink-400">+{formatCurrency(crust.extra_price)}</span>
             )}
           </button>
         ))}
@@ -87,7 +101,7 @@ export function SaucePicker({
   return (
     <section>
       <h3 className="mb-2.5 text-sm font-bold text-ink-900">Salsa</h3>
-      <div role="radiogroup" aria-label="Salsa" className="flex flex-wrap gap-2">
+      <div role="radiogroup" aria-label="Salsa" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {sauces.map((sauce) => (
           <button
             key={sauce.id}
@@ -95,13 +109,14 @@ export function SaucePicker({
             aria-checked={value === sauce.id}
             onClick={() => onChange(sauce.id)}
             className={cn(
-              'rounded-full border-2 px-4 py-2 text-sm font-semibold transition',
+              'flex flex-col items-center gap-1.5 rounded-2xl border-2 p-3 text-center transition',
               value === sauce.id
                 ? 'border-brand-500 bg-brand-50 text-brand-900'
                 : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
             )}
           >
-            {sauce.name}
+            <ItemThumb name={sauce.name} imageUrl={sauce.image_url} size="sm" />
+            <span className="text-sm font-semibold">{sauce.name}</span>
           </button>
         ))}
       </div>
@@ -137,18 +152,18 @@ export function ToppingPicker({
               aria-pressed={active}
               onClick={() => onToggle(topping.id)}
               className={cn(
-                'flex items-center justify-between gap-2 rounded-2xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition',
+                'flex items-center gap-2.5 rounded-2xl border-2 p-2.5 text-left transition',
                 active
                   ? 'border-brand-500 bg-brand-50 text-brand-900'
                   : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
               )}
             >
-              <span>{topping.name}</span>
-              {active ? (
-                <Check size={16} className="shrink-0" aria-hidden="true" />
-              ) : (
-                <span className="shrink-0 text-[11px] font-medium text-ink-400">+{formatCurrency(topping.price)}</span>
-              )}
+              <ItemThumb name={topping.name} imageUrl={topping.image_url} size="sm" className="shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{topping.name}</span>
+                <span className="block text-xs text-ink-400">+{formatCurrency(topping.price)}</span>
+              </span>
+              {active && <Check size={16} className="shrink-0" aria-hidden="true" />}
             </button>
           )
         })}

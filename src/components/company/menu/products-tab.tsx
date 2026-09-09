@@ -45,7 +45,9 @@ export function ProductsTab() {
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM)
-  const [sizes, setSizes] = useState<{ id?: string; name: string; price: string }[]>([])
+  const [sizes, setSizes] = useState<
+    { id?: string; name: string; price: string; sizeInches: string; sizeCm: string }[]
+  >([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -98,7 +100,15 @@ export function ProductsTab() {
         .select('*')
         .eq('menu_item_id', item.id)
         .order('sort_order')
-      setSizes((data ?? []).map((s: ItemSize) => ({ id: s.id, name: s.name, price: String(s.price) })))
+      setSizes(
+        (data ?? []).map((s: ItemSize) => ({
+          id: s.id,
+          name: s.name,
+          price: String(s.price),
+          sizeInches: s.size_inches != null ? String(s.size_inches) : '',
+          sizeCm: s.size_cm != null ? String(s.size_cm) : '',
+        }))
+      )
     } else {
       setSizes([])
     }
@@ -106,10 +116,13 @@ export function ProductsTab() {
   }
 
   function addSizeRow() {
-    setSizes((prev) => [...prev, { name: '', price: '0' }])
+    setSizes((prev) => [...prev, { name: '', price: '0', sizeInches: '', sizeCm: '' }])
   }
 
-  function updateSizeRow(index: number, patch: Partial<{ name: string; price: string }>) {
+  function updateSizeRow(
+    index: number,
+    patch: Partial<{ name: string; price: string; sizeInches: string; sizeCm: string }>
+  ) {
     setSizes((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
   }
 
@@ -173,6 +186,8 @@ export function ProductsTab() {
             menu_item_id: saved.id,
             name: s.name.trim(),
             price: Number(s.price) || 0,
+            size_inches: s.sizeInches.trim() ? Number(s.sizeInches) : null,
+            size_cm: s.sizeCm.trim() ? Number(s.sizeCm) : null,
             sort_order: i,
           }))
         )
@@ -364,27 +379,47 @@ export function ProductsTab() {
                   </div>
                   <div className="space-y-2">
                     {sizes.map((size, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <Input
-                          placeholder='Ej. 9.5"'
-                          value={size.name}
-                          onChange={(e) => updateSizeRow(i, { name: e.target.value })}
-                          className="flex-1"
-                        />
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Precio"
-                          value={size.price}
-                          onChange={(e) => updateSizeRow(i, { price: e.target.value })}
-                          className="w-28"
-                        />
-                        <button
-                          onClick={() => removeSizeRow(i)}
-                          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-ink-400 hover:text-danger-500"
-                        >
-                          <X size={14} />
-                        </button>
+                      <div key={i} className="rounded-xl bg-white p-2.5">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            placeholder="Ej. Pequeña"
+                            value={size.name}
+                            onChange={(e) => updateSizeRow(i, { name: e.target.value })}
+                            className="flex-1"
+                          />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="Precio"
+                            value={size.price}
+                            onChange={(e) => updateSizeRow(i, { price: e.target.value })}
+                            className="w-24"
+                          />
+                          <button
+                            onClick={() => removeSizeRow(i)}
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink-50 text-ink-400 hover:text-danger-500"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            placeholder="Pulgadas (ej. 10)"
+                            value={size.sizeInches}
+                            onChange={(e) => updateSizeRow(i, { sizeInches: e.target.value })}
+                            className="flex-1"
+                          />
+                          <Input
+                            type="number"
+                            step="0.5"
+                            placeholder="Centímetros (ej. 25)"
+                            value={size.sizeCm}
+                            onChange={(e) => updateSizeRow(i, { sizeCm: e.target.value })}
+                            className="flex-1"
+                          />
+                        </div>
                       </div>
                     ))}
                     {sizes.length === 0 && (
