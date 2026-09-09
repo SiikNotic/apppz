@@ -6,9 +6,11 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Profile, RewardsAccount } from '@/lib/types'
 
 export default function CustomersPage() {
+  const { t } = useLanguage()
   const [customers, setCustomers] = useState<Profile[]>([])
   const [rewardsByUser, setRewardsByUser] = useState<Record<string, RewardsAccount>>({})
   const [loading, setLoading] = useState(true)
@@ -41,30 +43,30 @@ export default function CustomersPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Clientes</h1>
-        <p className="text-sm text-ink-400">Todas las cuentas de clientes registradas.</p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('customersAdmin.title')}</h1>
+        <p className="text-sm text-ink-400">{t('customersAdmin.subtitle')}</p>
       </div>
 
       <Card className="overflow-x-auto p-0">
         <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Teléfono</TableHead>
-              <TableHead>Puntos</TableHead>
-              <TableHead>Nivel</TableHead>
-              <TableHead>Registrado</TableHead>
+              <TableHead>{t('ordersAdmin.customer')}</TableHead>
+              <TableHead>{t('auth.phone')}</TableHead>
+              <TableHead>{t('customersAdmin.points')}</TableHead>
+              <TableHead>{t('customersAdmin.tier')}</TableHead>
+              <TableHead>{t('customersAdmin.registered')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-ink-400">Cargando…</TableCell>
+                <TableCell colSpan={5} className="py-8 text-center text-ink-400">{t('common.loading')}</TableCell>
               </TableRow>
             )}
             {!loading && customers.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-ink-400">Sin clientes todavía.</TableCell>
+                <TableCell colSpan={5} className="py-8 text-center text-ink-400">{t('customersAdmin.noCustomers')}</TableCell>
               </TableRow>
             )}
             {customers.map((customer) => {

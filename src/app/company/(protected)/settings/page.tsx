@@ -8,11 +8,13 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Setting } from '@/lib/types'
 import type { Json } from '@/lib/database.types'
 
 export default function CompanySettingsPage() {
   const { can } = useAuth()
+  const { t } = useLanguage()
   const canManage = can('settings.manage')
   const [settings, setSettings] = useState<Setting[]>([])
   const [draft, setDraft] = useState<Record<string, string>>({})
@@ -54,15 +56,14 @@ export default function CompanySettingsPage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  if (loading) return <p className="text-sm text-ink-400">Cargando…</p>
+  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Configuración</h1>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('settingsAdmin.title')}</h1>
         <p className="text-sm text-ink-400">
-          Estos valores los usa <code>calculate_cart_price</code> en cada checkout — cambian el
-          costo real que se cobra, no solo lo que se muestra.
+          {t('settingsAdmin.subtitlePre')} <code>calculate_cart_price</code> {t('settingsAdmin.subtitlePost')}
         </p>
       </div>
 
@@ -91,7 +92,7 @@ export default function CompanySettingsPage() {
                 value={draft[setting.key] ?? ''}
                 onChange={(e) => setDraft({ ...draft, [setting.key]: e.target.value })}
                 disabled={!canManage}
-                placeholder={setting.key.includes('threshold') ? 'null = desactivado' : undefined}
+                placeholder={setting.key.includes('threshold') ? t('settingsAdmin.disabledPlaceholder') : undefined}
               />
             </div>
           )
@@ -100,9 +101,9 @@ export default function CompanySettingsPage() {
         {canManage && (
           <div className="flex items-center gap-3 pt-2">
             <Button onClick={handleSave} disabled={saving}>
-              <Save size={16} aria-hidden="true" /> {saving ? 'Guardando…' : 'Guardar cambios'}
+              <Save size={16} aria-hidden="true" /> {saving ? t('account.saving') : t('account.saveChanges')}
             </Button>
-            {saved && <span role="status" className="text-xs font-semibold text-success-500">Guardado.</span>}
+            {saved && <span role="status" className="text-xs font-semibold text-success-500">{t('settingsAdmin.saved')}</span>}
           </div>
         )}
       </Card>

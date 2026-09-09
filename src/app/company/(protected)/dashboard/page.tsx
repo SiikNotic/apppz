@@ -9,7 +9,8 @@ import { StatCard } from '@/components/ui/stat-card'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { ORDER_STATUS_LABELS, type Ingredient, type Order, type OrderStatus } from '@/lib/types'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { type Ingredient, type Order, type OrderStatus } from '@/lib/types'
 
 function startOfToday(): string {
   const d = new Date()
@@ -31,6 +32,7 @@ const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'dan
 
 export default function DashboardPage() {
   const { can } = useAuth()
+  const { t } = useLanguage()
   const canView = can('orders.view')
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
   const [lowStock, setLowStock] = useState<Ingredient[]>([])
@@ -71,42 +73,42 @@ export default function DashboardPage() {
     return (
       <Card className="flex flex-col items-center gap-2 p-10 text-center">
         <AlertTriangle size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">No tienes permiso para ver esta sección.</p>
+        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
       </Card>
     )
   }
 
-  if (loading) return <p className="text-sm text-ink-400">Cargando dashboard…</p>
+  if (loading) return <p className="text-sm text-ink-400">{t('dashboardHome.loadingDashboard')}</p>
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Dashboard</h1>
-        <p className="text-sm text-ink-400">Resumen del día de tu dark kitchen.</p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('dashboardHome.title')}</h1>
+        <p className="text-sm text-ink-400">{t('dashboardHome.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Ventas de hoy"
+          label={t('dashboardHome.salesToday')}
           value={formatCurrency(revenueToday)}
           icon={<DollarSign size={20} />}
           tone="brand"
         />
         <StatCard
-          label="Pedidos de hoy"
+          label={t('dashboardHome.ordersToday')}
           value={String(todayOrders.length)}
           icon={<ClipboardList size={20} />}
           tone="brand"
-          hint={`${activeOrders} en curso`}
+          hint={t('dashboardHome.activeCount', { count: activeOrders })}
         />
         <StatCard
-          label="Ticket promedio"
+          label={t('dashboardHome.avgTicket')}
           value={formatCurrency(avgTicket)}
           icon={<TrendingUp size={20} />}
           tone="success"
         />
         <StatCard
-          label="Ingredientes bajos"
+          label={t('dashboardHome.lowIngredients')}
           value={String(lowStock.length)}
           icon={<AlertTriangle size={20} />}
           tone={lowStock.length > 0 ? 'danger' : 'success'}
@@ -116,14 +118,14 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-[1.4fr,1fr]">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-ink-900">Pedidos recientes</h2>
+            <h2 className="text-base font-extrabold text-ink-900">{t('dashboardHome.recentOrders')}</h2>
             <Link href="/company/orders" className="text-xs font-bold text-brand-900">
-              Ver todos
+              {t('dashboardHome.viewAll')}
             </Link>
           </div>
           <div className="space-y-3">
             {recentOrders.length === 0 && (
-              <p className="text-sm text-ink-400">Aún no hay pedidos.</p>
+              <p className="text-sm text-ink-400">{t('dashboardHome.noOrdersYet')}</p>
             )}
             {recentOrders.map((order) => (
               <div key={order.id} className="flex items-center justify-between text-sm">
@@ -136,7 +138,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-ink-900">{formatCurrency(order.total)}</span>
                   <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>
-                    {ORDER_STATUS_LABELS[order.status as OrderStatus]}
+                    {t(`orderStatus.${order.status}`)}
                   </Badge>
                 </div>
               </div>
@@ -146,14 +148,14 @@ export default function DashboardPage() {
 
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-ink-900">Alertas de stock</h2>
+            <h2 className="text-base font-extrabold text-ink-900">{t('dashboardHome.stockAlerts')}</h2>
             <Link href="/company/inventory" className="text-xs font-bold text-brand-900">
-              Ver inventario
+              {t('dashboardHome.viewInventory')}
             </Link>
           </div>
           <div className="space-y-3">
             {lowStock.length === 0 && (
-              <p className="text-sm text-ink-400">Todo tu inventario está en buen nivel. 🎉</p>
+              <p className="text-sm text-ink-400">{t('dashboardHome.allStockGood')}</p>
             )}
             {lowStock.map((ing) => (
               <div key={ing.id} className="flex items-center justify-between text-sm">

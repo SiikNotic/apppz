@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { RewardCatalogManager } from '@/components/company/rewards/reward-catalog-manager'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { RewardTier, Setting } from '@/lib/types'
 
 interface TierForm {
@@ -25,6 +26,7 @@ const EMPTY_TIER: TierForm = { name: '', minLifetimePoints: '0', sortOrder: '0',
 
 export default function RewardsSettingsPage() {
   const { can } = useAuth()
+  const { t } = useLanguage()
   const canManage = can('rewards.manage')
 
   const [tiers, setTiers] = useState<RewardTier[]>([])
@@ -91,7 +93,7 @@ export default function RewardsSettingsPage() {
   }
 
   async function handleDeleteTier(tier: RewardTier) {
-    if (!confirm(`¿Eliminar el nivel "${tier.name}"?`)) return
+    if (!confirm(t('rewardsAdmin.confirmDeleteTier', { name: tier.name }))) return
     await supabase.from('reward_tiers').delete().eq('id', tier.id)
     load()
   }
@@ -112,17 +114,17 @@ export default function RewardsSettingsPage() {
     load()
   }
 
-  if (loading) return <p className="text-sm text-ink-400">Cargando…</p>
+  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Rewards</h1>
-        <p className="text-sm text-ink-400">Configura cómo tus clientes ganan y canjean puntos.</p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('dashboardNav.rewards')}</h1>
+        <p className="text-sm text-ink-400">{t('rewardsAdmin.subtitle')}</p>
       </div>
 
       <Card className="p-6">
-        <h2 className="mb-4 text-sm font-bold text-ink-900">Reglas de puntos</h2>
+        <h2 className="mb-4 text-sm font-bold text-ink-900">{t('rewardsAdmin.pointsRules')}</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           {Object.entries(settings).map(([key, setting]) => (
             <div key={key}>
@@ -139,9 +141,9 @@ export default function RewardsSettingsPage() {
         {canManage && (
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={handleSaveSettings} disabled={savingSettings}>
-              <Save size={16} aria-hidden="true" /> {savingSettings ? 'Guardando…' : 'Guardar reglas'}
+              <Save size={16} aria-hidden="true" /> {savingSettings ? t('account.saving') : t('rewardsAdmin.saveRules')}
             </Button>
-            {savedNotice && <span role="status" className="text-xs font-semibold text-success-500">Guardado.</span>}
+            {savedNotice && <span role="status" className="text-xs font-semibold text-success-500">{t('settingsAdmin.saved')}</span>}
           </div>
         )}
       </Card>
@@ -150,10 +152,10 @@ export default function RewardsSettingsPage() {
 
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-ink-900">Niveles</h2>
+          <h2 className="text-sm font-bold text-ink-900">{t('rewardsAdmin.tiersHeading')}</h2>
           {canManage && (
             <Button size="sm" onClick={openCreate}>
-              <Plus size={14} aria-hidden="true" /> Nivel
+              <Plus size={14} aria-hidden="true" /> {t('rewardsAdmin.newTier')}
             </Button>
           )}
         </div>
@@ -167,7 +169,7 @@ export default function RewardsSettingsPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-ink-900">{tier.name}</span>
-                    <Badge variant="brand">{tier.min_lifetime_points}+ pts</Badge>
+                    <Badge variant="brand">{t('rewardsAdmin.ptsPlus', { points: tier.min_lifetime_points })}</Badge>
                   </div>
                   {Array.isArray(tier.benefits) && tier.benefits.length > 0 && (
                     <p className="text-xs text-ink-400">{(tier.benefits as string[]).join(' · ')}</p>
@@ -178,14 +180,14 @@ export default function RewardsSettingsPage() {
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => openEdit(tier)}
-                    aria-label={`Editar nivel ${tier.name}`}
+                    aria-label={t('rewardsAdmin.editTierAria', { name: tier.name })}
                     className="grid h-8 w-8 place-items-center rounded-full bg-white text-ink-600 hover:bg-ink-100"
                   >
                     <Pencil size={14} aria-hidden="true" />
                   </button>
                   <button
                     onClick={() => handleDeleteTier(tier)}
-                    aria-label={`Eliminar nivel ${tier.name}`}
+                    aria-label={t('rewardsAdmin.deleteTierAria', { name: tier.name })}
                     className="grid h-8 w-8 place-items-center rounded-full bg-white text-danger-500 hover:bg-red-50"
                   >
                     <Trash2 size={14} aria-hidden="true" />
@@ -201,16 +203,16 @@ export default function RewardsSettingsPage() {
         <DialogContent className="max-w-sm">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {editingId ? 'Editar nivel' : 'Nuevo nivel'}
+              {editingId ? t('rewardsAdmin.editTierTitle') : t('rewardsAdmin.newTierTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label htmlFor="tier-name">Nombre</Label>
+                <Label htmlFor="tier-name">{t('menuMgmt.name')}</Label>
                 <Input id="tier-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="tier-points">Puntos mínimos</Label>
+                  <Label htmlFor="tier-points">{t('rewardsAdmin.minPoints')}</Label>
                   <Input
                     id="tier-points"
                     type="number"
@@ -219,12 +221,12 @@ export default function RewardsSettingsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="tier-order">Orden</Label>
+                  <Label htmlFor="tier-order">{t('menuMgmt.sortOrder')}</Label>
                   <Input id="tier-order" type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: e.target.value })} />
                 </div>
               </div>
               <div>
-                <Label htmlFor="tier-benefits">Beneficios (uno por línea)</Label>
+                <Label htmlFor="tier-benefits">{t('rewardsAdmin.benefitsLabel')}</Label>
                 <Textarea
                   id="tier-benefits"
                   rows={3}
@@ -233,7 +235,7 @@ export default function RewardsSettingsPage() {
                 />
               </div>
               <Button fullWidth onClick={handleSaveTier}>
-                Guardar nivel
+                {t('rewardsAdmin.saveTier')}
               </Button>
             </div>
           </div>

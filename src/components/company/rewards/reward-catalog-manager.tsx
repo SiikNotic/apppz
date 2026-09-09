@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { RewardCatalogItem } from '@/lib/types'
 
 interface CatalogForm {
@@ -48,6 +49,7 @@ interface RedemptionRow {
 }
 
 export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
+  const { t } = useLanguage()
   const [items, setItems] = useState<RewardCatalogItem[]>([])
   const [redemptions, setRedemptions] = useState<RedemptionRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -110,7 +112,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
     })
     setUploading(false)
     if (uploadErr) {
-      setError('No se pudo subir la imagen.')
+      setError(t('rewardsAdmin.uploadFailedGeneric'))
       return
     }
     const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
@@ -118,9 +120,9 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     const pointsCost = Number(form.pointsCost)
-    if (!pointsCost || pointsCost <= 0) return setError('Los puntos requeridos deben ser mayores a 0.')
+    if (!pointsCost || pointsCost <= 0) return setError(t('rewardsAdmin.pointsRequiredError'))
 
     setSaving(true)
     setError(null)
@@ -143,30 +145,30 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
   }
 
   async function handleDelete(item: RewardCatalogItem) {
-    if (!confirm(`¿Eliminar la recompensa "${item.name}"?`)) return
+    if (!confirm(t('rewardsAdmin.confirmDeleteReward', { name: item.name }))) return
     await supabase.from('reward_catalog').delete().eq('id', item.id)
     load()
   }
 
-  if (loading) return <p className="text-sm text-ink-400">Cargando…</p>
+  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
 
   return (
     <>
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-ink-900">Catálogo de recompensas</h2>
-            <p className="text-xs text-ink-400">Lo que tus clientes pueden canjear con sus puntos.</p>
+            <h2 className="text-sm font-bold text-ink-900">{t('rewardsAdmin.catalogHeading')}</h2>
+            <p className="text-xs text-ink-400">{t('rewardsAdmin.catalogSubtitle')}</p>
           </div>
           {canManage && (
             <Button size="sm" onClick={openCreate}>
-              <Plus size={14} aria-hidden="true" /> Recompensa
+              <Plus size={14} aria-hidden="true" /> {t('rewardsAdmin.newReward')}
             </Button>
           )}
         </div>
 
         {items.length === 0 ? (
-          <p className="text-sm text-ink-400">Sin recompensas configuradas todavía.</p>
+          <p className="text-sm text-ink-400">{t('rewardsAdmin.noRewardsConfigured')}</p>
         ) : (
           <div className="space-y-3">
             {items.map((item) => (
@@ -177,12 +179,12 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                     <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-bold text-ink-900">{item.name}</span>
                       <Badge variant={item.active ? 'success' : 'neutral'}>
-                        {item.active ? 'Activa' : 'Inactiva'}
+                        {item.active ? t('menuMgmt.activeF') : t('menuMgmt.inactiveF')}
                       </Badge>
                     </div>
                     <p className="text-xs text-ink-400">
-                      {item.points_cost} pts
-                      {item.expires_at ? ` · Vence ${formatDate(item.expires_at)}` : ''}
+                      {item.points_cost} {t('account.pts')}
+                      {item.expires_at ? ` · ${t('rewardsAdmin.expiresOn', { date: formatDate(item.expires_at) })}` : ''}
                     </p>
                   </div>
                 </div>
@@ -190,14 +192,14 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                   <div className="flex shrink-0 gap-1.5">
                     <button
                       onClick={() => openEdit(item)}
-                      aria-label={`Editar ${item.name}`}
+                      aria-label={t('rewardsAdmin.editRewardAria', { name: item.name })}
                       className="grid h-8 w-8 place-items-center rounded-full bg-white text-ink-600 hover:bg-ink-100"
                     >
                       <Pencil size={14} aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => handleDelete(item)}
-                      aria-label={`Eliminar ${item.name}`}
+                      aria-label={t('rewardsAdmin.deleteRewardAria', { name: item.name })}
                       className="grid h-8 w-8 place-items-center rounded-full bg-white text-danger-500 hover:bg-red-50"
                     >
                       <Trash2 size={14} aria-hidden="true" />
@@ -212,16 +214,18 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
 
       {canManage && redemptions.length > 0 && (
         <Card className="p-6">
-          <h2 className="mb-4 text-sm font-bold text-ink-900">Canjes recientes</h2>
+          <h2 className="mb-4 text-sm font-bold text-ink-900">{t('rewardsAdmin.recentRedemptions')}</h2>
           <div className="space-y-2">
             {redemptions.map((r) => (
               <div key={r.id} className="flex items-center justify-between text-sm">
                 <div>
-                  <span className="font-semibold text-ink-900">{r.customer?.full_name ?? 'Cliente'}</span>
-                  <span className="text-ink-400"> canjeó </span>
-                  <span className="font-semibold text-ink-900">{r.reward?.name ?? 'Recompensa'}</span>
+                  <span className="font-semibold text-ink-900">{r.customer?.full_name ?? t('rewardsAdmin.customerFallback')}</span>
+                  <span className="text-ink-400"> {t('rewardsAdmin.redeemedVerb')} </span>
+                  <span className="font-semibold text-ink-900">{r.reward?.name ?? t('rewardsAdmin.rewardFallback')}</span>
                 </div>
-                <span className="text-xs text-ink-400">{formatDate(r.redeemed_at)} · {r.points_spent} pts</span>
+                <span className="text-xs text-ink-400">
+                  {formatDate(r.redeemed_at)} · {r.points_spent} {t('account.pts')}
+                </span>
               </div>
             ))}
           </div>
@@ -232,11 +236,11 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
         <DialogContent className="max-w-sm">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {form.id ? 'Editar recompensa' : 'Nueva recompensa'}
+              {form.id ? t('rewardsAdmin.editRewardTitle') : t('rewardsAdmin.newRewardTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label htmlFor="reward-name">Nombre</Label>
+                <Label htmlFor="reward-name">{t('menuMgmt.name')}</Label>
                 <Input
                   id="reward-name"
                   value={form.name}
@@ -244,7 +248,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                 />
               </div>
               <div>
-                <Label htmlFor="reward-description">Descripción (opcional)</Label>
+                <Label htmlFor="reward-description">{t('rewardsAdmin.descriptionOptional')}</Label>
                 <Textarea
                   id="reward-description"
                   rows={2}
@@ -253,9 +257,9 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                 />
               </div>
               <div>
-                <Label>Foto (opcional)</Label>
+                <Label>{t('rewardsAdmin.photoOptional')}</Label>
                 <div className="flex items-center gap-3">
-                  <ItemThumb name={form.name || 'Recompensa'} imageUrl={form.imageUrl} size="md" />
+                  <ItemThumb name={form.name || t('rewardsAdmin.rewardFallback')} imageUrl={form.imageUrl} size="md" />
                   <div className="flex-1">
                     <input
                       ref={fileInputRef}
@@ -273,11 +277,11 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                     >
                       {uploading ? (
                         <>
-                          <Loader2 size={14} className="animate-spin" /> Subiendo…
+                          <Loader2 size={14} className="animate-spin" /> {t('menuMgmt.uploading')}
                         </>
                       ) : (
                         <>
-                          <Upload size={14} /> {form.imageUrl ? 'Cambiar' : 'Subir'}
+                          <Upload size={14} /> {form.imageUrl ? t('rewardsAdmin.changePhotoShort') : t('rewardsAdmin.uploadPhotoShort')}
                         </>
                       )}
                     </Button>
@@ -286,7 +290,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="reward-points">Puntos requeridos</Label>
+                  <Label htmlFor="reward-points">{t('rewardsAdmin.pointsRequired')}</Label>
                   <Input
                     id="reward-points"
                     type="number"
@@ -296,7 +300,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="reward-expires">Vence (opcional)</Label>
+                  <Label htmlFor="reward-expires">{t('rewardsAdmin.expiresOptional')}</Label>
                   <Input
                     id="reward-expires"
                     type="date"
@@ -310,7 +314,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                   checked={form.active}
                   onCheckedChange={(checked) => setForm({ ...form, active: checked === true })}
                 />
-                Disponible para canjear
+                {t('rewardsAdmin.availableToRedeem')}
               </label>
               {error && (
                 <p role="alert" className="text-xs font-semibold text-danger-500">
@@ -318,7 +322,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                 </p>
               )}
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar recompensa'}
+                {saving ? t('menuMgmt.savingButton') : t('rewardsAdmin.saveReward')}
               </Button>
             </div>
           </div>
