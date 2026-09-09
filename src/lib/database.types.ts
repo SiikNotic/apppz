@@ -1343,6 +1343,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_decrypted_secret: { Args: { secret_name: string }; Returns: string }
       has_permission: { Args: { perm: string }; Returns: boolean }
       is_company_staff: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
