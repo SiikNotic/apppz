@@ -29,10 +29,33 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { LanguageToggle } from '@/components/ui/language-toggle'
 import { supabase } from '@/lib/supabase'
 import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { BRAND_NAME } from '@/lib/config'
 import { NAV_ITEMS_BY_PERMISSION } from '@/lib/auth/permissions'
+
+// Mapea cada ruta del nav a su clave en dashboardNav (translations.ts).
+// Las labels en NAV_ITEMS_BY_PERMISSION ya venían hardcodeadas en inglés
+// — esto las hace bilingües de verdad sin tocar esa lista (la usan otros
+// consumidores) ni perder el fallback si alguna ruta nueva no está mapeada.
+const NAV_LABEL_KEYS: Record<string, string> = {
+  '/company/dashboard': 'dashboard',
+  '/company/orders': 'orders',
+  '/company/kitchen': 'kitchen',
+  '/company/menu': 'menu',
+  '/company/customers': 'customers',
+  '/company/support': 'support',
+  '/company/team': 'team',
+  '/company/promotions': 'promotions',
+  '/company/rewards': 'rewards',
+  '/company/drivers': 'drivers',
+  '/company/analytics': 'analytics',
+  '/company/settings': 'settings',
+  '/company/inventory': 'inventory',
+  '/company/driver': 'myDeliveries',
+}
 
 // Rutas que ya tienen página implementada — controla qué aparece en el nav.
 const IMPLEMENTED_ROUTES = new Set([
@@ -79,6 +102,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 function CompanyChrome({ children }: { children: ReactNode }) {
   const { profile, user, can, signOut } = useAuth()
+  const { t } = useLanguage()
   const pathname = usePathname()
   const router = useRouter()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -150,7 +174,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-extrabold leading-tight">{BRAND_NAME}</p>
-              <p className="text-[11px] text-white/50">Company dashboard</p>
+              <p className="text-[11px] text-white/50">{t('nav.companyDashboard')}</p>
             </div>
           </Link>
           <nav aria-label="Navegación principal" className="space-y-1">
@@ -171,7 +195,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                   )}
                 >
                   <Icon size={18} aria-hidden="true" />
-                  <span className="flex-1">{label}</span>
+                  <span className="flex-1">{NAV_LABEL_KEYS[href] ? t(`dashboardNav.${NAV_LABEL_KEYS[href]}`) : label}</span>
                   {unreadCount > 0 && (
                     <span className="grid h-5 min-w-5 place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white">
                       {unreadCount}
@@ -195,15 +219,16 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white"
           >
             <Home size={18} aria-hidden="true" />
-            Ver sitio del cliente
+            {t('nav.viewSite')}
           </Link>
           <button
             onClick={handleSignOut}
             className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white"
           >
             <LogOut size={18} aria-hidden="true" />
-            Sign out
+            {t('nav.signOut')}
           </button>
+          <LanguageToggle className="mx-1" />
         </div>
       </aside>
 
@@ -272,7 +297,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                   )}
                 >
                   <Icon size={20} aria-hidden="true" />
-                  <span className="flex-1">{label}</span>
+                  <span className="flex-1">{NAV_LABEL_KEYS[href] ? t(`dashboardNav.${NAV_LABEL_KEYS[href]}`) : label}</span>
                   {unreadCount > 0 && (
                     <span className="grid h-5 min-w-5 place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white">
                       {unreadCount}
@@ -296,15 +321,16 @@ function CompanyChrome({ children }: { children: ReactNode }) {
               className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/10 hover:text-white"
             >
               <Home size={20} aria-hidden="true" />
-              Ver sitio del cliente
+              {t('nav.viewSite')}
             </Link>
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/10 hover:text-white"
             >
               <LogOut size={20} aria-hidden="true" />
-              Sign out
+              {t('nav.signOut')}
             </button>
+            <LanguageToggle className="mx-1" />
           </div>
         </div>
       )}

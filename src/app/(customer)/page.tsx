@@ -11,10 +11,12 @@ import { PromoBannerHero } from '@/components/customer/promo-banner-hero'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { BRAND_TAGLINE } from '@/lib/config'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function HomePage() {
   const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
   const { banner } = usePromoBanner()
+  const { t } = useLanguage()
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery')
   const [search, setSearch] = useState('')
 
@@ -44,23 +46,23 @@ export default function HomePage() {
           <PromoBannerHero banner={banner} />
           <section className="flex items-center gap-2 px-1 text-xs font-semibold text-ink-400">
             <MapPin size={12} className="shrink-0" aria-hidden="true" />
-            Pizza recién horneada, directo a tu puerta · {BRAND_TAGLINE}
+            {t('home.heroTitle')} · {BRAND_TAGLINE}
           </section>
         </>
       ) : (
         <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-ink-900 sm:p-10">
           <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-ink-900/10 px-3 py-1 text-xs font-semibold">
-            <MapPin size={12} aria-hidden="true" /> Entregando en tu zona
+            <MapPin size={12} aria-hidden="true" /> {t('home.deliveringArea')}
           </div>
           <h1 className="max-w-md text-3xl font-extrabold leading-tight sm:text-4xl">
-            Pizza recién horneada, directo a tu puerta
+            {t('home.heroTitle')}
           </h1>
           <p className="mt-2 max-w-sm text-sm text-ink-900/75">{BRAND_TAGLINE}</p>
           <Link
             href="/menu"
             className="mt-5 inline-flex items-center rounded-full bg-ink-900 px-6 py-3 text-sm font-bold text-white shadow-pop hover:bg-ink-800"
           >
-            Order Now
+            {t('home.orderNow')}
           </Link>
         </section>
       )}
@@ -79,7 +81,7 @@ export default function HomePage() {
               orderType === 'delivery' ? 'bg-brand-500 text-ink-900' : 'text-ink-600'
             )}
           >
-            <Truck size={15} aria-hidden="true" /> Delivery
+            <Truck size={15} aria-hidden="true" /> {t('home.delivery')}
           </button>
           <button
             onClick={() => setOrderType('pickup')}
@@ -89,7 +91,7 @@ export default function HomePage() {
               orderType === 'pickup' ? 'bg-brand-500 text-ink-900' : 'text-ink-600'
             )}
           >
-            <Store size={15} aria-hidden="true" /> Pickup
+            <Store size={15} aria-hidden="true" /> {t('home.pickup')}
           </button>
         </div>
         <div className="relative flex-1">
@@ -97,8 +99,8 @@ export default function HomePage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar pizzas, bebidas, postres…"
-            aria-label="Buscar productos"
+            placeholder={t('home.searchPlaceholder')}
+            aria-label={t('common.search')}
             className="pl-10"
           />
         </div>
@@ -106,21 +108,23 @@ export default function HomePage() {
 
       {search.trim() ? (
         <section>
-          <h2 className="mb-4 text-lg font-extrabold text-ink-900">Resultados para &quot;{search}&quot;</h2>
+          <h2 className="mb-4 text-lg font-extrabold text-ink-900">
+            {t('home.searchResultsFor')} &quot;{search}&quot;
+          </h2>
           <MenuGrid
             items={searchResults ?? []}
             sizesByItem={sizesByItem}
             crusts={crusts}
             sauces={sauces}
             toppings={toppings}
-            emptyMessage="No encontramos productos con ese nombre."
+            emptyMessage={t('home.noResults')}
           />
         </section>
       ) : (
         <>
           {/* Categorías */}
           <section>
-            <h2 className="mb-4 text-lg font-extrabold text-ink-900">Categorías</h2>
+            <h2 className="mb-4 text-lg font-extrabold text-ink-900">{t('home.categories')}</h2>
             <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
               {categories.map((cat) => (
                 <Link
@@ -137,9 +141,9 @@ export default function HomePage() {
           {/* Populares */}
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-extrabold text-ink-900">Populares</h2>
+              <h2 className="text-lg font-extrabold text-ink-900">{t('home.popular')}</h2>
               <Link href="/menu" className="text-sm font-semibold text-brand-900 hover:underline">
-                Ver todo
+                {t('common.seeAll')}
               </Link>
             </div>
             <MenuGrid items={popular} sizesByItem={sizesByItem} crusts={crusts} sauces={sauces} toppings={toppings} />

@@ -6,13 +6,16 @@ import { useRouter, usePathname } from 'next/navigation'
 import { ShoppingBag, ChefHat, User } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { ActiveOrderBanner } from '@/components/customer/active-order-banner'
+import { LanguageToggle } from '@/components/ui/language-toggle'
 import { formatCurrency } from '@/lib/format'
 import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/config'
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {
   const { itemCount, subtotal } = useCart()
   const { session } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
   const pathname = usePathname()
   const showCartBar = itemCount > 0 && pathname === '/'
@@ -34,14 +37,14 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
             <button
               onClick={() => router.push(session ? '/account/profile' : '/login')}
               className="grid h-11 w-11 place-items-center rounded-2xl bg-ink-900/10 hover:bg-ink-900/20"
-              aria-label={session ? 'Mi cuenta' : 'Iniciar sesión'}
+              aria-label={session ? t('nav.account') : t('nav.login')}
             >
               <User size={20} aria-hidden="true" />
             </button>
             <button
               onClick={() => router.push('/checkout')}
               className="relative grid h-11 w-11 place-items-center rounded-2xl bg-ink-900/10 hover:bg-ink-900/20"
-              aria-label={`Ver carrito${itemCount > 0 ? `, ${itemCount} ${itemCount === 1 ? 'artículo' : 'artículos'}` : ''}`}
+              aria-label={`${t('cart.viewCart')}${itemCount > 0 ? `, ${itemCount} ${itemCount === 1 ? t('cart.item') : t('cart.items')}` : ''}`}
             >
               <ShoppingBag size={20} aria-hidden="true" />
               {itemCount > 0 && (
@@ -66,24 +69,25 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
       <footer className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-ink-100 pt-5 text-xs text-ink-400">
           <Link href="/help" className="hover:text-ink-600 hover:underline">
-            Ayuda
+            {t('nav.help')}
           </Link>
           <Link href="/terms" className="hover:text-ink-600 hover:underline">
-            Términos
+            {t('nav.terms')}
           </Link>
           <Link href="/privacy" className="hover:text-ink-600 hover:underline">
-            Privacidad
+            {t('nav.privacy')}
           </Link>
           <Link href="/accessibility" className="hover:text-ink-600 hover:underline">
-            Accesibilidad
+            {t('nav.accessibility')}
           </Link>
           <span aria-hidden="true" className="text-ink-100">
             ·
           </span>
           {/* Acceso del equipo: flujo separado del login de clientes, ver /company/login */}
           <Link href="/company/login" className="hover:text-ink-600 hover:underline">
-            Acceso para el equipo
+            {t('nav.companyLogin')}
           </Link>
+          <LanguageToggle className="ml-1" />
         </div>
       </footer>
 
@@ -95,7 +99,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
           >
             <span className="flex items-center gap-2 text-sm font-semibold">
               <ShoppingBag size={18} />
-              Ver carrito · {itemCount} {itemCount === 1 ? 'item' : 'items'}
+              {t('cart.viewCart')} · {itemCount} {itemCount === 1 ? t('cart.item') : t('cart.items')}
             </span>
             <span className="text-base font-extrabold">{formatCurrency(subtotal)}</span>
           </button>

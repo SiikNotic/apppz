@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { ThemeProvider } from 'next-themes'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CartProvider } from '@/contexts/CartContext'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
@@ -14,9 +15,11 @@ export function Providers({ children }: { children: ReactNode }) {
     // con la paleta naranja/crema pensada en el diseño, sin importar el
     // tema del dispositivo, hasta terminar esa migración.
     <ThemeProvider attribute="class" forcedTheme="light" disableTransitionOnChange>
-      <AuthProvider>
-        <CartProvider>{children}</CartProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <CartProvider>{children}</CartProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   )
 }

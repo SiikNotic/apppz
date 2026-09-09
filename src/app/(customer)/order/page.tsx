@@ -12,14 +12,16 @@ import { Button } from '@/components/ui/button'
 import { DeliveryChat } from '@/components/shared/delivery-chat'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
+import { ORDER_STATUS_FLOW, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
 import type { DeliveryAssignment, Order, OrderItem, OrderStatus } from '@/lib/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 function OrderStatusContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('id') ?? undefined
   const router = useRouter()
   const { addLine } = useCart()
+  const { t } = useLanguage()
   const [order, setOrder] = useState<Order | null>(null)
   const [items, setItems] = useState<OrderItem[]>([])
   const [assignment, setAssignment] = useState<DeliveryAssignment | null>(null)
@@ -135,7 +137,7 @@ function OrderStatusContent() {
           Pedido #{order.order_number}
         </p>
         <h1 className="mt-1 text-2xl font-extrabold text-ink-900">
-          {ORDER_STATUS_LABELS[status]}
+          {t(`orderStatus.${status}`)}
         </h1>
         <p className="mt-1 text-xs text-ink-400">Creado {formatDate(order.created_at)}</p>
       </div>
@@ -155,7 +157,7 @@ function OrderStatusContent() {
                   <span
                     className={`text-sm font-semibold ${done ? 'text-ink-900' : 'text-ink-400'}`}
                   >
-                    {ORDER_STATUS_LABELS[step]}
+                    {t(`orderStatus.${step}`)}
                   </span>
                 </li>
               )

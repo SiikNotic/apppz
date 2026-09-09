@@ -6,8 +6,9 @@ import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getLastOrderId, clearLastOrderId } from '@/lib/active-order'
-import { ORDER_STATUS_LABELS, ORDER_CLOSED_STATUSES } from '@/lib/types'
+import { ORDER_CLOSED_STATUSES } from '@/lib/types'
 import type { Order, OrderStatus } from '@/lib/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * Recordatorio persistente del pedido activo: así, si el cliente cierra la
@@ -17,6 +18,7 @@ import type { Order, OrderStatus } from '@/lib/types'
  */
 export function ActiveOrderBanner() {
   const pathname = usePathname()
+  const { t } = useLanguage()
   const [order, setOrder] = useState<Order | null>(null)
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export function ActiveOrderBanner() {
       className="flex items-center justify-between gap-3 rounded-2xl bg-ink-900 px-4 py-3 text-white shadow-card"
     >
       <span className="min-w-0 truncate text-sm font-semibold">
-        Pedido #{order.order_number} · {ORDER_STATUS_LABELS[order.status as OrderStatus]}
+        Pedido #{order.order_number} · {t(`orderStatus.${order.status as OrderStatus}`)}
       </span>
       <span className="flex shrink-0 items-center gap-0.5 text-xs font-bold text-brand-300">
         Ver seguimiento <ChevronRight size={14} aria-hidden="true" />

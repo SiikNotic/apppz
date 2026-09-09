@@ -11,7 +11,8 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES, type Order, type OrderStatus } from '@/lib/types'
+import { ORDER_TERMINAL_STATUSES, type Order, type OrderStatus } from '@/lib/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   pending: 'warning',
@@ -28,6 +29,7 @@ const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'dan
 export default function OrdersHistoryPage() {
   const { user, loading: authLoading } = useAuth()
   const { addLine } = useCart()
+  const { t } = useLanguage()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -138,6 +140,7 @@ function OrderSection({
   reorderingId: string | null
   router: ReturnType<typeof useRouter>
 }) {
+  const { t } = useLanguage()
   return (
     <section>
       <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-400">{title}</h2>
@@ -155,7 +158,7 @@ function OrderSection({
                 <p className="text-xs text-ink-400">{formatDate(order.created_at)}</p>
               </button>
               <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>
-                {ORDER_STATUS_LABELS[order.status as OrderStatus]}
+                {t(`orderStatus.${order.status as OrderStatus}`)}
               </Badge>
             </div>
             <div className="mt-3 flex items-center justify-between">

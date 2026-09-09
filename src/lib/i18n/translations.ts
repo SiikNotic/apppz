@@ -1,0 +1,166 @@
+// Diccionarios de traducción (Problema 15). No existía ningún sistema de
+// i18n en el proyecto — todo el texto estaba hardcodeado en español. En
+// vez de una librería de routing basada en URL (next-intl, etc., que
+// típicamente exige prefijos /en/ /es/ y reestructurar todas las rutas
+// de este export estático), se usa un Context simple: el idioma es una
+// preferencia del navegador (persistida en localStorage), no parte de
+// la URL — encaja mejor con la arquitectura ya existente y no agrega
+// una dependencia nueva.
+//
+// `es` es el diccionario base (la app nació en español); `en` cubre las
+// mismas claves. Si a `en` le falta una clave, useTranslation() cae de
+// vuelta a `es` en vez de romperse o mostrar la clave cruda.
+export type Language = 'es' | 'en'
+
+export const translations = {
+  es: {
+    nav: {
+      home: 'Inicio',
+      menu: 'Menú',
+      cart: 'Carrito',
+      account: 'Mi cuenta',
+      login: 'Iniciar sesión',
+      help: 'Ayuda',
+      terms: 'Términos',
+      privacy: 'Privacidad',
+      accessibility: 'Accesibilidad',
+      companyLogin: 'Acceso para el equipo',
+      viewSite: 'Ver sitio del cliente',
+      signOut: 'Cerrar sesión',
+      companyDashboard: 'Panel de la compañía',
+    },
+    common: {
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      delete: 'Eliminar',
+      edit: 'Editar',
+      confirm: 'Confirmar',
+      loading: 'Cargando…',
+      send: 'Enviar',
+      close: 'Cerrar',
+      back: 'Volver',
+      search: 'Buscar',
+      seeAll: 'Ver todo',
+    },
+    cart: {
+      viewCart: 'Ver carrito',
+      item: 'artículo',
+      items: 'artículos',
+    },
+    home: {
+      deliveringArea: 'Entregando en tu zona',
+      heroTitle: 'Pizza recién horneada, directo a tu puerta',
+      orderNow: 'Ordenar ahora',
+      delivery: 'Entrega a domicilio',
+      pickup: 'Recoger en tienda',
+      searchPlaceholder: 'Buscar pizzas, bebidas, postres…',
+      categories: 'Categorías',
+      popular: 'Populares',
+      searchResultsFor: 'Resultados para',
+      noResults: 'No encontramos productos con ese nombre.',
+    },
+    orderStatus: {
+      pending: 'Pendiente',
+      confirmed: 'Confirmado',
+      preparing: 'En preparación',
+      ready: 'Listo',
+      out_for_delivery: 'En camino',
+      delivered: 'Entregado',
+      cancelled: 'Cancelado',
+      refunded: 'Reembolsado',
+      failed: 'Fallido',
+    },
+    dashboardNav: {
+      dashboard: 'Panel',
+      orders: 'Pedidos',
+      kitchen: 'Cocina',
+      menu: 'Menú',
+      customers: 'Clientes',
+      team: 'Equipo',
+      promotions: 'Promociones',
+      rewards: 'Rewards',
+      drivers: 'Conductores',
+      myDeliveries: 'Mis entregas',
+      analytics: 'Analítica',
+      settings: 'Configuración',
+      support: 'Soporte',
+      inventory: 'Inventario',
+    },
+  },
+  en: {
+    nav: {
+      home: 'Home',
+      menu: 'Menu',
+      cart: 'Cart',
+      account: 'My account',
+      login: 'Log in',
+      help: 'Help',
+      terms: 'Terms',
+      privacy: 'Privacy',
+      accessibility: 'Accessibility',
+      companyLogin: 'Staff login',
+      viewSite: 'View customer site',
+      signOut: 'Sign out',
+      companyDashboard: 'Company dashboard',
+    },
+    common: {
+      save: 'Save',
+      cancel: 'Cancel',
+      delete: 'Delete',
+      edit: 'Edit',
+      confirm: 'Confirm',
+      loading: 'Loading…',
+      send: 'Send',
+      close: 'Close',
+      back: 'Back',
+      search: 'Search',
+      seeAll: 'See all',
+    },
+    cart: {
+      viewCart: 'View cart',
+      item: 'item',
+      items: 'items',
+    },
+    home: {
+      deliveringArea: 'Delivering to your area',
+      heroTitle: 'Fresh-baked pizza, straight to your door',
+      orderNow: 'Order Now',
+      delivery: 'Delivery',
+      pickup: 'Pickup',
+      searchPlaceholder: 'Search pizzas, drinks, desserts…',
+      categories: 'Categories',
+      popular: 'Popular',
+      searchResultsFor: 'Results for',
+      noResults: "We couldn't find any products with that name.",
+    },
+    orderStatus: {
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      preparing: 'Preparing',
+      ready: 'Ready',
+      out_for_delivery: 'Out for delivery',
+      delivered: 'Delivered',
+      cancelled: 'Cancelled',
+      refunded: 'Refunded',
+      failed: 'Failed',
+    },
+    dashboardNav: {
+      dashboard: 'Dashboard',
+      orders: 'Orders',
+      kitchen: 'Kitchen',
+      menu: 'Menu',
+      customers: 'Customers',
+      team: 'Team',
+      promotions: 'Promotions',
+      rewards: 'Rewards',
+      drivers: 'Drivers',
+      myDeliveries: 'My deliveries',
+      analytics: 'Analytics',
+      settings: 'Settings',
+      support: 'Support',
+      inventory: 'Inventory',
+    },
+  },
+} as const satisfies Record<Language, unknown>
+
+export type TranslationShape = typeof translations.es
