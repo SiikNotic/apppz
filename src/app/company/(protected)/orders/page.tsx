@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowRight, Ban, Eye } from 'lucide-react'
+import { Check, Ban, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { deductInventoryForOrder } from '@/lib/inventoryDeduction'
 import { useAuth } from '@/contexts/AuthContext'
-import { nextHappyPathStatus } from '@/lib/business-logic/order-state-machine'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -76,21 +75,20 @@ export default function OrdersPage() {
     return o.status === filter
   })
 
-  async function advanceStatus(order: Order) {
-    const next = nextHappyPathStatus(order.status as OrderStatus)
-    if (!next) return
+  // Orders solo es responsable de UN paso: revisar un pedido nuevo y
+  // aceptarlo. De ahí en adelante (preparando → listo → asignar
+  // repartidor → entregado) es exclusivamente de Cocina y del Driver —
+  // antes este mismo botón podía empujar un pedido a través de TODOS los
+  // estados desde aquí, duplicando lo que Cocina ya hace y generando la
+  // confusión de "varias flechas para que llegue a Cocina".
+  async function acceptOrder(order: Order) {
+    if (order.status !== 'pending') return
     setBusyId(order.id)
-
-    if (order.status === 'pending' && next === 'confirmed') {
-      await deductInventoryForOrder(order.id)
-    }
-
-    const { error } = await supabase.from('orders').update({ status: next }).eq('id', order.id)
+    await deductInventoryForOrder(order.id)
+    const { error } = await supabase.from('orders').update({ status: 'confirmed' }).eq('id', order.id)
     setBusyId(null)
     if (error) {
-      // El trigger de la base de datos rechaza transiciones inválidas —
-      // si esto dispara, es que dos personas cambiaron el estado a la vez.
-      alert('No se pudo actualizar el estado (puede que ya haya cambiado). Se recargó la lista.')
+      alert('No se pudo aceptar el pedido (puede que ya haya cambiado). Se recargó la lista.')
     }
     load()
   }
@@ -175,16 +173,15 @@ export default function OrdersPage() {
                     <Button size="sm" variant="secondary" onClick={() => openDetail(order)} className="flex-1">
                       <Eye size={14} aria-hidden="true" /> Ver detalle
                     </Button>
-                    {notTerminal && canUpdateStatus && (
-                      <button
-                        onClick={() => advanceStatus(order)}
+                    {status === 'pending' && canUpdateStatus && (
+                      <Button
+                        size="sm"
+                        onClick={() => acceptOrder(order)}
                         disabled={busyId === order.id}
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-900 hover:brightness-95 disabled:opacity-50"
-                        title="Avanzar estado"
+                        className="flex-1"
                       >
-                        <ArrowRight size={16} aria-hidden="true" />
-                        <span className="sr-only">Avanzar estado</span>
-                      </button>
+                        <Check size={14} aria-hidden="true" /> Aceptar pedido
+                      </Button>
                     )}
                     {notTerminal && canCancel && (
                       <button
@@ -247,16 +244,10 @@ export default function OrdersPage() {
                             <Eye size={14} aria-hidden="true" />
                             <span className="sr-only">Ver detalle</span>
                           </button>
-                          {notTerminal && canUpdateStatus && (
-                            <button
-                              onClick={() => advanceStatus(order)}
-                              disabled={busyId === order.id}
-                              className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-900 hover:brightness-95 disabled:opacity-50"
-                              title="Avanzar estado"
-                            >
-                              <ArrowRight size={14} aria-hidden="true" />
-                              <span className="sr-only">Avanzar estado</span>
-                            </button>
+                          {status === 'pending' && canUpdateStatus && (
+                            <Button size="sm" onClick={() => acceptOrder(order)} disabled={busyId === order.id}>
+                              <Check size={14} aria-hidden="true" /> Aceptar
+                            </Button>
                           )}
                           {notTerminal && canCancel && (
                             <button

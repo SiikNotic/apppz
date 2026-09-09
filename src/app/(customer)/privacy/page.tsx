@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { LegalPage } from '@/components/customer/legal-page'
 import { BRAND_NAME } from '@/lib/config'
 
@@ -34,9 +35,9 @@ export default function PrivacyPage() {
       <p>
         Puedes ver y editar tus datos desde tu perfil en cualquier momento, y solicitar la
         eliminación completa de tu cuenta desde{' '}
-        <a href="/account/profile" className="text-brand-900 underline">
+        <Link href="/account/profile" className="text-brand-900 underline">
           Mi perfil
-        </a>
+        </Link>
         .
       </p>
       <h2>Cookies</h2>

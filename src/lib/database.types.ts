@@ -374,6 +374,64 @@ export type Database = {
           },
         ]
       }
+      issue_reports: {
+        Row: {
+          category: string
+          created_at: string
+          customer_id: string | null
+          description: string | null
+          id: string
+          order_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_reports_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_reports_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_reports_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_sizes: {
         Row: {
           id: string

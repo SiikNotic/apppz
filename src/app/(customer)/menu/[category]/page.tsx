@@ -1,5 +1,10 @@
+// Esta ruta mostraba una vista de categoría separada (un back-link + esa
+// categoría sola) — exactamente el "cambia de pantalla" que no queremos:
+// las categorías del inicio deben aterrizar en el MISMO menú con filtro
+// instantáneo, no en otra página. Se deja como redirect permanente hacia
+// /menu?category=X para no romper enlaces/marcadores viejos.
 import { supabase } from '@/lib/supabase'
-import { CategoryMenuClient } from './category-menu-client'
+import { CategoryRedirect } from './category-redirect'
 
 export async function generateStaticParams() {
   try {
@@ -9,11 +14,10 @@ export async function generateStaticParams() {
   } catch (err) {
     console.warn('[generateStaticParams] No se pudo consultar categories en build time:', err)
   }
-  // Ver nota equivalente en product/[id]/page.tsx.
   return [{ category: 'placeholder' }]
 }
 
-export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
+export default async function CategoryRedirectPage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params
-  return <CategoryMenuClient categoryId={category} />
+  return <CategoryRedirect categoryId={category} />
 }

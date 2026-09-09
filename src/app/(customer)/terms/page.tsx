@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { LegalPage } from '@/components/customer/legal-page'
 import { BRAND_NAME } from '@/lib/config'
 
@@ -8,9 +9,9 @@ export default function TermsPage() {
     <LegalPage title="Términos de servicio" updated="8 de septiembre de 2026">
       <p>
         Al usar {BRAND_NAME} para ordenar comida aceptas estos términos. Léelos junto con nuestra{' '}
-        <a href="/privacy" className="text-brand-900 underline">
+        <Link href="/privacy" className="text-brand-900 underline">
           Política de privacidad
-        </a>
+        </Link>
         .
       </p>
       <h2>Pedidos y precios</h2>
@@ -29,9 +30,9 @@ export default function TermsPage() {
       <p>
         Puedes cancelar un pedido mientras esté en estado &quot;Pendiente&quot;. Una vez que la
         cocina lo confirma, contáctanos desde{' '}
-        <a href="/help" className="text-brand-900 underline">
+        <Link href="/help" className="text-brand-900 underline">
           Ayuda
-        </a>{' '}
+        </Link>{' '}
         para resolver cualquier problema.
       </p>
       <h2>Programa de puntos</h2>
@@ -48,9 +49,9 @@ export default function TermsPage() {
       <h2>Contacto</h2>
       <p>
         Para dudas sobre estos términos, escríbenos desde la página de{' '}
-        <a href="/help" className="text-brand-900 underline">
+        <Link href="/help" className="text-brand-900 underline">
           Ayuda
-        </a>
+        </Link>
         .
       </p>
     </LegalPage>

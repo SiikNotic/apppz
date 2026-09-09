@@ -10,6 +10,7 @@ import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DeliveryChat } from '@/components/shared/delivery-chat'
+import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
 import type { DeliveryAssignment, Order, OrderItem, OrderStatus } from '@/lib/types'
@@ -25,6 +26,7 @@ function OrderStatusContent() {
   const [loading, setLoading] = useState(true)
   const [reordering, setReordering] = useState(false)
   const [reorderNotice, setReorderNotice] = useState<string | null>(null)
+  const [reportOpen, setReportOpen] = useState(false)
 
   useEffect(() => {
     if (!orderId) {
@@ -199,18 +201,23 @@ function OrderStatusContent() {
         </p>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Button fullWidth onClick={handleReorder} disabled={reordering}>
           <RotateCcw size={16} aria-hidden="true" />
           {reordering ? 'Agregando…' : 'Ordenar de nuevo'}
         </Button>
-        <Button fullWidth variant="secondary" asChild>
-          <a href="/help">
-            <MessageCircleWarning size={16} aria-hidden="true" />
-            Reportar un problema
-          </a>
+        <Button fullWidth variant="secondary" onClick={() => setReportOpen(true)}>
+          <MessageCircleWarning size={16} aria-hidden="true" />
+          Reportar un problema
         </Button>
       </div>
+
+      <ReportProblemDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        orderId={order.id}
+        customerId={order.customer_id}
+      />
 
       <Button fullWidth variant="ghost" onClick={() => router.push('/menu')}>
         Volver al menú

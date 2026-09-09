@@ -31,6 +31,16 @@ export type ProductImage = Tables<'product_images'>
 export type Favorite = Tables<'favorites'>
 export type Setting = Tables<'settings'>
 export type AccountDeletionRequest = Tables<'account_deletion_requests'>
+export type IssueReport = Tables<'issue_reports'>
+
+export const ISSUE_REPORT_CATEGORY_LABELS: Record<string, string> = {
+  wrong_order: 'Pedido incorrecto',
+  missing_item: 'Artículo faltante',
+  damaged_order: 'Pedido dañado',
+  delivery_issue: 'Problema con la entrega',
+  payment_issue: 'Problema con el pago',
+  other: 'Otro',
+}
 
 export type OrderStatus =
   | 'pending'

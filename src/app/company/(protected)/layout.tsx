@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   UserPlus,
+  MessageCircleWarning,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -42,6 +43,7 @@ const IMPLEMENTED_ROUTES = new Set([
   '/company/driver',
   '/company/analytics',
   '/company/settings',
+  '/company/support',
 ])
 
 const ICONS: Record<string, LucideIcon> = {
@@ -57,6 +59,7 @@ const ICONS: Record<string, LucideIcon> = {
   '/company/driver': Truck,
   '/company/analytics': BarChart3,
   '/company/settings': Settings,
+  '/company/support': MessageCircleWarning,
 }
 
 const ROLE_LABELS: Record<string, string> = {

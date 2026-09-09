@@ -109,7 +109,7 @@ export default function HomePage() {
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={`/menu/${cat.id}`}
+                  href={`/menu?category=${cat.id}`}
                   className="shrink-0 rounded-2xl bg-white px-5 py-4 text-center shadow-card transition hover:shadow-pop"
                 >
                   <span className="text-sm font-bold text-ink-900">{cat.name}</span>
