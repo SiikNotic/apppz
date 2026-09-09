@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Pencil, Trash2, X, Upload, Loader2, Sparkles } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Upload, Loader2, Sparkles, Copy } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -52,6 +52,7 @@ export function ProductsTab() {
   >([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -263,6 +264,63 @@ export function ProductsTab() {
     if (!error) load()
   }
 
+  /**
+   * Crea una copia 100% independiente: una nueva fila en menu_items (nuevo
+   * id) y, si es pizza personalizable, copias nuevas de sus item_sizes
+   * (también con id nuevo, jamás compartiendo filas con el original).
+   * Editar la copia después nunca puede tocar el original porque no
+   * comparten ninguna fila. Queda inactiva por defecto para que el
+   * administrador la termine de ajustar (nombre, precio, foto) antes de
+   * que aparezca en el menú de clientes — se abre directo en edición.
+   */
+  async function handleDuplicate(item: MenuItem) {
+    setDuplicatingId(item.id)
+    const { data: copy, error: copyError } = await supabase
+      .from('menu_items')
+      .insert({
+        name: `${item.name} (copia)`,
+        description: item.description,
+        category_id: item.category_id,
+        base_price: item.base_price,
+        image_url: item.image_url,
+        is_customizable_pizza: item.is_customizable_pizza,
+        free_toppings_limit: item.free_toppings_limit,
+        active: false,
+      })
+      .select()
+      .single()
+
+    if (copyError || !copy) {
+      setDuplicatingId(null)
+      alert(copyError?.message ?? 'No se pudo duplicar el producto.')
+      return
+    }
+
+    if (item.is_customizable_pizza) {
+      const { data: originalSizes } = await supabase
+        .from('item_sizes')
+        .select('*')
+        .eq('menu_item_id', item.id)
+        .order('sort_order')
+      if (originalSizes && originalSizes.length > 0) {
+        await supabase.from('item_sizes').insert(
+          originalSizes.map((s) => ({
+            menu_item_id: copy.id,
+            name: s.name,
+            price: s.price,
+            size_inches: s.size_inches,
+            size_cm: s.size_cm,
+            sort_order: s.sort_order,
+          }))
+        )
+      }
+    }
+
+    setDuplicatingId(null)
+    await load()
+    await openEdit(copy as MenuItem)
+  }
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -298,13 +356,30 @@ export function ProductsTab() {
                 </Badge>
               </button>
               <button
+                onClick={() => handleDuplicate(item)}
+                disabled={duplicatingId === item.id}
+                aria-label={`Duplicar ${item.name}`}
+                title="Duplicar"
+                className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100 disabled:opacity-50"
+              >
+                {duplicatingId === item.id ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Copy size={14} />
+                )}
+              </button>
+              <button
                 onClick={() => openEdit(item)}
+                aria-label={`Editar ${item.name}`}
+                title="Editar"
                 className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
               >
                 <Pencil size={14} />
               </button>
               <button
                 onClick={() => handleDelete(item)}
+                aria-label={`Eliminar ${item.name}`}
+                title="Eliminar"
                 className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
               >
                 <Trash2 size={14} />
