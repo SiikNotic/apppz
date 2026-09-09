@@ -15,10 +15,12 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatDate } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { RewardsAccount, PointsLedgerEntry, RewardTier, RewardCatalogItem } from '@/lib/types'
 
 export default function RewardsPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [account, setAccount] = useState<RewardsAccount | null>(null)
   const [history, setHistory] = useState<PointsLedgerEntry[]>([])
   const [tiers, setTiers] = useState<RewardTier[]>([])
@@ -60,18 +62,16 @@ export default function RewardsPage() {
     setRedeemedNotice(null)
     try {
       await redeemCatalogReward(reward.id)
-      setRedeemedNotice(`¡Canjeaste "${reward.name}"! Muéstraselo al personal para recibirlo.`)
+      setRedeemedNotice(t('account.redeemed', { name: reward.name }))
       load()
     } catch (err) {
-      setRedeemError(
-        err instanceof Error ? err.message : 'No se pudo canjear la recompensa. Intenta de nuevo.'
-      )
+      setRedeemError(err instanceof Error ? err.message : t('account.redeemErrorDefault'))
     } finally {
       setRedeemingId(null)
     }
   }
 
-  if (loading) return <p className="text-sm text-ink-400">Cargando…</p>
+  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
 
   const progress = calculateTierProgress(account?.lifetime_points ?? 0, tiers)
   const balance = account?.points_balance ?? 0
@@ -79,8 +79,8 @@ export default function RewardsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Rewards</h1>
-        <p className="text-sm text-ink-400">Gana puntos con cada compra y canjéalos por recompensas.</p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('dashboardNav.rewards')}</h1>
+        <p className="text-sm text-ink-400">{t('account.rewardsSubtitle')}</p>
       </div>
 
       <Card className="p-6">
@@ -90,7 +90,9 @@ export default function RewardsPage() {
           </span>
           <div>
             <p className="text-3xl font-extrabold text-ink-900">{account?.points_balance ?? 0}</p>
-            <p className="text-sm text-ink-400">puntos disponibles · nivel {progress.currentTier?.name ?? 'Bronze'}</p>
+            <p className="text-sm text-ink-400">
+              {t('account.pointsAvailable', { tier: progress.currentTier?.name ?? 'Bronze' })}
+            </p>
           </div>
         </div>
 
@@ -107,7 +109,7 @@ export default function RewardsPage() {
               />
             </div>
             <p className="mt-1.5 text-xs text-ink-400">
-              {progress.pointsToNextTier} puntos para {progress.nextTier.name}
+              {t('account.pointsToNextTier', { points: progress.pointsToNextTier, tier: progress.nextTier.name })}
             </p>
           </div>
         )}
@@ -123,7 +125,7 @@ export default function RewardsPage() {
 
       {catalog.length > 0 && (
         <Card className="p-6">
-          <h2 className="mb-4 text-sm font-bold text-ink-900">Canjea tus puntos</h2>
+          <h2 className="mb-4 text-sm font-bold text-ink-900">{t('account.redeemPoints')}</h2>
           {redeemedNotice && (
             <p role="status" className="mb-3 text-xs font-semibold text-success-500">
               {redeemedNotice}
@@ -150,7 +152,9 @@ export default function RewardsPage() {
                     {reward.description && (
                       <p className="mt-0.5 line-clamp-2 text-xs text-ink-400">{reward.description}</p>
                     )}
-                    <p className="mt-1 text-xs font-semibold text-brand-900">{reward.points_cost} pts</p>
+                    <p className="mt-1 text-xs font-semibold text-brand-900">
+                      {reward.points_cost} {t('account.pts')}
+                    </p>
                     <div className="mt-2">
                       {canAfford ? (
                         <Button
@@ -158,12 +162,12 @@ export default function RewardsPage() {
                           onClick={() => handleRedeem(reward)}
                           disabled={redeemingId === reward.id}
                         >
-                          {redeemingId === reward.id ? 'Canjeando…' : 'Canjear'}
+                          {redeemingId === reward.id ? t('account.redeeming') : t('account.redeem')}
                         </Button>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-ink-400">
                           <Lock size={12} aria-hidden="true" />
-                          Te faltan {reward.points_cost - balance} puntos
+                          {t('account.missingPoints', { points: reward.points_cost - balance })}
                         </span>
                       )}
                     </div>
@@ -176,9 +180,9 @@ export default function RewardsPage() {
       )}
 
       <Card className="p-6">
-        <h2 className="mb-4 text-sm font-bold text-ink-900">Historial de puntos</h2>
+        <h2 className="mb-4 text-sm font-bold text-ink-900">{t('account.pointsHistory')}</h2>
         {history.length === 0 ? (
-          <p className="text-sm text-ink-400">Todavía no tienes movimientos.</p>
+          <p className="text-sm text-ink-400">{t('account.noMovements')}</p>
         ) : (
           <div className="space-y-3">
             {history.map((entry) => (

@@ -6,18 +6,20 @@ import { usePathname, useRouter } from 'next/navigation'
 import { User, MapPin, CreditCard, Heart, Gift, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const TABS = [
-  { href: '/account/profile', label: 'Perfil', icon: User },
-  { href: '/account/orders', label: 'Pedidos', icon: ClipboardList },
-  { href: '/account/addresses', label: 'Direcciones', icon: MapPin },
-  { href: '/account/payment-methods', label: 'Pago', icon: CreditCard },
-  { href: '/account/favorites', label: 'Favoritos', icon: Heart },
-  { href: '/account/rewards', label: 'Rewards', icon: Gift },
-]
+  { href: '/account/profile', key: 'account.navProfile', icon: User },
+  { href: '/account/orders', key: 'account.navOrders', icon: ClipboardList },
+  { href: '/account/addresses', key: 'account.navAddresses', icon: MapPin },
+  { href: '/account/payment-methods', key: 'account.navPayment', icon: CreditCard },
+  { href: '/account/favorites', key: 'account.navFavorites', icon: Heart },
+  { href: '/account/rewards', key: 'account.navRewards', icon: Gift },
+] as const
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -28,13 +30,13 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   }, [loading, session, pathname, router])
 
   if (loading || !session) {
-    return <p className="py-16 text-center text-sm text-ink-400">Cargando…</p>
+    return <p className="py-16 text-center text-sm text-ink-400">{t('common.loading')}</p>
   }
 
   return (
     <div className="grid gap-5 lg:grid-cols-[220px,1fr]">
-      <nav aria-label="Navegación de cuenta" className="no-scrollbar flex gap-2 overflow-x-auto lg:flex-col">
-        {TABS.map(({ href, label, icon: Icon }) => {
+      <nav aria-label={t('account.accountNav')} className="no-scrollbar flex gap-2 overflow-x-auto lg:flex-col">
+        {TABS.map(({ href, key, icon: Icon }) => {
           const isActive = pathname === href
           return (
             <Link
@@ -47,7 +49,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
               )}
             >
               <Icon size={16} aria-hidden="true" />
-              {label}
+              {t(key)}
             </Link>
           )
         })}

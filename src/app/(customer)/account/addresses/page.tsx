@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Address } from '@/lib/types'
 
 const EMPTY: AddressInput = {
@@ -35,6 +36,7 @@ const LABEL_ICON = { Home, Work: Briefcase, Other: MapPin }
 
 export default function AddressesPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
@@ -101,7 +103,7 @@ export default function AddressesPage() {
   }
 
   async function handleDelete(address: Address) {
-    if (!confirm(`¿Eliminar la dirección "${address.label}"?`)) return
+    if (!confirm(t('account.confirmDeleteAddress', { label: address.label }))) return
     await deleteAddress(address.id)
     load()
   }
@@ -110,18 +112,18 @@ export default function AddressesPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">Direcciones</h1>
-          <p className="text-sm text-ink-400">Guarda tus lugares frecuentes para pedir más rápido.</p>
+          <h1 className="text-2xl font-extrabold text-ink-900">{t('account.addressesTitle')}</h1>
+          <p className="text-sm text-ink-400">{t('account.addressesSubtitle')}</p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={16} aria-hidden="true" /> Nueva dirección
+          <Plus size={16} aria-hidden="true" /> {t('account.newAddress')}
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-ink-400">Cargando…</p>
+        <p className="text-sm text-ink-400">{t('common.loading')}</p>
       ) : addresses.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-ink-400">Todavía no tienes direcciones guardadas.</Card>
+        <Card className="p-8 text-center text-sm text-ink-400">{t('account.noAddresses')}</Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {addresses.map((address) => {
@@ -132,21 +134,21 @@ export default function AddressesPage() {
                   <div className="flex items-center gap-2">
                     <Icon size={16} className="text-brand-900" aria-hidden="true" />
                     <span className="text-sm font-bold text-ink-900">{address.label}</span>
-                    {address.is_default && <Badge variant="brand">Predeterminada</Badge>}
-                    {address.dog_warning && <Dog size={14} className="text-warning-500" aria-label="Cuidado, perro" />}
+                    {address.is_default && <Badge variant="brand">{t('account.defaultBadge')}</Badge>}
+                    {address.dog_warning && <Dog size={14} className="text-warning-500" aria-label={t('account.dogWarningAlt')} />}
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => openEdit(address)}
                       className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                      aria-label={`Editar dirección ${address.label}`}
+                      aria-label={`${t('account.editAddress')} ${address.label}`}
                     >
                       <Pencil size={14} aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => handleDelete(address)}
                       className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-                      aria-label={`Eliminar dirección ${address.label}`}
+                      aria-label={`${t('account.deleteAddress')} ${address.label}`}
                     >
                       <Trash2 size={14} aria-hidden="true" />
                     </button>
@@ -170,48 +172,48 @@ export default function AddressesPage() {
         <DialogContent className="max-w-md">
           <div className="p-6">
             <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
-              {editingId ? 'Editar dirección' : 'Nueva dirección'}
+              {editingId ? t('account.editAddressTitle') : t('account.newAddressTitle')}
             </DialogTitle>
             <div className="space-y-3">
               <div>
-                <Label>Etiqueta</Label>
+                <Label>{t('account.addressLabel')}</Label>
                 <Select value={form.label} onValueChange={(v) => setForm({ ...form, label: v as AddressInput['label'] })}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Home">Casa</SelectItem>
-                    <SelectItem value="Work">Trabajo</SelectItem>
-                    <SelectItem value="Other">Otro</SelectItem>
+                    <SelectItem value="Home">{t('account.labelHome')}</SelectItem>
+                    <SelectItem value="Work">{t('account.labelWork')}</SelectItem>
+                    <SelectItem value="Other">{t('account.labelOther')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="addr-street">Calle y número</Label>
+                <Label htmlFor="addr-street">{t('account.street')}</Label>
                 <Input id="addr-street" value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} />
                 {fieldErrors.street && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.street}</p>}
               </div>
               <div>
-                <Label htmlFor="addr-apt">Apartamento / interior (opcional)</Label>
+                <Label htmlFor="addr-apt">{t('account.apartment')}</Label>
                 <Input id="addr-apt" value={form.apartment} onChange={(e) => setForm({ ...form, apartment: e.target.value })} />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <Label htmlFor="addr-city">Ciudad</Label>
+                  <Label htmlFor="addr-city">{t('account.city')}</Label>
                   <Input id="addr-city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
                 </div>
                 <div>
-                  <Label htmlFor="addr-state">Estado</Label>
+                  <Label htmlFor="addr-state">{t('account.state')}</Label>
                   <Input id="addr-state" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
                 </div>
               </div>
               <div>
-                <Label htmlFor="addr-zip">Código postal</Label>
+                <Label htmlFor="addr-zip">{t('account.zip')}</Label>
                 <Input id="addr-zip" value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />
                 {fieldErrors.zip && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.zip}</p>}
               </div>
               <div>
-                <Label htmlFor="addr-instructions">Instrucciones de entrega</Label>
+                <Label htmlFor="addr-instructions">{t('account.deliveryInstructions')}</Label>
                 <Textarea
                   id="addr-instructions"
                   rows={2}
@@ -220,20 +222,20 @@ export default function AddressesPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="addr-code">Código de acceso (opcional)</Label>
+                <Label htmlFor="addr-code">{t('account.accessCode')}</Label>
                 <Input id="addr-code" value={form.accessCode} onChange={(e) => setForm({ ...form, accessCode: e.target.value })} />
               </div>
               <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
                 <Checkbox checked={form.dogWarning} onCheckedChange={(c) => setForm({ ...form, dogWarning: c === true })} />
-                Hay un perro en esta dirección
+                {t('account.dogWarningLabel')}
               </label>
               <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
                 <Checkbox checked={form.isDefault} onCheckedChange={(c) => setForm({ ...form, isDefault: c === true })} />
-                Usar como dirección predeterminada
+                {t('account.useAsDefault')}
               </label>
 
               <Button fullWidth onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar dirección'}
+                {saving ? t('account.saving') : t('account.saveAddress')}
               </Button>
             </div>
           </div>

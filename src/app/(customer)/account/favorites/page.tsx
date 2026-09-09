@@ -8,10 +8,12 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatCurrency } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Favorite, MenuItem } from '@/lib/types'
 
 export default function FavoritesPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [products, setProducts] = useState<Record<string, MenuItem>>({})
   const [loading, setLoading] = useState(true)
@@ -53,19 +55,16 @@ export default function FavoritesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">Favoritos</h1>
-        <p className="text-sm text-ink-400">Tus productos guardados para pedir de nuevo rápido.</p>
+        <h1 className="text-2xl font-extrabold text-ink-900">{t('account.favoritesTitle')}</h1>
+        <p className="text-sm text-ink-400">{t('account.favoritesSubtitle')}</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-ink-400">Cargando…</p>
+        <p className="text-sm text-ink-400">{t('common.loading')}</p>
       ) : favorites.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 p-10 text-center">
           <Heart size={28} className="text-ink-200" aria-hidden="true" />
-          <p className="text-sm text-ink-400">
-            Aún no tienes favoritos. Toca el corazón en cualquier producto del menú para
-            guardarlo aquí.
-          </p>
+          <p className="text-sm text-ink-400">{t('account.noFavorites')}</p>
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -80,7 +79,7 @@ export default function FavoritesPage() {
                   <p className="text-sm font-semibold text-brand-900">{formatCurrency(item.base_price)}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => removeFavorite(fav.id)}>
-                  Quitar
+                  {t('account.remove')}
                 </Button>
               </Card>
             )
