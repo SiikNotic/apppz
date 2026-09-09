@@ -9,6 +9,7 @@ import { ItemThumb } from '@/components/ui/item-thumb'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/format'
 import { PizzaBuilderModal } from './pizza-builder-modal'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { MenuItem, ItemSize, Crust, Sauce, Topping } from '@/lib/types'
 
 interface MenuGridProps {
@@ -22,10 +23,11 @@ interface MenuGridProps {
 
 export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMessage }: MenuGridProps) {
   const { addLine } = useCart()
+  const { t } = useLanguage()
   const [builderItem, setBuilderItem] = useState<MenuItem | null>(null)
 
   if (items.length === 0) {
-    return <p className="py-10 text-center text-sm text-ink-400">{emptyMessage ?? 'No hay productos en esta categoría.'}</p>
+    return <p className="py-10 text-center text-sm text-ink-400">{emptyMessage ?? t('product.noProductsInCategory')}</p>
   }
 
   return (
@@ -58,12 +60,12 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
               </Link>
               <div className="mt-1.5 flex items-center justify-between">
                 <span className="text-sm font-extrabold text-brand-900">
-                  {isBuilder ? 'Desde ' : ''}
+                  {isBuilder ? t('product.from') : ''}
                   {formatCurrency(displayPrice)}
                 </span>
                 {isBuilder ? (
                   <Button size="sm" onClick={() => setBuilderItem(item)}>
-                    Crear ahora
+                    {t('product.createNow')}
                   </Button>
                 ) : (
                   <button
@@ -78,7 +80,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
                       })
                     }
                     className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-ink-900 transition active:scale-90 hover:bg-brand-600"
-                    aria-label={`Agregar ${item.name} al carrito`}
+                    aria-label={t('product.addToCartAria', { name: item.name })}
                   >
                     <Plus size={16} aria-hidden="true" />
                   </button>

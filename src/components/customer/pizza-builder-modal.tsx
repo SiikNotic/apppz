@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/format'
 import { usePizzaBuilder } from './use-pizza-builder'
 import { SizePicker, CrustPicker, SaucePicker, ToppingPicker } from './pizza-option-pickers'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { MenuItem, ItemSize, Crust, Sauce, Topping, CartLine } from '@/lib/types'
 
 interface PizzaBuilderModalProps {
@@ -31,6 +32,7 @@ export function PizzaBuilderModal({
   onAdd,
 }: PizzaBuilderModalProps) {
   const [step, setStep] = useState<1 | 2>(1)
+  const { t } = useLanguage()
   const builder = usePizzaBuilder(sizes, crusts, sauces, toppings, item.free_toppings_limit)
 
   function handleClose() {
@@ -54,14 +56,14 @@ export function PizzaBuilderModal({
             {step === 2 && (
               <button
                 onClick={() => setStep(1)}
-                aria-label="Volver al paso anterior"
+                aria-label={t('product.backStep')}
                 className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
               >
                 <ChevronLeft size={18} aria-hidden="true" />
               </button>
             )}
             <span className="text-xs font-bold uppercase tracking-wide text-brand-900">
-              Paso {step} de 2
+              {t('product.stepOf', { step })}
             </span>
           </div>
 
@@ -97,11 +99,11 @@ export function PizzaBuilderModal({
           <div className="mx-auto flex max-w-xl items-center gap-3">
             {step === 1 ? (
               <Button fullWidth size="lg" onClick={() => setStep(2)} disabled={!builder.selectedSize}>
-                Siguiente · {formatCurrency(builder.total)}
+                {t('product.nextButton')} · {formatCurrency(builder.total)}
               </Button>
             ) : (
               <Button fullWidth size="lg" variant="dark" onClick={handleAdd} disabled={!builder.selectedSauce}>
-                Agregar al carrito · {formatCurrency(builder.total)}
+                {t('product.addToCartButton')} · {formatCurrency(builder.total)}
               </Button>
             )}
           </div>

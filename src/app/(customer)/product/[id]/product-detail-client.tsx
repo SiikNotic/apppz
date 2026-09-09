@@ -18,12 +18,14 @@ import { SizePicker, CrustPicker, SaucePicker, ToppingPicker } from '@/component
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/format'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { MenuItem, ItemSize, Crust, Sauce, Topping } from '@/lib/types'
 
 export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
   const router = useRouter()
   const { user } = useAuth()
   const { addLine } = useCart()
+  const { t } = useLanguage()
 
   const [item, setItem] = useState<MenuItem | null>(null)
   const [sizes, setSizes] = useState<ItemSize[]>([])
@@ -128,13 +130,13 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
     setTimeout(() => setAdded(false), 2000)
   }
 
-  if (loading) return <p className="py-16 text-center text-sm text-ink-400">Cargando producto…</p>
+  if (loading) return <p className="py-16 text-center text-sm text-ink-400">{t('product.loadingProduct')}</p>
 
   if (!item) {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-center">
-        <p className="text-sm font-semibold text-ink-600">No encontramos este producto.</p>
-        <Button onClick={() => router.push('/menu')}>Ver el menú</Button>
+        <p className="text-sm font-semibold text-ink-600">{t('product.notFound')}</p>
+        <Button onClick={() => router.push('/menu')}>{t('checkout.seeMenu')}</Button>
       </div>
     )
   }
@@ -151,7 +153,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
             <button
               onClick={toggleFavorite}
               aria-pressed={isFavorite}
-              aria-label={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+              aria-label={isFavorite ? t('product.removeFavorite') : t('product.addFavorite')}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white shadow-card text-ink-600 hover:text-brand-900"
             >
               <Heart size={18} className={isFavorite ? 'fill-brand-900 text-brand-900' : ''} aria-hidden="true" />
@@ -159,7 +161,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
           </div>
           {item.description && <p className="mt-1 text-sm text-ink-600">{item.description}</p>}
           <p className="mt-2 text-lg font-extrabold text-brand-900">
-            {item.is_customizable_pizza ? 'Desde ' : ''}
+            {item.is_customizable_pizza ? t('product.from') : ''}
             {formatCurrency(displayPrice)}
           </p>
         </div>
@@ -180,7 +182,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
       ) : (
         <div className="flex items-center gap-2 rounded-2xl bg-white p-3">
           <PizzaIcon size={18} className="text-ink-300" aria-hidden="true" />
-          <span className="text-sm text-ink-600">Cantidad</span>
+          <span className="text-sm text-ink-600">{t('product.quantityLabel')}</span>
         </div>
       )}
 
@@ -189,7 +191,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
           <div className="flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-1">
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              aria-label="Disminuir cantidad"
+              aria-label={t('product.decreaseQuantity')}
               className="grid h-8 w-8 place-items-center rounded-full text-white hover:bg-white/10"
             >
               <Minus size={14} aria-hidden="true" />
@@ -197,7 +199,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
             <span className="w-6 text-center text-sm font-bold text-white">{quantity}</span>
             <button
               onClick={() => setQuantity((q) => q + 1)}
-              aria-label="Aumentar cantidad"
+              aria-label={t('product.increaseQuantity')}
               className="grid h-8 w-8 place-items-center rounded-full text-white hover:bg-white/10"
             >
               <Plus size={14} aria-hidden="true" />
@@ -209,7 +211,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
             className="bg-transparent hover:bg-white/10"
             onClick={item.is_customizable_pizza ? handleAddPizza : handleAddSimple}
           >
-            {added ? '¡Agregado!' : `Agregar · ${formatCurrency(displayPrice * quantity)}`}
+            {added ? t('product.added') : `${t('product.addButton')} · ${formatCurrency(displayPrice * quantity)}`}
           </Button>
         </div>
       </div>

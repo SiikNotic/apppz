@@ -4,6 +4,7 @@ import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/format'
 import { ItemThumb } from '@/components/ui/item-thumb'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { ItemSize, Crust, Sauce, Topping } from '@/lib/types'
 
 /** "10"" si hay pulgadas, si no "25 cm" si hay centímetros, si no nada —
@@ -23,10 +24,11 @@ export function SizePicker({
   value?: string
   onChange: (id: string) => void
 }) {
+  const { t } = useLanguage()
   return (
     <section>
-      <h3 className="mb-2.5 text-sm font-bold text-ink-900">Tamaño</h3>
-      <div role="radiogroup" aria-label="Tamaño" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <h3 className="mb-2.5 text-sm font-bold text-ink-900">{t('product.size')}</h3>
+      <div role="radiogroup" aria-label={t('product.size')} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {sizes.map((size) => {
           const dimension = sizeDimensionLabel(size)
           return (
@@ -60,10 +62,11 @@ export function CrustPicker({
   value?: string
   onChange: (id: string) => void
 }) {
+  const { t } = useLanguage()
   return (
     <section>
-      <h3 className="mb-2.5 text-sm font-bold text-ink-900">Masa</h3>
-      <div role="radiogroup" aria-label="Masa" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <h3 className="mb-2.5 text-sm font-bold text-ink-900">{t('product.crustLabel')}</h3>
+      <div role="radiogroup" aria-label={t('product.crustLabel')} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {crusts.map((crust) => (
           <button
             key={crust.id}
@@ -98,10 +101,11 @@ export function SaucePicker({
   value?: string
   onChange: (id: string) => void
 }) {
+  const { t } = useLanguage()
   return (
     <section>
-      <h3 className="mb-2.5 text-sm font-bold text-ink-900">Salsa</h3>
-      <div role="radiogroup" aria-label="Salsa" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <h3 className="mb-2.5 text-sm font-bold text-ink-900">{t('product.sauceLabel')}</h3>
+      <div role="radiogroup" aria-label={t('product.sauceLabel')} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {sauces.map((sauce) => (
           <button
             key={sauce.id}
@@ -135,12 +139,15 @@ export function ToppingPicker({
   freeRemaining: number
   onToggle: (id: string) => void
 }) {
+  const { t } = useLanguage()
   return (
     <section>
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-ink-900">Toppings</h3>
+        <h3 className="text-sm font-bold text-ink-900">{t('product.toppingsLabel')}</h3>
         <span className="text-xs font-semibold text-ink-400">
-          {freeRemaining > 0 ? `${freeRemaining} gratis restantes` : `Extra +${formatCurrency(toppings[0]?.price ?? 0.55)} c/u`}
+          {freeRemaining > 0
+            ? t('product.freeRemaining', { count: freeRemaining })
+            : t('product.extraEach', { price: formatCurrency(toppings[0]?.price ?? 0.55) })}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

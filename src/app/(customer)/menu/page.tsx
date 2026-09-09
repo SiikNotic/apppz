@@ -6,9 +6,11 @@ import { cn } from '@/lib/utils'
 import { useMenuData } from '@/hooks/useMenuData'
 import { MenuGrid } from '@/components/customer/menu-grid'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 function MenuPageContent() {
   const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const router = useRouter()
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -25,7 +27,7 @@ function MenuPageContent() {
   const currentCategory = activeCategory ?? categories[0]?.id ?? null
 
   if (loading) return <MenuSkeleton />
-  if (error) return <p className="py-16 text-center text-sm text-danger-500">No pudimos cargar el menú: {error}</p>
+  if (error) return <p className="py-16 text-center text-sm text-danger-500">{t('product.loadError')} {error}</p>
 
   function selectCategory(id: string) {
     setActiveCategory(id)
@@ -37,8 +39,8 @@ function MenuPageContent() {
 
   return (
     <div>
-      <h1 className="sr-only">Menú completo</h1>
-      <div role="tablist" aria-label="Categorías" className="no-scrollbar mb-5 flex gap-2 overflow-x-auto pb-1">
+      <h1 className="sr-only">{t('product.fullMenu')}</h1>
+      <div role="tablist" aria-label={t('product.categoriesLabel')} className="no-scrollbar mb-5 flex gap-2 overflow-x-auto pb-1">
         {categories.map((cat) => (
           <button
             key={cat.id}
