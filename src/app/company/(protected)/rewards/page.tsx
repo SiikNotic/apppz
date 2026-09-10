@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { RewardCatalogManager } from '@/components/company/rewards/reward-catalog-manager'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { PageHeader } from '@/components/company/page-header'
 import type { RewardTier, Setting } from '@/lib/types'
 
 interface TierForm {
@@ -114,14 +115,11 @@ export default function RewardsSettingsPage() {
     load()
   }
 
-  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
+  if (loading) return <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('dashboardNav.rewards')}</h1>
-        <p className="text-sm text-ink-400">{t('rewardsAdmin.subtitle')}</p>
-      </div>
+      <PageHeader title={t('dashboardNav.rewards')} subtitle={t('rewardsAdmin.subtitle')} />
 
       <Card className="p-6">
         <h2 className="mb-4 text-sm font-bold text-ink-900">{t('rewardsAdmin.pointsRules')}</h2>

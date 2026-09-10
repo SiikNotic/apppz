@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DeliveryChat } from '@/components/shared/delivery-chat'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/company/page-header'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Address, DeliveryAssignment, Driver, DriverShift, Order } from '@/lib/types'
@@ -213,42 +215,37 @@ export default function DriverPage() {
   }
 
   if (!isDriver) {
-    return (
-      <Card className="flex flex-col items-center gap-2 p-10 text-center">
-        <Bike size={28} className="text-ink-200" aria-hidden="true" />
-        <p className="text-sm text-ink-400">{t('driverPage.notDriverOnly')}</p>
-      </Card>
-    )
+    return <EmptyState icon={<Bike size={28} aria-hidden="true" />} message={t('driverPage.notDriverOnly')} />
   }
 
-  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
+  if (loading) return <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
 
   const [current, ...queue] = active
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">{t('driverPage.title')}</h1>
-          <p className="text-sm text-ink-400">
-            {profile?.full_name
-              ? t('driverPage.greeting', { name: profile.full_name.split(' ')[0] })
-              : t('driverPage.subtitleFallback')}
-          </p>
-        </div>
-        <Button
-          size="sm"
-          variant={driver?.status === 'available' ? 'default' : 'secondary'}
-          disabled={togglingStatus || driver?.status === 'on_delivery'}
-          onClick={toggleAvailability}
-        >
-          {driver?.status === 'on_delivery'
-            ? t('driverPage.statusOnDelivery')
-            : driver?.status === 'available'
-              ? t('driverPage.statusAvailable')
-              : t('driverPage.statusOffline')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('driverPage.title')}
+        subtitle={
+          profile?.full_name
+            ? t('driverPage.greeting', { name: profile.full_name.split(' ')[0] })
+            : t('driverPage.subtitleFallback')
+        }
+        actions={
+          <Button
+            size="sm"
+            variant={driver?.status === 'available' ? 'default' : 'secondary'}
+            disabled={togglingStatus || driver?.status === 'on_delivery'}
+            onClick={toggleAvailability}
+          >
+            {driver?.status === 'on_delivery'
+              ? t('driverPage.statusOnDelivery')
+              : driver?.status === 'available'
+                ? t('driverPage.statusAvailable')
+                : t('driverPage.statusOffline')}
+          </Button>
+        }
+      />
 
       {/* Registro de entrada/salida del turno — para llevar la hora
           trabajada, independiente del toggle Disponible/Offline de

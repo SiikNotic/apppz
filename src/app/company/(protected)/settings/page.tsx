@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { PageHeader } from '@/components/company/page-header'
 import type { Setting } from '@/lib/types'
 import type { Json } from '@/lib/database.types'
 
@@ -56,16 +57,18 @@ export default function CompanySettingsPage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  if (loading) return <p className="text-sm text-ink-400">{t('common.loading')}</p>
+  if (loading) return <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('settingsAdmin.title')}</h1>
-        <p className="text-sm text-ink-400">
-          {t('settingsAdmin.subtitlePre')} <code>calculate_cart_price</code> {t('settingsAdmin.subtitlePost')}
-        </p>
-      </div>
+      <PageHeader
+        title={t('settingsAdmin.title')}
+        subtitle={
+          <>
+            {t('settingsAdmin.subtitlePre')} <code>calculate_cart_price</code> {t('settingsAdmin.subtitlePost')}
+          </>
+        }
+      />
 
       <Card className="max-w-lg space-y-4 p-6">
         {settings.map((setting) => {

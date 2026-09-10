@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatNumber } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/company/page-header'
 import type { Ingredient } from '@/lib/types'
 
 const UNITS = ['unidad', 'kg', 'g', 'l', 'ml']
@@ -153,19 +155,19 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">{t('inventoryAdmin.title')}</h1>
-          <p className="text-sm text-ink-400">{t('inventoryAdmin.subtitle')}</p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus size={16} /> {t('inventoryAdmin.newIngredient')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('inventoryAdmin.title')}
+        subtitle={t('inventoryAdmin.subtitle')}
+        actions={
+          <Button onClick={openCreate}>
+            <Plus size={16} /> {t('inventoryAdmin.newIngredient')}
+          </Button>
+        }
+      />
 
-      {loading && <p className="py-8 text-center text-sm text-ink-400">{t('common.loading')}</p>}
+      {loading && <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>}
       {!loading && ingredients.length === 0 && (
-        <Card className="py-8 text-center text-sm text-ink-400">{t('inventoryAdmin.noIngredients')}</Card>
+        <EmptyState icon={<PackagePlus size={28} aria-hidden="true" />} message={t('inventoryAdmin.noIngredients')} />
       )}
 
       {/* Cards en vez de tabla: en mobile una columna sin scroll horizontal,

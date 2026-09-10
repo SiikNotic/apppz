@@ -16,6 +16,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/company/page-header'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Order, OrderItem } from '@/lib/types'
@@ -162,40 +164,36 @@ export default function ReportsPage() {
   }
 
   if (!canView) {
-    return (
-      <Card className="flex flex-col items-center gap-2 p-10 text-center">
-        <p className="text-sm text-ink-400">{t('ordersAdmin.noPermission')}</p>
-      </Card>
-    )
+    return <EmptyState icon={<Receipt size={28} aria-hidden="true" />} message={t('ordersAdmin.noPermission')} />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">{t('analyticsAdmin.title')}</h1>
-          <p className="text-sm text-ink-400">{t('analyticsAdmin.subtitle')}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {RANGES.map((r) => (
-            <button
-              key={r.key}
-              onClick={() => setRangeDays(r.key)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                rangeDays === r.key ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-white text-ink-600'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-          <Button size="sm" variant="secondary" onClick={exportOrdersCsv} disabled={loading || orders.length === 0}>
-            <Download size={14} aria-hidden="true" /> {t('analyticsAdmin.downloadOrdersCsv')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t('analyticsAdmin.title')}
+        subtitle={t('analyticsAdmin.subtitle')}
+        actions={
+          <>
+            {RANGES.map((r) => (
+              <button
+                key={r.key}
+                onClick={() => setRangeDays(r.key)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  rangeDays === r.key ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-card text-muted-foreground'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+            <Button size="sm" variant="secondary" onClick={exportOrdersCsv} disabled={loading || orders.length === 0}>
+              <Download size={14} aria-hidden="true" /> {t('analyticsAdmin.downloadOrdersCsv')}
+            </Button>
+          </>
+        }
+      />
 
       {loading ? (
-        <p className="text-sm text-ink-400">{t('analyticsAdmin.loadingReports')}</p>
+        <p className="text-sm text-muted-foreground">{t('analyticsAdmin.loadingReports')}</p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
