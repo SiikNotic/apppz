@@ -221,6 +221,7 @@ export const translations = {
       locatingAddress: 'Buscando la dirección…',
       setLocation: 'Confirmar ubicación',
       locatedFromMap: 'Ubicado en el mapa — revisa y ajusta los datos antes de guardar.',
+      mapNotConfigured: 'El mapa no está disponible en este momento — puedes seguir escribiendo la dirección a mano.',
       addressesSubtitle: 'Guarda tus lugares frecuentes para pedir más rápido.',
       newAddress: 'Nueva dirección',
       noAddresses: 'Todavía no tienes direcciones guardadas.',
@@ -864,6 +865,7 @@ export const translations = {
       waitingLocation: 'Esperando la ubicación del repartidor…',
       driverFallbackName: 'Tu repartidor',
       callAria: 'Llamar a {name}',
+      mapNotConfigured: 'El mapa no está disponible en este momento.',
     },
     sharedChat: {
       chatWithCustomer: 'Chat con el cliente',
@@ -1134,6 +1136,7 @@ export const translations = {
       locatingAddress: 'Looking up the address…',
       setLocation: 'Confirm location',
       locatedFromMap: 'Located on the map — review and adjust the fields before saving.',
+      mapNotConfigured: "The map isn't available right now — you can still type the address by hand.",
       addressesSubtitle: 'Save your frequent places to order faster.',
       newAddress: 'New address',
       noAddresses: "You don't have any saved addresses yet.",
@@ -1776,6 +1779,7 @@ export const translations = {
       waitingLocation: "Waiting for the driver's location…",
       driverFallbackName: 'Your driver',
       callAria: 'Call {name}',
+      mapNotConfigured: "The map isn't available right now.",
     },
     sharedChat: {
       chatWithCustomer: 'Chat with customer',

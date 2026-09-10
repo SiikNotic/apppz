@@ -85,9 +85,12 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
     }
   }, [driverId])
 
-  // Inicializa el mapa una sola vez.
+  // Inicializa el mapa una sola vez. mapboxgl.Map lanza una excepción
+  // síncrona (no solo un warning) si accessToken viene vacío — sin este
+  // guard, un token mal configurado rompía la pantalla entera contra el
+  // error boundary genérico en vez de mostrar un aviso claro acá.
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return
+    if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN) return
     const initialCenter = destination ?? restaurant ?? { lat: 19.4326, lng: -99.1332 }
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -183,6 +186,14 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
       map.fitBounds(bounds, { padding: 40, maxZoom: 15 })
     }
   }, [driverPos, restaurant, destination])
+
+  if (!MAPBOX_TOKEN) {
+    return (
+      <div className="grid h-64 w-full place-items-center rounded-3xl border border-border bg-muted p-4 text-center text-xs text-muted-foreground">
+        {t('deliveryTracking.mapNotConfigured')}
+      </div>
+    )
+  }
 
   return (
     <div className="overflow-hidden rounded-3xl border border-border">

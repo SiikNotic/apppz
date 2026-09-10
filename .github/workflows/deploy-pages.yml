@@ -50,10 +50,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://zfegecwnyhtihqugyljs.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_CRXjUaIKjKN-KHgHw08mmQ__sXaHD5u
           # Token PÚBLICO de Mapbox (pk.*) — configurar como Repository
-          # variable (Settings → Secrets and variables → Actions →
-          # Variables), no hardcodeado acá: GitHub Push Protection lo
-          # bloquea como posible secreto. Ver src/lib/mapbox.ts.
-          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
+          # variable O secret (Settings → Secrets and variables →
+          # Actions), no hardcodeado acá: GitHub Push Protection lo
+          # bloquea como posible secreto. El fallback con secrets.* cubre
+          # el caso de que se haya guardado como secret en vez de
+          # variable. Ver src/lib/mapbox.ts.
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN || secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
         run: npm run build
 
       - name: Add .nojekyll

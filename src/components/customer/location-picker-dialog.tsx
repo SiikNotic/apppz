@@ -46,8 +46,11 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
 
   // Inicializa el mapa cada vez que se abre — se destruye al cerrar para
   // no dejar un mapa de Mapbox vivo detrás de un diálogo invisible.
+  // mapboxgl.Map lanza una excepción síncrona (no solo un warning) si
+  // accessToken viene vacío — sin este guard, un token mal configurado
+  // rompía el diálogo entero contra el error boundary genérico.
   useEffect(() => {
-    if (!open || !containerRef.current || mapRef.current) return
+    if (!open || !containerRef.current || mapRef.current || !MAPBOX_TOKEN) return
     const start = initial ?? { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] }
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -140,39 +143,47 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
             </button>
           </div>
 
-          <div className="relative mt-3 h-72 w-full">
-            <div ref={containerRef} className="h-full w-full" />
-            {/* Círculo y pin fijos al centro de la pantalla — el mapa se
-                mueve debajo. El círculo es un overlay decorativo en
-                pantalla (no un radio geográfico real): comunica "tu
-                ubicación aproximada" igual que Uber/Google Maps, sin
-                necesitar una librería de geometría aparte solo para eso. */}
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/15 ring-1 ring-brand-500/40" />
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-full">
-              <MapPin size={36} className="fill-brand-500 text-brand-700 drop-shadow" aria-hidden="true" />
+          {MAPBOX_TOKEN ? (
+            <div className="relative mt-3 h-72 w-full">
+              <div ref={containerRef} className="h-full w-full" />
+              {/* Círculo y pin fijos al centro de la pantalla — el mapa se
+                  mueve debajo. El círculo es un overlay decorativo en
+                  pantalla (no un radio geográfico real): comunica "tu
+                  ubicación aproximada" igual que Uber/Google Maps, sin
+                  necesitar una librería de geometría aparte solo para eso. */}
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/15 ring-1 ring-brand-500/40" />
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-full">
+                <MapPin size={36} className="fill-brand-500 text-brand-700 drop-shadow" aria-hidden="true" />
+              </div>
+              <button
+                onClick={handleUseMyLocation}
+                disabled={locating}
+                className="absolute bottom-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white text-brand-900 shadow-pop disabled:opacity-50"
+                aria-label={t('account.useMyLocation')}
+                title={t('account.useMyLocation')}
+              >
+                <LocateFixed size={16} aria-hidden="true" />
+              </button>
             </div>
-            <button
-              onClick={handleUseMyLocation}
-              disabled={locating}
-              className="absolute bottom-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white text-brand-900 shadow-pop disabled:opacity-50"
-              aria-label={t('account.useMyLocation')}
-              title={t('account.useMyLocation')}
-            >
-              <LocateFixed size={16} aria-hidden="true" />
-            </button>
-          </div>
+          ) : (
+            <div className="mt-3 grid h-72 w-full place-items-center bg-ink-50 p-4 text-center text-xs text-ink-400">
+              {t('account.mapNotConfigured')}
+            </div>
+          )}
 
-          <div className="space-y-3 p-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-ink-400">{t('account.yourLocation')}</p>
-              <p className="text-sm font-semibold text-ink-900">
-                {address ? [address.street, address.city, address.state].filter(Boolean).join(', ') : t('account.locatingAddress')}
-              </p>
+          {MAPBOX_TOKEN && (
+            <div className="space-y-3 p-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-ink-400">{t('account.yourLocation')}</p>
+                <p className="text-sm font-semibold text-ink-900">
+                  {address ? [address.street, address.city, address.state].filter(Boolean).join(', ') : t('account.locatingAddress')}
+                </p>
+              </div>
+              <Button fullWidth size="lg" onClick={handleConfirm}>
+                {t('account.setLocation')}
+              </Button>
             </div>
-            <Button fullWidth size="lg" onClick={handleConfirm}>
-              {t('account.setLocation')}
-            </Button>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
