@@ -176,11 +176,10 @@ export function ProductsTab() {
   }
 
   // Backend real (Edge Function generate-product-image), gateado por el
-  // permiso media.manage — nunca finge una generación en el cliente. Hoy
-  // el proyecto no tiene ninguna clave de proveedor de IA configurada,
-  // así que la función siempre responde configured:false; esta interfaz
-  // ya queda lista (prompt → generando → preview → aceptar/regenerar)
-  // para cuando el negocio provea una clave real.
+  // permiso media.manage — nunca finge una generación en el cliente. Llama
+  // a Gemini (gemini-2.5-flash-image) usando la clave guardada en Vault
+  // como `image_generation_api_key`; si no existe, la función responde
+  // configured:false con un mensaje claro en vez de fabricar una imagen.
   async function handleGenerateImage() {
     if (!aiPrompt.trim()) return
     setAiGenerating(true)
@@ -191,7 +190,22 @@ export function ProductsTab() {
     })
     setAiGenerating(false)
     if (fnError) {
-      setAiMessage(t('productForm.generateImageFailed'))
+      // supabase-js reporta las respuestas 4xx/5xx de la función como
+      // FunctionsHttpError sin exponer el body automáticamente — igual que
+      // en team/page.tsx, lo leemos del contexto para mostrar el motivo
+      // real (ej. "el proveedor no devolvió ninguna imagen") en vez de un
+      // "algo salió mal" genérico.
+      let message = t('productForm.generateImageFailed')
+      const ctx = (fnError as { context?: Response }).context
+      if (ctx) {
+        try {
+          const body = await ctx.clone().json()
+          if (body?.error) message = body.error
+        } catch {
+          // deja el mensaje genérico
+        }
+      }
+      setAiMessage(message)
       return
     }
     if (!data?.configured) {

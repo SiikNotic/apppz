@@ -5,23 +5,20 @@
 // datos igual que manage-staff-status/create-staff-user — nunca
 // confía en que el frontend haya ocultado el botón a un cliente.
 //
-// Estado actual: en este proyecto NO hay ninguna clave de API de un
-// proveedor de generación de imágenes configurada en Vault (solo existen
-// `resend_api_key` y `order_email_webhook_secret`). Las herramientas de
-// IA con las que se construyó esta app (usadas por el agente durante el
-// desarrollo) no están disponibles para la app en producción — un
-// proveedor real de generación de imágenes debe integrarse aquí una vez
-// que el negocio provea una clave de API propia.
+// Proveedor: Google Gemini API, modelo gemini-2.5-flash-image ("nano
+// banana") — elegido porque tiene un tier gratis generoso (~500
+// imágenes/día en AI Studio, sin tarjeta de crédito) y una API REST
+// simple de un solo request. La clave se guarda en Supabase Vault bajo
+// el secreto `image_generation_api_key` (mismo nombre que ya
+// verificaba el stub anterior) — se consigue gratis en
+// https://aistudio.google.com/apikey.
 //
-// Por eso esta función, hoy, SIEMPRE responde `configured: false` con un
-// mensaje claro en vez de simular una generación falsa. La interfaz del
-// dashboard (products-tab.tsx) ya maneja el contrato completo
-// (prompt → generando → preview → aceptar/regenerar), así que activar
-// esta función en el futuro es solo: guardar la clave del proveedor en
-// Vault, y reemplazar el bloque marcado abajo con la llamada real al
-// proveedor + subida del resultado a Storage (mismo bucket `menu-images`,
-// carpeta `products/`, mismo patrón que import-product-image).
+// Si el secreto no existe todavía, la función responde `configured:
+// false` con un mensaje claro en vez de fabricar una respuesta falsa.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+
+const GEMINI_MODEL = 'gemini-2.5-flash-image'
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -92,15 +89,56 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // --- A partir de aquí iría la integración real con el proveedor una
-  // vez exista una clave: llamar a su API con `prompt`, subir la imagen
-  // resultante a `menu-images/products/` (mismo bucket que ya usa la
-  // subida manual) y devolver su URL pública. No se implementa la
-  // llamada en sí porque no hay proveedor/clave real contra el cual
-  // verificarla — hacerlo ahora sería fabricar una integración sin
-  // poder probarla.
-  return json({
-    configured: false,
-    message: 'Proveedor de generación de imágenes no implementado todavía.',
-  })
+  // Pedimos explícitamente foto de producto tipo catálogo (fondo neutro,
+  // buena iluminación) además de lo que haya escrito el usuario, para que
+  // el resultado combine con el resto de las fotos del menú.
+  const fullPrompt = `${prompt}. Fotografía de producto para el menú digital de una pizzería: fondo neutro y liso, buena iluminación de estudio, alta calidad, sin texto ni marcas de agua.`
+
+  let geminiRes: Response
+  try {
+    geminiRes = await fetch(GEMINI_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] }),
+    })
+  } catch {
+    return json({ configured: true, error: 'No se pudo contactar al proveedor de generación de imágenes.' }, 502)
+  }
+
+  if (!geminiRes.ok) {
+    // No repetimos el body del proveedor tal cual (puede filtrar detalles
+    // internos) — solo lo suficiente para diagnosticar en logs.
+    console.error('generate-product-image: Gemini respondió', geminiRes.status, await geminiRes.text())
+    return json(
+      { configured: true, error: 'El proveedor de generación de imágenes no pudo procesar la solicitud.' },
+      502
+    )
+  }
+
+  const geminiBody = await geminiRes.json()
+  const parts = geminiBody?.candidates?.[0]?.content?.parts ?? []
+  const imagePart = parts.find((p: { inlineData?: { data?: string } }) => p?.inlineData?.data)
+
+  if (!imagePart) {
+    console.error('generate-product-image: respuesta de Gemini sin imagen', JSON.stringify(geminiBody))
+    return json({ configured: true, error: 'El proveedor no devolvió ninguna imagen. Intenta con otra descripción.' }, 502)
+  }
+
+  const mimeType: string = imagePart.inlineData.mimeType ?? 'image/png'
+  const ext = mimeType.split('/')[1]?.split('+')[0] || 'png'
+  const base64 = imagePart.inlineData.data as string
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+
+  const path = `products/${crypto.randomUUID()}.${ext}`
+  const { error: uploadError } = await adminClient.storage
+    .from('menu-images')
+    .upload(path, bytes, { contentType: mimeType, upsert: false })
+
+  if (uploadError) {
+    console.error('generate-product-image: fallo al subir a Storage', uploadError)
+    return json({ configured: true, error: 'La imagen se generó pero no se pudo guardar. Intenta de nuevo.' }, 500)
+  }
+
+  const { data: publicUrlData } = adminClient.storage.from('menu-images').getPublicUrl(path)
+  return json({ configured: true, url: publicUrlData.publicUrl })
 })
