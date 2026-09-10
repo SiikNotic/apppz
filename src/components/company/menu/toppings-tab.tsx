@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ItemThumb } from '@/components/ui/item-thumb'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatCurrency } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Topping, Ingredient } from '@/lib/types'
@@ -120,51 +122,106 @@ export function ToppingsTab() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-extrabold text-ink-900">{t('menuMgmt.tabToppings')}</h2>
+        <h2 className="text-base font-extrabold text-foreground">{t('menuMgmt.tabToppings')}</h2>
         <Button size="sm" onClick={openCreate}>
           <Plus size={14} /> {t('menuMgmt.toppingWord')}
         </Button>
       </div>
 
-      <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
-        {!loading && toppings.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">{t('menuMgmt.noToppings')}</p>
-        )}
-        {toppings.map((topping) => (
-          <div key={topping.id} className="flex items-center justify-between gap-3 px-5 py-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <ItemThumb name={topping.name} imageUrl={topping.image_url} size="sm" />
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
-                <span className="text-sm font-semibold text-ink-900">{topping.name}</span>
-                <span className="text-xs font-semibold text-ink-400">
-                  +{formatCurrency(topping.price)} ·{' '}
-                  {t('menuMgmt.consumesIngredient', { ingredient: ingredientName(topping.ingredient_id) })}
-                </span>
-                <button onClick={() => toggleActive(topping)}>
-                  <Badge variant={topping.active ? 'success' : 'neutral'}>
-                    {topping.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
-                  </Badge>
-                </button>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <button
-                onClick={() => openEdit(topping)}
-                className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-              >
-                <Pencil size={14} />
-              </button>
-              <button
-                onClick={() => handleDelete(topping)}
-                className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
+      {loading && <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>}
+      {!loading && toppings.length === 0 && <EmptyState message={t('menuMgmt.noToppings')} icon={<Plus size={28} aria-hidden="true" />} />}
+
+      {!loading && toppings.length > 0 && (
+        <>
+          {/* Mobile (< md): tarjeta por topping. */}
+          <div className="space-y-3 md:hidden">
+            {toppings.map((topping) => (
+              <Card key={topping.id} className="space-y-3 p-4">
+                <div className="flex items-start gap-3">
+                  <ItemThumb name={topping.name} imageUrl={topping.image_url} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-semibold text-foreground">{topping.name}</span>
+                      <button onClick={() => toggleActive(topping)}>
+                        <Badge variant={topping.active ? 'success' : 'neutral'}>
+                          {topping.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
+                        </Badge>
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      +{formatCurrency(topping.price)} ·{' '}
+                      {t('menuMgmt.consumesIngredient', { ingredient: ingredientName(topping.ingredient_id) })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 border-t border-border pt-3">
+                  <Button size="sm" variant="secondary" onClick={() => openEdit(topping)} className="flex-1">
+                    <Pencil size={14} aria-hidden="true" /> {t('common.edit')}
+                  </Button>
+                  <button
+                    onClick={() => handleDelete(topping)}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                  >
+                    <Trash2 size={14} aria-hidden="true" />
+                  </button>
+                </div>
+              </Card>
+            ))}
           </div>
-        ))}
-      </Card>
+
+          {/* Tablet/Desktop (>= md): tabla real, más densa. */}
+          <Card className="hidden overflow-x-auto p-0 md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('menuMgmt.name')}</TableHead>
+                  <TableHead>{t('menuMgmt.extraPrice')}</TableHead>
+                  <TableHead>{t('menuMgmt.ingredientOptional')}</TableHead>
+                  <TableHead>{t('ordersAdmin.status')}</TableHead>
+                  <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {toppings.map((topping) => (
+                  <TableRow key={topping.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <ItemThumb name={topping.name} imageUrl={topping.image_url} size="sm" />
+                        <span className="font-semibold text-foreground">{topping.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">+{formatCurrency(topping.price)}</TableCell>
+                    <TableCell className="text-muted-foreground">{ingredientName(topping.ingredient_id)}</TableCell>
+                    <TableCell>
+                      <button onClick={() => toggleActive(topping)}>
+                        <Badge variant={topping.active ? 'success' : 'neutral'}>
+                          {topping.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
+                        </Badge>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEdit(topping)}
+                          className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                        >
+                          <Pencil size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(topping)}
+                          className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                        >
+                          <Trash2 size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-sm">

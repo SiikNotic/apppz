@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ItemThumb } from '@/components/ui/item-thumb'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatCurrency } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Category, MenuItem, ItemSize } from '@/lib/types'
@@ -324,70 +326,145 @@ export function ProductsTab() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-extrabold text-ink-900">{t('menuMgmt.tabProducts')}</h2>
+        <h2 className="text-base font-extrabold text-foreground">{t('menuMgmt.tabProducts')}</h2>
         <Button size="sm" onClick={openCreate}>
           <Plus size={14} /> {t('productForm.newProduct')}
         </Button>
       </div>
 
-      <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
-        {!loading && items.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">{t('productForm.noProducts')}</p>
-        )}
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <ItemThumb name={item.name} imageUrl={item.image_url} size="sm" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold text-ink-900">{item.name}</span>
-                  {item.is_customizable_pizza && <Badge variant="brand">{t('productForm.customizableBadge')}</Badge>}
+      {loading && <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>}
+      {!loading && items.length === 0 && <EmptyState message={t('productForm.noProducts')} icon={<Plus size={28} aria-hidden="true" />} />}
+
+      {!loading && items.length > 0 && (
+        <>
+          {/* Mobile (< md): tarjeta por producto. */}
+          <div className="space-y-3 md:hidden">
+            {items.map((item) => (
+              <Card key={item.id} className="space-y-3 p-4">
+                <div className="flex items-start gap-3">
+                  <ItemThumb name={item.name} imageUrl={item.image_url} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-semibold text-foreground">{item.name}</span>
+                      {item.is_customizable_pizza && <Badge variant="brand">{t('productForm.customizableBadge')}</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {categoryName(item.category_id)} · {formatCurrency(item.base_price)}
+                    </p>
+                  </div>
+                  <button onClick={() => toggleActive(item)} className="shrink-0">
+                    <Badge variant={item.active ? 'success' : 'neutral'}>
+                      {item.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
+                    </Badge>
+                  </button>
                 </div>
-                <p className="text-xs text-ink-400">
-                  {categoryName(item.category_id)} · {formatCurrency(item.base_price)}
-                </p>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <button onClick={() => toggleActive(item)}>
-                <Badge variant={item.active ? 'success' : 'neutral'}>
-                  {item.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
-                </Badge>
-              </button>
-              <button
-                onClick={() => handleDuplicate(item)}
-                disabled={duplicatingId === item.id}
-                aria-label={t('productForm.duplicateAria', { name: item.name })}
-                title={t('productForm.duplicateTitle')}
-                className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100 disabled:opacity-50"
-              >
-                {duplicatingId === item.id ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Copy size={14} />
-                )}
-              </button>
-              <button
-                onClick={() => openEdit(item)}
-                aria-label={t('productForm.editAria', { name: item.name })}
-                title={t('common.edit')}
-                className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-              >
-                <Pencil size={14} />
-              </button>
-              <button
-                onClick={() => handleDelete(item)}
-                aria-label={t('productForm.deleteAria', { name: item.name })}
-                title={t('common.delete')}
-                className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
+                <div className="flex items-center gap-1.5 border-t border-border pt-3">
+                  <Button size="sm" variant="secondary" onClick={() => openEdit(item)} className="flex-1">
+                    <Pencil size={14} aria-hidden="true" /> {t('common.edit')}
+                  </Button>
+                  <button
+                    onClick={() => handleDuplicate(item)}
+                    disabled={duplicatingId === item.id}
+                    aria-label={t('productForm.duplicateAria', { name: item.name })}
+                    title={t('productForm.duplicateTitle')}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70 disabled:opacity-50"
+                  >
+                    {duplicatingId === item.id ? (
+                      <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Copy size={14} aria-hidden="true" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item)}
+                    aria-label={t('productForm.deleteAria', { name: item.name })}
+                    title={t('common.delete')}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                  >
+                    <Trash2 size={14} aria-hidden="true" />
+                  </button>
+                </div>
+              </Card>
+            ))}
           </div>
-        ))}
-      </Card>
+
+          {/* Tablet/Desktop (>= md): tabla real, más densa. */}
+          <Card className="hidden overflow-x-auto p-0 md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('menuMgmt.name')}</TableHead>
+                  <TableHead>{t('productForm.category')}</TableHead>
+                  <TableHead>{t('productForm.price')}</TableHead>
+                  <TableHead>{t('ordersAdmin.status')}</TableHead>
+                  <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <ItemThumb name={item.name} imageUrl={item.image_url} size="sm" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate font-semibold text-foreground">{item.name}</span>
+                            {item.is_customizable_pizza && (
+                              <Badge variant="brand">{t('productForm.customizableBadge')}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{categoryName(item.category_id)}</TableCell>
+                    <TableCell className="font-semibold text-foreground">{formatCurrency(item.base_price)}</TableCell>
+                    <TableCell>
+                      <button onClick={() => toggleActive(item)}>
+                        <Badge variant={item.active ? 'success' : 'neutral'}>
+                          {item.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
+                        </Badge>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleDuplicate(item)}
+                          disabled={duplicatingId === item.id}
+                          aria-label={t('productForm.duplicateAria', { name: item.name })}
+                          title={t('productForm.duplicateTitle')}
+                          className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70 disabled:opacity-50"
+                        >
+                          {duplicatingId === item.id ? (
+                            <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                          ) : (
+                            <Copy size={14} aria-hidden="true" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openEdit(item)}
+                          aria-label={t('productForm.editAria', { name: item.name })}
+                          title={t('common.edit')}
+                          className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                        >
+                          <Pencil size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          aria-label={t('productForm.deleteAria', { name: item.name })}
+                          title={t('common.delete')}
+                          className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                        >
+                          <Trash2 size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-lg">

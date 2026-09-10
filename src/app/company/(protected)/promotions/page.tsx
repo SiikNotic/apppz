@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { EmptyState } from '@/components/ui/empty-state'
 import { BannersManager } from '@/components/company/promotions/banners-manager'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -149,58 +151,121 @@ export default function PromotionsPage() {
         }
       />
 
-      <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
-        {!loading && promotions.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">{t('promotionsAdmin.noPromotions')}</p>
-        )}
-        {promotions.map((promo) => (
-          <div key={promo.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-900">
-                <Tag size={16} aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="truncate text-sm font-bold text-ink-900">{promo.name}</span>
-                  {promo.code && <Badge variant="brand">{promo.code}</Badge>}
-                  <button onClick={() => canManage && toggleActive(promo)} disabled={!canManage}>
-                    <Badge variant={promo.active ? 'success' : 'neutral'}>
-                      {promo.active ? t('menuMgmt.activeF') : t('menuMgmt.inactiveF')}
-                    </Badge>
-                  </button>
+      {loading && <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>}
+      {!loading && promotions.length === 0 && (
+        <EmptyState icon={<Tag size={28} aria-hidden="true" />} message={t('promotionsAdmin.noPromotions')} />
+      )}
+
+      {!loading && promotions.length > 0 && (
+        <>
+          {/* Mobile (< md): tarjeta por promoción. */}
+          <div className="space-y-3 md:hidden">
+            {promotions.map((promo) => (
+              <Card key={promo.id} className="space-y-3 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-900">
+                    <Tag size={16} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-bold text-foreground">{promo.name}</span>
+                      {promo.code && <Badge variant="brand">{promo.code}</Badge>}
+                      <button onClick={() => canManage && toggleActive(promo)} disabled={!canManage}>
+                        <Badge variant={promo.active ? 'success' : 'neutral'}>
+                          {promo.active ? t('menuMgmt.activeF') : t('menuMgmt.inactiveF')}
+                        </Badge>
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t(TYPE_KEYS[promo.type])} ·{' '}
+                      {promo.type === 'percentage' ? `${promo.value}%` : formatCurrency(promo.value)}
+                      {promo.min_order_amount
+                        ? ` · ${t('promotionsAdmin.minPrefix', { amount: formatCurrency(promo.min_order_amount) })}`
+                        : ''}
+                      {promo.ends_at ? ` · ${t('promotionsAdmin.expiresPrefix', { date: formatDate(promo.ends_at) })}` : ''}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-ink-400">
-                  {t(TYPE_KEYS[promo.type])} ·{' '}
-                  {promo.type === 'percentage' ? `${promo.value}%` : formatCurrency(promo.value)}
-                  {promo.min_order_amount
-                    ? ` · ${t('promotionsAdmin.minPrefix', { amount: formatCurrency(promo.min_order_amount) })}`
-                    : ''}
-                  {promo.ends_at ? ` · ${t('promotionsAdmin.expiresPrefix', { date: formatDate(promo.ends_at) })}` : ''}
-                </p>
-              </div>
-            </div>
-            {canManage && (
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button
-                  onClick={() => openEdit(promo)}
-                  aria-label={t('promotionsAdmin.editAria', { name: promo.name })}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                >
-                  <Pencil size={14} aria-hidden="true" />
-                </button>
-                <button
-                  onClick={() => handleDelete(promo)}
-                  aria-label={t('promotionsAdmin.deleteAria', { name: promo.name })}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-                >
-                  <Trash2 size={14} aria-hidden="true" />
-                </button>
-              </div>
-            )}
+                {canManage && (
+                  <div className="flex items-center gap-2 border-t border-border pt-3">
+                    <Button size="sm" variant="secondary" onClick={() => openEdit(promo)} className="flex-1">
+                      <Pencil size={14} aria-hidden="true" /> {t('common.edit')}
+                    </Button>
+                    <button
+                      onClick={() => handleDelete(promo)}
+                      aria-label={t('promotionsAdmin.deleteAria', { name: promo.name })}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </Card>
+            ))}
           </div>
-        ))}
-      </Card>
+
+          {/* Tablet/Desktop (>= md): tabla real, más densa. */}
+          <Card className="hidden overflow-x-auto p-0 md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('menuMgmt.name')}</TableHead>
+                  <TableHead>{t('promotionsAdmin.type')}</TableHead>
+                  <TableHead>{t('ordersAdmin.status')}</TableHead>
+                  <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {promotions.map((promo) => (
+                  <TableRow key={promo.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">{promo.name}</span>
+                        {promo.code && <Badge variant="brand">{promo.code}</Badge>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {t(TYPE_KEYS[promo.type])} ·{' '}
+                      {promo.type === 'percentage' ? `${promo.value}%` : formatCurrency(promo.value)}
+                      {promo.min_order_amount
+                        ? ` · ${t('promotionsAdmin.minPrefix', { amount: formatCurrency(promo.min_order_amount) })}`
+                        : ''}
+                      {promo.ends_at ? ` · ${t('promotionsAdmin.expiresPrefix', { date: formatDate(promo.ends_at) })}` : ''}
+                    </TableCell>
+                    <TableCell>
+                      <button onClick={() => canManage && toggleActive(promo)} disabled={!canManage}>
+                        <Badge variant={promo.active ? 'success' : 'neutral'}>
+                          {promo.active ? t('menuMgmt.activeF') : t('menuMgmt.inactiveF')}
+                        </Badge>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      {canManage && (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openEdit(promo)}
+                            aria-label={t('promotionsAdmin.editAria', { name: promo.name })}
+                            className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                          >
+                            <Pencil size={14} aria-hidden="true" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(promo)}
+                            aria-label={t('promotionsAdmin.deleteAria', { name: promo.name })}
+                            className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
 
       <BannersManager canManage={canManage} />
 

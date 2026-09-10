@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   EmployeeDetailsForm,
   EMPTY_EMPLOYEE_DETAILS,
@@ -311,73 +312,157 @@ export default function TeamPage() {
         }
       />
 
-      <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
-        {!loading && staff.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">{t('teamAdmin.onlyYouForNow')}</p>
-        )}
-        {staff.map((member) => {
-          const isTerminated = !!member.terminated_at
-          const isOwner = member.company_role === 'owner'
-          return (
-            <div key={member.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-ink-900">
-                  {member.full_name || t('teamAdmin.noName')}
-                </p>
-                <p className="text-xs text-ink-400">
-                  {isTerminated
-                    ? t('teamAdmin.terminatedOn', { date: formatDate(member.terminated_at!) })
-                    : t('teamAdmin.sinceDate', { date: formatDate(member.created_at) })}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Badge variant={isTerminated ? 'danger' : isOwner ? 'brand' : 'neutral'}>
-                  {isTerminated ? t('teamAdmin.terminatedBadge') : member.company_role ? ROLE_LABELS[member.company_role] : t('teamAdmin.roleStaff')}
-                </Badge>
-                {!isOwner &&
-                  (isTerminated ? (
-                    <button
-                      onClick={() => openReactivate(member)}
-                      aria-label={t('teamAdmin.reactivateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                      title={t('teamAdmin.reactivateTitle')}
-                      className="grid h-8 w-8 place-items-center rounded-full bg-success-500/10 text-success-500 hover:brightness-95"
-                    >
-                      <UserCheck size={14} aria-hidden="true" />
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => openDetails(member)}
-                        aria-label={t('teamAdmin.viewDetailsAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                        title={t('teamAdmin.detailsTitle')}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                      >
-                        <IdCard size={14} aria-hidden="true" />
-                      </button>
-                      <button
-                        onClick={() => openChangeRole(member)}
-                        aria-label={t('teamAdmin.changeRoleAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                        title={t('teamAdmin.changeRoleTitle')}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                      >
-                        <Repeat size={14} aria-hidden="true" />
-                      </button>
-                      <button
-                        onClick={() => openTerminate(member)}
-                        aria-label={t('teamAdmin.terminateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                        title={t('teamAdmin.terminateTitle')}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-                      >
-                        <UserX size={14} aria-hidden="true" />
-                      </button>
-                    </>
-                  ))}
-              </div>
-            </div>
-          )
-        })}
-      </Card>
+      {loading && <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>}
+      {!loading && staff.length === 0 && (
+        <EmptyState icon={<Users size={28} aria-hidden="true" />} message={t('teamAdmin.onlyYouForNow')} />
+      )}
+
+      {!loading && staff.length > 0 && (
+        <>
+          {/* Mobile (< md): tarjeta por empleado. */}
+          <div className="space-y-3 md:hidden">
+            {staff.map((member) => {
+              const isTerminated = !!member.terminated_at
+              const isOwner = member.company_role === 'owner'
+              return (
+                <Card key={member.id} className="space-y-3 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {member.full_name || t('teamAdmin.noName')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isTerminated
+                          ? t('teamAdmin.terminatedOn', { date: formatDate(member.terminated_at!) })
+                          : t('teamAdmin.sinceDate', { date: formatDate(member.created_at) })}
+                      </p>
+                    </div>
+                    <Badge variant={isTerminated ? 'danger' : isOwner ? 'brand' : 'neutral'}>
+                      {isTerminated ? t('teamAdmin.terminatedBadge') : member.company_role ? ROLE_LABELS[member.company_role] : t('teamAdmin.roleStaff')}
+                    </Badge>
+                  </div>
+                  {!isOwner && (
+                    <div className="flex items-center gap-1.5 border-t border-border pt-3">
+                      {isTerminated ? (
+                        <Button size="sm" variant="secondary" onClick={() => openReactivate(member)} className="flex-1">
+                          <UserCheck size={14} aria-hidden="true" /> {t('teamAdmin.reactivateTitle')}
+                        </Button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => openDetails(member)}
+                            aria-label={t('teamAdmin.viewDetailsAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                            title={t('teamAdmin.detailsTitle')}
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                          >
+                            <IdCard size={14} aria-hidden="true" />
+                          </button>
+                          <button
+                            onClick={() => openChangeRole(member)}
+                            aria-label={t('teamAdmin.changeRoleAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                            title={t('teamAdmin.changeRoleTitle')}
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                          >
+                            <Repeat size={14} aria-hidden="true" />
+                          </button>
+                          <button
+                            onClick={() => openTerminate(member)}
+                            aria-label={t('teamAdmin.terminateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                            title={t('teamAdmin.terminateTitle')}
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                          >
+                            <UserX size={14} aria-hidden="true" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* Tablet/Desktop (>= md): tabla real, más densa. */}
+          <Card className="hidden overflow-x-auto p-0 md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('auth.fullName')}</TableHead>
+                  <TableHead>{t('teamAdmin.roleLabel')}</TableHead>
+                  <TableHead>{t('customersAdmin.registered')}</TableHead>
+                  <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {staff.map((member) => {
+                  const isTerminated = !!member.terminated_at
+                  const isOwner = member.company_role === 'owner'
+                  return (
+                    <TableRow key={member.id}>
+                      <TableCell className="font-semibold text-foreground">
+                        {member.full_name || t('teamAdmin.noName')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={isTerminated ? 'danger' : isOwner ? 'brand' : 'neutral'}>
+                          {isTerminated ? t('teamAdmin.terminatedBadge') : member.company_role ? ROLE_LABELS[member.company_role] : t('teamAdmin.roleStaff')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {isTerminated
+                          ? t('teamAdmin.terminatedOn', { date: formatDate(member.terminated_at!) })
+                          : t('teamAdmin.sinceDate', { date: formatDate(member.created_at) })}
+                      </TableCell>
+                      <TableCell>
+                        {!isOwner && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isTerminated ? (
+                              <button
+                                onClick={() => openReactivate(member)}
+                                aria-label={t('teamAdmin.reactivateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                                title={t('teamAdmin.reactivateTitle')}
+                                className="grid h-8 w-8 place-items-center rounded-full bg-success-500/10 text-success-500 hover:brightness-95"
+                              >
+                                <UserCheck size={14} aria-hidden="true" />
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => openDetails(member)}
+                                  aria-label={t('teamAdmin.viewDetailsAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                                  title={t('teamAdmin.detailsTitle')}
+                                  className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                                >
+                                  <IdCard size={14} aria-hidden="true" />
+                                </button>
+                                <button
+                                  onClick={() => openChangeRole(member)}
+                                  aria-label={t('teamAdmin.changeRoleAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                                  title={t('teamAdmin.changeRoleTitle')}
+                                  className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                                >
+                                  <Repeat size={14} aria-hidden="true" />
+                                </button>
+                                <button
+                                  onClick={() => openTerminate(member)}
+                                  aria-label={t('teamAdmin.terminateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
+                                  title={t('teamAdmin.terminateTitle')}
+                                  className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                                >
+                                  <UserX size={14} aria-hidden="true" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-lg">

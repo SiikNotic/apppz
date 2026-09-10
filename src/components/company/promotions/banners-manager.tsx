@@ -17,6 +17,8 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { PromoBanner, Promotion, MenuItem } from '@/lib/types'
@@ -172,8 +174,8 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-extrabold text-ink-900">{t('promotionsAdmin.bannerHeading')}</h2>
-          <p className="text-xs text-ink-400">{t('promotionsAdmin.bannerSubtitle')}</p>
+          <h2 className="text-base font-extrabold text-foreground">{t('promotionsAdmin.bannerHeading')}</h2>
+          <p className="text-xs text-muted-foreground">{t('promotionsAdmin.bannerSubtitle')}</p>
         </div>
         {canManage && (
           <Button size="sm" onClick={openCreate}>
@@ -182,57 +184,122 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
         )}
       </div>
 
-      <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
-        {!loading && banners.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">{t('promotionsAdmin.noBanners')}</p>
-        )}
-        {banners.map((banner) => (
-          <div key={banner.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-ink-50 text-ink-400">
-                {banner.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={banner.image_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <ImageIcon size={16} aria-hidden="true" />
-                )}
-              </span>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="truncate text-sm font-bold text-ink-900">{banner.title}</span>
-                  <button onClick={() => canManage && toggleActive(banner)} disabled={!canManage}>
-                    <Badge variant={banner.active ? 'success' : 'neutral'}>
-                      {banner.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
-                    </Badge>
-                  </button>
+      {loading && <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</p>}
+      {!loading && banners.length === 0 && (
+        <EmptyState icon={<ImageIcon size={28} aria-hidden="true" />} message={t('promotionsAdmin.noBanners')} />
+      )}
+
+      {!loading && banners.length > 0 && (
+        <>
+          {/* Mobile (< md): tarjeta por banner. */}
+          <div className="space-y-3 md:hidden">
+            {banners.map((banner) => (
+              <Card key={banner.id} className="space-y-3 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-muted-foreground">
+                    {banner.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={banner.image_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImageIcon size={16} aria-hidden="true" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-bold text-foreground">{banner.title}</span>
+                      <button onClick={() => canManage && toggleActive(banner)} disabled={!canManage}>
+                        <Badge variant={banner.active ? 'success' : 'neutral'}>
+                          {banner.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
+                        </Badge>
+                      </button>
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {banner.ends_at ? t('promotionsAdmin.expiresOnly', { date: formatDate(banner.ends_at) }) : t('promotionsAdmin.noExpiryDate')}
+                    </p>
+                  </div>
                 </div>
-                <p className="truncate text-xs text-ink-400">
-                  {banner.ends_at ? t('promotionsAdmin.expiresOnly', { date: formatDate(banner.ends_at) }) : t('promotionsAdmin.noExpiryDate')}
-                </p>
-              </div>
-            </div>
-            {canManage && (
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button
-                  onClick={() => openEdit(banner)}
-                  aria-label={t('promotionsAdmin.editAria', { name: banner.title })}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
-                >
-                  <Pencil size={14} aria-hidden="true" />
-                </button>
-                <button
-                  onClick={() => handleDelete(banner)}
-                  aria-label={t('promotionsAdmin.deleteAria', { name: banner.title })}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-                >
-                  <Trash2 size={14} aria-hidden="true" />
-                </button>
-              </div>
-            )}
+                {canManage && (
+                  <div className="flex items-center gap-2 border-t border-border pt-3">
+                    <Button size="sm" variant="secondary" onClick={() => openEdit(banner)} className="flex-1">
+                      <Pencil size={14} aria-hidden="true" /> {t('common.edit')}
+                    </Button>
+                    <button
+                      onClick={() => handleDelete(banner)}
+                      aria-label={t('promotionsAdmin.deleteAria', { name: banner.title })}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </Card>
+            ))}
           </div>
-        ))}
-      </Card>
+
+          {/* Tablet/Desktop (>= md): tabla real, más densa. */}
+          <Card className="hidden overflow-x-auto p-0 md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('promotionsAdmin.bannerTitleLabel')}</TableHead>
+                  <TableHead>{t('promotionsAdmin.endsOptional')}</TableHead>
+                  <TableHead>{t('ordersAdmin.status')}</TableHead>
+                  <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {banners.map((banner) => (
+                  <TableRow key={banner.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-muted-foreground">
+                          {banner.image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={banner.image_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <ImageIcon size={16} aria-hidden="true" />
+                          )}
+                        </span>
+                        <span className="font-semibold text-foreground">{banner.title}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {banner.ends_at ? formatDate(banner.ends_at) : t('promotionsAdmin.noExpiryDate')}
+                    </TableCell>
+                    <TableCell>
+                      <button onClick={() => canManage && toggleActive(banner)} disabled={!canManage}>
+                        <Badge variant={banner.active ? 'success' : 'neutral'}>
+                          {banner.active ? t('menuMgmt.activeM') : t('menuMgmt.inactiveM')}
+                        </Badge>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      {canManage && (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openEdit(banner)}
+                            aria-label={t('promotionsAdmin.editAria', { name: banner.title })}
+                            className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                          >
+                            <Pencil size={14} aria-hidden="true" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(banner)}
+                            aria-label={t('promotionsAdmin.deleteAria', { name: banner.title })}
+                            className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
