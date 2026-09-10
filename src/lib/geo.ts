@@ -1,17 +1,11 @@
-// Geocodificación de direcciones — usa Nominatim (OpenStreetMap), no
-// Mapbox: Mapbox exige una cuenta con correo "de trabajo" y rechaza
-// correos personales (gmail, etc.), lo cual bloqueaba por completo poder
-// configurar esto. Nominatim no pide cuenta ni API key.
-//
-// Política de uso de Nominatim (https://operations.osmfoundation.org/policies/nominatim/):
-// máximo ~1 solicitud/segundo y se debe poder identificar la app que
-// llama. Desde el navegador no se puede sobreescribir el header
-// User-Agent (los navegadores lo bloquean por seguridad), así que la
-// identificación real es el header Referer que el navegador ya manda
-// solo — suficiente para este volumen (una geocodificación por
-// dirección nueva, con el resultado guardado después para no repetirla).
-const NOMINATIM_SEARCH_ENDPOINT = 'https://nominatim.openstreetmap.org/search'
-const NOMINATIM_REVERSE_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse'
+// Geocodificación de direcciones — Mapbox Geocoding API v6, con el
+// mismo token público del mapa (ver src/lib/mapbox.ts). Antes usaba
+// Nominatim (OpenStreetMap) porque Mapbox rechazaba cuentas con correo
+// personal; ese bloqueo ya no aplica con la cuenta actual del cliente.
+import { MAPBOX_TOKEN } from './mapbox'
+
+const FORWARD_ENDPOINT = 'https://api.mapbox.com/search/geocode/v6/forward'
+const REVERSE_ENDPOINT = 'https://api.mapbox.com/search/geocode/v6/reverse'
 
 export interface GeocodeResult {
   lat: number
@@ -25,6 +19,20 @@ export interface ReverseGeocodeResult {
   zip: string
 }
 
+interface MapboxContext {
+  address?: { name?: string; address_number?: string; street_name?: string }
+  street?: { name?: string }
+  postcode?: { name?: string }
+  place?: { name?: string }
+  district?: { name?: string }
+  region?: { name?: string }
+}
+
+interface MapboxFeature {
+  geometry?: { coordinates?: [number, number] }
+  properties?: { name?: string; context?: MapboxContext }
+}
+
 /**
  * Convierte una dirección de texto a coordenadas. Devuelve null si la
  * dirección viene vacía o el proveedor no encuentra nada — nunca fabrica
@@ -34,15 +42,17 @@ export async function geocodeAddress(query: string): Promise<GeocodeResult | nul
   const trimmed = query.trim()
   if (!trimmed) return null
 
-  const url = `${NOMINATIM_SEARCH_ENDPOINT}?format=jsonv2&limit=1&q=${encodeURIComponent(trimmed)}`
+  const url = `${FORWARD_ENDPOINT}?q=${encodeURIComponent(trimmed)}&limit=1&access_token=${MAPBOX_TOKEN}`
 
   try {
     const res = await fetch(url)
     if (!res.ok) return null
     const data = await res.json()
-    const result = data?.[0]
-    if (!result?.lat || !result?.lon) return null
-    return { lat: Number(result.lat), lng: Number(result.lon) }
+    const feature: MapboxFeature | undefined = data?.features?.[0]
+    const coords = feature?.geometry?.coordinates
+    if (!coords) return null
+    const [lng, lat] = coords
+    return { lat, lng }
   } catch {
     return null
   }
@@ -56,20 +66,25 @@ export async function geocodeAddress(query: string): Promise<GeocodeResult | nul
  * siempre puede corregir cualquier campo antes de guardar.
  */
 export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult | null> {
-  const url = `${NOMINATIM_REVERSE_ENDPOINT}?format=jsonv2&lat=${lat}&lon=${lng}`
+  const url = `${REVERSE_ENDPOINT}?longitude=${lng}&latitude=${lat}&access_token=${MAPBOX_TOKEN}`
 
   try {
     const res = await fetch(url)
     if (!res.ok) return null
     const data = await res.json()
-    const addr = data?.address
-    if (!addr) return null
-    const street = [addr.road, addr.house_number].filter(Boolean).join(' ')
+    const feature: MapboxFeature | undefined = data?.features?.[0]
+    const ctx = feature?.properties?.context
+    if (!ctx) return null
+    const street =
+      ctx.address?.name ||
+      [ctx.address?.address_number, ctx.address?.street_name || ctx.street?.name].filter(Boolean).join(' ') ||
+      feature?.properties?.name ||
+      ''
     return {
-      street: street || data.display_name || '',
-      city: addr.city || addr.town || addr.village || addr.county || '',
-      state: addr.state || '',
-      zip: addr.postcode || '',
+      street,
+      city: ctx.place?.name || ctx.district?.name || '',
+      state: ctx.region?.name || '',
+      zip: ctx.postcode?.name || '',
     }
   } catch {
     return null

@@ -8,7 +8,7 @@ import { fetchUserAddresses, createAddress, updateAddress, deleteAddress } from 
 import { addressSchema, firstFieldErrors, type AddressInput } from '@/lib/validation/address.schema'
 import { Card } from '@/components/ui/card'
 
-// Leaflet necesita `window` — con export estático hay que saltarlo del
+// Mapbox GL necesita `window` — con export estático hay que saltarlo del
 // prerenderizado (mismo patrón que LiveDeliveryMap).
 const LocationPickerDialog = dynamic(
   () => import('@/components/customer/location-picker-dialog').then((m) => m.LocationPickerDialog),

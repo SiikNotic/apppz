@@ -5,20 +5,23 @@
 // centro de la pantalla y es el MAPA el que se arrastra debajo (mismo
 // patrón que Uber/Google Maps), así no hace falta lógica de arrastrar
 // un marcador. Al soltar, se geocodifica el centro a una dirección
-// aproximada (Nominatim) que el cliente puede seguir editando — nunca
-// se guarda nada sin que él confirme.
+// aproximada (Mapbox) que el cliente puede seguir editando — nunca se
+// guarda nada sin que él confirme.
 //
 // Se importa siempre vía next/dynamic con ssr:false (igual que
-// LiveDeliveryMap) porque Leaflet necesita `window`.
+// LiveDeliveryMap) porque Mapbox GL necesita `window`.
 import { useEffect, useRef, useState } from 'react'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 import { MapPin, Search, LocateFixed } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { geocodeAddress, reverseGeocode, type ReverseGeocodeResult } from '@/lib/geo'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { MAPBOX_TOKEN, MAPBOX_STYLE } from '@/lib/mapbox'
+
+mapboxgl.accessToken = MAPBOX_TOKEN
 
 interface LocationPickerDialogProps {
   open: boolean
@@ -32,8 +35,7 @@ const DEFAULT_CENTER: [number, number] = [19.4326, -99.1332]
 export function LocationPickerDialog({ open, onClose, initial, onConfirm }: LocationPickerDialogProps) {
   const { t } = useLanguage()
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<L.Map | null>(null)
-  const circleRef = useRef<L.Circle | null>(null)
+  const mapRef = useRef<mapboxgl.Map | null>(null)
   const [search, setSearch] = useState('')
   const [searching, setSearching] = useState(false)
   const [address, setAddress] = useState<ReverseGeocodeResult | null>(null)
@@ -43,26 +45,20 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
   )
 
   // Inicializa el mapa cada vez que se abre — se destruye al cerrar para
-  // no dejar un mapa de Leaflet vivo detrás de un diálogo invisible.
+  // no dejar un mapa de Mapbox vivo detrás de un diálogo invisible.
   useEffect(() => {
     if (!open || !containerRef.current || mapRef.current) return
     const start = initial ?? { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] }
-    const map = L.map(containerRef.current, { zoomControl: true }).setView([start.lat, start.lng], 15)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map)
-    circleRef.current = L.circle([start.lat, start.lng], {
-      radius: 150,
-      color: '#ff0000',
-      fillColor: '#ff0000',
-      fillOpacity: 0.15,
-      weight: 1,
-    }).addTo(map)
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: MAPBOX_STYLE,
+      center: [start.lng, start.lat],
+      zoom: 15,
+    })
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
 
     function handleMoveEnd() {
       const c = map.getCenter()
-      circleRef.current?.setLatLng(c)
       setCenter({ lat: c.lat, lng: c.lng })
     }
     map.on('moveend', handleMoveEnd)
@@ -72,7 +68,6 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
       map.off('moveend', handleMoveEnd)
       map.remove()
       mapRef.current = null
-      circleRef.current = null
     }
   }, [open, initial])
 
@@ -98,7 +93,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
     setSearching(true)
     const result = await geocodeAddress(search)
     setSearching(false)
-    if (result) mapRef.current?.setView([result.lat, result.lng], 16)
+    if (result) mapRef.current?.flyTo({ center: [result.lng, result.lat], zoom: 16 })
   }
 
   function handleUseMyLocation() {
@@ -107,7 +102,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false)
-        mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 16)
+        mapRef.current?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 16 })
       },
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 10000 }
@@ -147,14 +142,19 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
 
           <div className="relative mt-3 h-72 w-full">
             <div ref={containerRef} className="h-full w-full" />
-            {/* Pin fijo al centro — el mapa se mueve debajo. */}
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-[1000] -translate-x-1/2 -translate-y-full">
+            {/* Círculo y pin fijos al centro de la pantalla — el mapa se
+                mueve debajo. El círculo es un overlay decorativo en
+                pantalla (no un radio geográfico real): comunica "tu
+                ubicación aproximada" igual que Uber/Google Maps, sin
+                necesitar una librería de geometría aparte solo para eso. */}
+            <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/15 ring-1 ring-brand-500/40" />
+            <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-full">
               <MapPin size={36} className="fill-brand-500 text-brand-700 drop-shadow" aria-hidden="true" />
             </div>
             <button
               onClick={handleUseMyLocation}
               disabled={locating}
-              className="absolute bottom-3 right-3 z-[1000] grid h-9 w-9 place-items-center rounded-full bg-white text-brand-900 shadow-pop disabled:opacity-50"
+              className="absolute bottom-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white text-brand-900 shadow-pop disabled:opacity-50"
               aria-label={t('account.useMyLocation')}
               title={t('account.useMyLocation')}
             >

@@ -17,6 +17,11 @@ env:
   # cualquier forma), así que no hace falta guardarlo como secret.
   NEXT_PUBLIC_SUPABASE_URL: https://zfegecwnyhtihqugyljs.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_CRXjUaIKjKN-KHgHw08mmQ__sXaHD5u
+  # Token PÚBLICO de Mapbox (pk.*) — configurar como Repository variable
+  # (Settings → Secrets and variables → Actions → Variables), no
+  # hardcodeado acá: GitHub Push Protection lo bloquea como posible
+  # secreto pese al prefijo público. Ver src/lib/mapbox.ts.
+  NEXT_PUBLIC_MAPBOX_TOKEN: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
 
 jobs:
   quality:
