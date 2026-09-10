@@ -57,6 +57,10 @@ export const translations = {
       item: 'artículo',
       items: 'artículos',
     },
+    activeOrder: {
+      orderNumber: 'Pedido #{number}',
+      track: 'Ver seguimiento',
+    },
     home: {
       deliveringArea: 'Entregando en tu zona',
       heroTitle: 'Pizza recién horneada, directo a tu puerta',
@@ -955,6 +959,10 @@ export const translations = {
       viewCart: 'View cart',
       item: 'item',
       items: 'items',
+    },
+    activeOrder: {
+      orderNumber: 'Order #{number}',
+      track: 'Track order',
     },
     home: {
       deliveringArea: 'Delivering to your area',

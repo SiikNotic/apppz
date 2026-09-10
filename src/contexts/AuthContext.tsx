@@ -5,6 +5,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile } from '@/lib/types'
 import { roleHasPermission, type PermissionKey } from '@/lib/auth/permissions'
+import { clearLastOrderId } from '@/lib/active-order'
 
 interface AuthContextValue {
   session: Session | null
@@ -85,6 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
+    // El recordatorio de "pedido activo" vive en este dispositivo (para que
+    // funcione hasta para invitados sin cuenta), no en la sesión — sin esto
+    // seguía mostrándose después de cerrar sesión, exponiendo el pedido de
+    // alguien más si el dispositivo se comparte.
+    clearLastOrderId()
   }
 
   async function resetPassword(email: string) {

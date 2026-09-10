@@ -192,7 +192,9 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
         </div>
       )}
 
-      <div className="sticky bottom-4 z-10 mt-6 rounded-full bg-ink-900 p-2 shadow-pop">
+      {/* bottom-20 (no bottom-4): deja libre el alto del tab bar fijo del
+          layout de cliente — si no, esta barra queda tapada detrás de él. */}
+      <div className="sticky bottom-20 z-10 mt-6 rounded-full bg-ink-900 p-2 shadow-pop">
         <div className="flex items-center gap-3 px-2">
           <div className="flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-1">
             <button
