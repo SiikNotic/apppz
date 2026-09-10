@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   // (~980px) y la app se ve "encogida" y hay que hacer zoom para leerla.
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#ffc830',
+  themeColor: '#ff0000',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>

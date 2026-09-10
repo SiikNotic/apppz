@@ -79,7 +79,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
                         toppings: [],
                       })
                     }
-                    className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-ink-900 transition active:scale-90 hover:bg-brand-600"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-white transition active:scale-90 hover:bg-brand-600"
                     aria-label={t('product.addToCartAria', { name: item.name })}
                   >
                     <Plus size={16} aria-hidden="true" />

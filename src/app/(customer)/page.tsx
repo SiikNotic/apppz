@@ -81,7 +81,7 @@ export default function HomePage() {
             aria-pressed={orderType === 'delivery'}
             className={cn(
               'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition',
-              orderType === 'delivery' ? 'bg-brand-500 text-ink-900' : 'text-ink-600'
+              orderType === 'delivery' ? 'bg-brand-500 text-white' : 'text-ink-600'
             )}
           >
             <Truck size={15} aria-hidden="true" /> {t('home.delivery')}
@@ -91,7 +91,7 @@ export default function HomePage() {
             aria-pressed={orderType === 'pickup'}
             className={cn(
               'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition',
-              orderType === 'pickup' ? 'bg-brand-500 text-ink-900' : 'text-ink-600'
+              orderType === 'pickup' ? 'bg-brand-500 text-white' : 'text-ink-600'
             )}
           >
             <Store size={15} aria-hidden="true" /> {t('home.pickup')}

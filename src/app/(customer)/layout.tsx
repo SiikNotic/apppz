@@ -22,7 +22,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-cream-100">
-      <header className="sticky top-0 z-30 bg-brand-500 text-ink-900 shadow-card">
+      <header className="sticky top-0 z-30 bg-brand-500 text-white shadow-card">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <button onClick={() => router.push('/')} className="flex items-center gap-2.5 text-left">
             <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink-900/10">

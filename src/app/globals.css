@@ -13,26 +13,27 @@ html {
 :root {
   --radius: 1rem;
 
-  /* Paleta calcada del Design Style Guide de referencia ("Uncle John's
-     Pizzas"): amarillo + negro como primarios, crema cálido de fondo,
-     verde menta como acento/éxito. Los nombres de variable (brand-*,
-     cream-*, ink-*) se conservan tal cual para no tener que tocar cada
-     className del proyecto — solo cambian los valores hex. */
-  --brand-50: #fffbea;
-  --brand-100: #fff3c4;
-  --brand-200: #ffe58a;
-  --brand-300: #ffd65c;
-  --brand-400: #ffcb3d;
-  --brand-500: #ffc830;
-  --brand-600: #e6ad1a;
-  --brand-700: #c4930f;
-  --brand-800: #9c740c;
-  --brand-900: #7a5a0a;
+  /* Paleta calcada del segundo Design Style Guide de referencia
+     ("Typography & Colors": rojo FF0000 + gris 3B3B3B + negro + rosa
+     FFF0F0 de fondo) — reemplaza la paleta amarilla anterior. Los
+     nombres de variable (brand-*, cream-*, ink-*) se conservan tal cual
+     para no tener que tocar cada className del proyecto — solo cambian
+     los valores hex, igual que la vez pasada. */
+  --brand-50: #fff0f0;
+  --brand-100: #ffd6d6;
+  --brand-200: #ffadad;
+  --brand-300: #ff7a7a;
+  --brand-400: #ff4747;
+  --brand-500: #ff0000;
+  --brand-600: #e60000;
+  --brand-700: #c00000;
+  --brand-800: #990000;
+  --brand-900: #730000;
 
-  --cream-50: #fffdfb;
-  --cream-100: #fff7f3;
-  --cream-200: #fcebe3;
-  --cream-300: #f6dcd0;
+  --cream-50: #fffafa;
+  --cream-100: #fff0f0;
+  --cream-200: #ffdbdb;
+  --cream-300: #ffc2c2;
 
   --ink-50: #f7f7f8;
   --ink-100: #e6e8f0;
@@ -46,17 +47,18 @@ html {
   --danger-500: #e0402e;
 
   /* Tokens semánticos que usan los componentes de shadcn/ui */
-  --background: var(--cream-100);
+  --background: #ffffff;
   --foreground: var(--ink-900);
   --card: #ffffff;
   --card-foreground: var(--ink-900);
   --popover: #ffffff;
   --popover-foreground: var(--ink-900);
   --primary: var(--brand-500);
-  /* El amarillo es demasiado claro para texto blanco (falla contraste) —
-     en la referencia todos los botones amarillos llevan texto oscuro; el
-     texto blanco queda para los botones negros ("dark" variant). */
-  --primary-foreground: var(--ink-900);
+  /* Al revés que con la paleta amarilla anterior: el rojo FF0000 es
+     suficientemente saturado/oscuro para texto blanco (la referencia usa
+     texto blanco en todos sus botones rojos) — texto oscuro sobre este
+     rojo fallaría contraste por el lado opuesto. */
+  --primary-foreground: #ffffff;
   --secondary: var(--ink-50);
   --secondary-foreground: var(--ink-900);
   --muted: var(--ink-50);
@@ -78,7 +80,7 @@ html {
   --popover: var(--ink-800);
   --popover-foreground: var(--cream-50);
   --primary: var(--brand-500);
-  --primary-foreground: var(--ink-900);
+  --primary-foreground: #ffffff;
   --secondary: rgb(255 255 255 / 10%);
   --secondary-foreground: var(--cream-50);
   --muted: rgb(255 255 255 / 8%);
@@ -93,7 +95,7 @@ html {
 }
 
 @theme inline {
-  --font-sans: "Noto Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);

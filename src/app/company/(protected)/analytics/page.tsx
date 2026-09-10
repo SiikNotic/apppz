@@ -179,7 +179,7 @@ export default function ReportsPage() {
                 key={r.key}
                 onClick={() => setRangeDays(r.key)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  rangeDays === r.key ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-card text-muted-foreground'
+                  rangeDays === r.key ? 'bg-brand-500 text-white shadow-card' : 'bg-card text-muted-foreground'
                 }`}
               >
                 {r.label}

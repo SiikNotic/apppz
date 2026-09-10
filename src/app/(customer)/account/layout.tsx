@@ -45,7 +45,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'flex shrink-0 items-center gap-2.5 rounded-2xl px-4 py-2.5 text-sm font-semibold transition',
-                isActive ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
+                isActive ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
               )}
             >
               <Icon size={16} aria-hidden="true" />

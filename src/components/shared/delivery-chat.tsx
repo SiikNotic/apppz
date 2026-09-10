@@ -119,7 +119,7 @@ export function DeliveryChat({ assignmentId, role, active }: DeliveryChatProps) 
             <p
               className={cn(
                 'max-w-[80%] rounded-2xl px-3.5 py-2 text-sm',
-                m.role === role ? 'bg-brand-500 text-ink-900' : 'bg-ink-50 text-ink-900'
+                m.role === role ? 'bg-brand-500 text-white' : 'bg-ink-50 text-ink-900'
               )}
             >
               {m.text}
@@ -142,7 +142,7 @@ export function DeliveryChat({ assignmentId, role, active }: DeliveryChatProps) 
           onClick={handleSend}
           disabled={!connected || !draft.trim()}
           aria-label={t('sharedChat.sendMessageAria')}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-ink-900 disabled:opacity-40"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-white disabled:opacity-40"
         >
           <Send size={16} aria-hidden="true" />
         </button>

@@ -49,7 +49,7 @@ function MenuPageContent() {
             onClick={() => selectCategory(cat.id)}
             className={cn(
               'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition',
-              currentCategory === cat.id ? 'bg-brand-500 text-ink-900 shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
+              currentCategory === cat.id ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
             )}
           >
             {cat.name}

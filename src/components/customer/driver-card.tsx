@@ -42,7 +42,7 @@ export function DriverCard({ profile, assignment }: DriverCardProps) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={profile.avatar_url} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
         ) : (
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-500 text-sm font-extrabold text-ink-900">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-500 text-sm font-extrabold text-white">
             {initialsFor(profile?.full_name)}
           </span>
         )}

@@ -33,7 +33,7 @@ export function PromoBannerHero({ banner }: { banner: BannerWithPromotion }) {
         )}
         <div className="flex-1 p-5 sm:p-6">
           {banner.discount_percent != null && (
-            <span className="mb-2 inline-block rounded-full bg-brand-500 px-3 py-1 text-xs font-extrabold text-ink-900">
+            <span className="mb-2 inline-block rounded-full bg-brand-500 px-3 py-1 text-xs font-extrabold text-white">
               -{banner.discount_percent}% OFF
             </span>
           )}
@@ -66,7 +66,7 @@ export function PromoBannerHero({ banner }: { banner: BannerWithPromotion }) {
             <p className="mt-2 text-xs text-white/50">Vence {new Date(banner.ends_at).toLocaleDateString('es-MX')}</p>
           )}
 
-          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-ink-900">
+          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white">
             {banner.cta_label || 'Ver oferta'}
             <ArrowRight size={16} aria-hidden="true" />
           </span>

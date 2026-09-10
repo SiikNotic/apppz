@@ -6,7 +6,7 @@ export default function NotFound() {
   return (
     <div className="grid min-h-screen place-items-center bg-cream-100 px-4">
       <div className="flex flex-col items-center gap-3 text-center">
-        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-500 text-ink-900">
+        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-500 text-white">
           <ChefHat size={26} aria-hidden="true" />
         </span>
         <h1 className="text-2xl font-extrabold text-ink-900">Página no encontrada</h1>

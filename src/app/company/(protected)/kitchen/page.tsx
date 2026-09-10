@@ -184,7 +184,7 @@ export default function KitchenViewPage() {
       {alertActive && (
         <div
           role="status"
-          className="flex items-center justify-between gap-3 rounded-2xl bg-brand-500 px-4 py-3 font-bold text-ink-900 shadow-pop"
+          className="flex items-center justify-between gap-3 rounded-2xl bg-brand-500 px-4 py-3 font-bold text-white shadow-pop"
         >
           <span className="flex items-center gap-2">
             <BellRing size={18} aria-hidden="true" /> {t('kitchen.newOrderAlert')}
