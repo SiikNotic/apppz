@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, UtensilsCrossed, ShoppingBag, User } from 'lucide-react'
+import { Home, ShoppingBag, User } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils'
 
 // Reemplaza la barra roja de sitio web que tenía el área de cliente por
 // una navegación fija abajo tipo app, igual que en cada pantalla de la
-// referencia. El cuarto ítem de la referencia es un chatbot de IA que
-// nunca se pidió construir (decisión explícita del cliente) — en su
-// lugar va "Menú", que sí es una sección real de la app.
+// referencia. La referencia trae un 4to ítem de chatbot de IA que nunca
+// se pidió construir; el ítem "Menú" que iba en su lugar también se
+// quitó a pedido del cliente — el menú de productos ya está a la vista
+// desde Home, un tab aparte para eso era redundante.
 export function BottomTabBar() {
   const pathname = usePathname()
   const { itemCount } = useCart()
@@ -21,12 +22,6 @@ export function BottomTabBar() {
 
   const items = [
     { href: '/', label: t('nav.home'), Icon: Home, active: pathname === '/' },
-    {
-      href: '/menu',
-      label: t('nav.menu'),
-      Icon: UtensilsCrossed,
-      active: pathname.startsWith('/menu') || pathname.startsWith('/product'),
-    },
     {
       href: '/checkout',
       label: t('nav.cart'),
