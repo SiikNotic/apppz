@@ -40,9 +40,14 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
   const [searching, setSearching] = useState(false)
   const [address, setAddress] = useState<ReverseGeocodeResult | null>(null)
   const [locating, setLocating] = useState(false)
+  const [mapBroken, setMapBroken] = useState(false)
   const [center, setCenter] = useState<{ lat: number; lng: number }>(
     initial ?? { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] }
   )
+  // El token puede estar bien pero el navegador no soportar WebGL (o
+  // bloquearlo) — mapboxgl.supported() lo detecta antes de intentar
+  // crear el mapa, en vez de dejar un canvas en blanco sin explicación.
+  const canRenderMap = Boolean(MAPBOX_TOKEN) && mapboxgl.supported() && !mapBroken
 
   // Inicializa el mapa cada vez que se abre — se destruye al cerrar para
   // no dejar un mapa de Mapbox vivo detrás de un diálogo invisible.
@@ -50,7 +55,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
   // accessToken viene vacío — sin este guard, un token mal configurado
   // rompía el diálogo entero contra el error boundary genérico.
   useEffect(() => {
-    if (!open || !containerRef.current || mapRef.current || !MAPBOX_TOKEN) return
+    if (!open || !containerRef.current || mapRef.current || !MAPBOX_TOKEN || !mapboxgl.supported()) return
     const start = initial ?? { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] }
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -59,6 +64,13 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
       zoom: 15,
     })
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
+    // Un estilo/token inválido o un fallo de red no lanzan excepción acá
+    // — Mapbox lo reporta por este evento. Sin escucharlo, el mapa se
+    // queda en un canvas en blanco sin ninguna pista de qué pasó.
+    map.on('error', (e) => {
+      console.error('[Mapbox]', e.error)
+      setMapBroken(true)
+    })
 
     function handleMoveEnd() {
       const c = map.getCenter()
@@ -119,7 +131,11 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-w-lg">
+      {/* showCloseButton={false}: la X que trae el modal por defecto
+          (arriba a la derecha) queda encima del botón de buscar, que
+          vive en esa misma esquina — cerrar sigue funcionando tocando
+          fuera del diálogo. */}
+      <DialogContent className="max-w-lg" showCloseButton={false}>
         <DialogTitle className="sr-only">{t('account.pickOnMap')}</DialogTitle>
         <div className="space-y-0">
           <div className="flex items-center gap-2 p-4 pb-0">
@@ -143,7 +159,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
             </button>
           </div>
 
-          {MAPBOX_TOKEN ? (
+          {canRenderMap ? (
             <div className="relative mt-3 h-72 w-full">
               <div ref={containerRef} className="h-full w-full" />
               {/* Círculo y pin fijos al centro de la pantalla — el mapa se
@@ -171,7 +187,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
             </div>
           )}
 
-          {MAPBOX_TOKEN && (
+          {canRenderMap && (
             <div className="space-y-3 p-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-ink-400">{t('account.yourLocation')}</p>

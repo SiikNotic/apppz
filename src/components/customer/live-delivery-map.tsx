@@ -50,6 +50,11 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const [driverPos, setDriverPos] = useState<LatLng | null>(null)
+  const [mapBroken, setMapBroken] = useState(false)
+  // El token puede estar bien pero el navegador no soportar WebGL (o
+  // bloquearlo) — mapboxgl.supported() lo detecta antes de intentar
+  // crear el mapa, en vez de dejar un canvas en blanco sin explicación.
+  const canRenderMap = Boolean(MAPBOX_TOKEN) && mapboxgl.supported() && !mapBroken
 
   // Posición inicial (última conocida en la DB) + suscripción en vivo.
   useEffect(() => {
@@ -90,7 +95,7 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
   // guard, un token mal configurado rompía la pantalla entera contra el
   // error boundary genérico en vez de mostrar un aviso claro acá.
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN) return
+    if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN || !mapboxgl.supported()) return
     const initialCenter = destination ?? restaurant ?? { lat: 19.4326, lng: -99.1332 }
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -99,6 +104,13 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
       zoom: 13,
     })
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
+    // Un estilo/token inválido o un fallo de red no lanzan excepción acá
+    // — Mapbox lo reporta por este evento. Sin escucharlo, el mapa se
+    // queda en un canvas en blanco sin ninguna pista de qué pasó.
+    map.on('error', (e) => {
+      console.error('[Mapbox]', e.error)
+      setMapBroken(true)
+    })
     map.on('load', () => {
       loadedRef.current = true
       map.addSource(ROUTE_SOURCE_ID, {
@@ -187,7 +199,7 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
     }
   }, [driverPos, restaurant, destination])
 
-  if (!MAPBOX_TOKEN) {
+  if (!canRenderMap) {
     return (
       <div className="grid h-64 w-full place-items-center rounded-3xl border border-border bg-muted p-4 text-center text-xs text-muted-foreground">
         {t('deliveryTracking.mapNotConfigured')}
