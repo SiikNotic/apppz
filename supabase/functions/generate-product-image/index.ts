@@ -5,22 +5,22 @@
 // datos igual que manage-staff-status/create-staff-user — nunca
 // confía en que el frontend haya ocultado el botón a un cliente.
 //
-// Proveedor: Google Gemini API, modelo gemini-2.5-flash-image ("nano
-// banana") — elegido porque tiene un tier gratis generoso (~500
-// imágenes/día en AI Studio, sin tarjeta de crédito) y una API REST
-// simple de un solo request. La clave se guarda como secreto de Edge
-// Functions (Project Settings → Edge Functions → Secrets, o
-// `supabase secrets set`) con el nombre `image_generation_api_key` —
-// se consigue gratis en https://aistudio.google.com/apikey. Va como
-// secreto de función (Deno.env), no en el Vault de la base de datos,
-// porque solo lo necesita esta función — nunca se lee desde SQL.
+// Proveedor: Pollinations.ai — se eligió porque es gratis de verdad
+// (sin cuenta, sin API key, sin tarjeta) y expone la generación como
+// un simple GET. Se cambió desde Gemini (gemini-2.5-flash-image /
+// "nano banana") porque Google puso en 0 la cuota gratuita de
+// generación de imágenes para ese modelo (confirmado en los logs de
+// esta función: RESOURCE_EXHAUSTED con limit:0) — hoy Gemini para
+// imágenes requiere facturación activada.
 //
-// Si el secreto no existe todavía, la función responde `configured:
-// false` con un mensaje claro en vez de fabricar una respuesta falsa.
+// Contrapartida de Pollinations: es un servicio comunitario sin SLA
+// (puede estar más lento o caerse) y limita a ~1 solicitud cada 15s en
+// el tier anónimo — de sobra para que un empleado genere una foto a la
+// vez, pero si el negocio crece y esto se vuelve un cuello de botella,
+// conviene reconsiderar un proveedor de pago.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const GEMINI_MODEL = 'gemini-2.5-flash-image'
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const POLLINATIONS_ENDPOINT = 'https://image.pollinations.ai/prompt'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -76,58 +76,37 @@ Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const adminClient = createClient(supabaseUrl, serviceKey)
 
-  // Existencia (no el valor) de una clave de proveedor de imágenes.
-  // Mientras no exista, esta función es honesta sobre no estar
-  // configurada en lugar de fabricar una respuesta.
-  const apiKey = Deno.env.get('image_generation_api_key')
-
-  if (!apiKey) {
-    return json({
-      configured: false,
-      message:
-        'La generación de imágenes con IA todavía no está configurada. Un administrador debe añadir una clave de API de un proveedor de generación de imágenes para activar esta función. Mientras tanto, puedes subir la foto manualmente.',
-    })
-  }
-
   // Pedimos explícitamente foto de producto tipo catálogo (fondo neutro,
   // buena iluminación) además de lo que haya escrito el usuario, para que
   // el resultado combine con el resto de las fotos del menú.
   const fullPrompt = `${prompt}. Fotografía de producto para el menú digital de una pizzería: fondo neutro y liso, buena iluminación de estudio, alta calidad, sin texto ni marcas de agua.`
 
-  let geminiRes: Response
+  const imageUrl =
+    `${POLLINATIONS_ENDPOINT}/${encodeURIComponent(fullPrompt)}` +
+    `?width=1024&height=1024&nologo=true&model=flux&referrer=nero-pizza-co-dashboard`
+
+  let imgRes: Response
   try {
-    geminiRes = await fetch(GEMINI_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] }),
-    })
+    imgRes = await fetch(imageUrl)
   } catch {
     return json({ configured: true, error: 'No se pudo contactar al proveedor de generación de imágenes.' }, 502)
   }
 
-  if (!geminiRes.ok) {
-    // No repetimos el body del proveedor tal cual (puede filtrar detalles
-    // internos) — solo lo suficiente para diagnosticar en logs.
-    console.error('generate-product-image: Gemini respondió', geminiRes.status, await geminiRes.text())
-    return json(
-      { configured: true, error: 'El proveedor de generación de imágenes no pudo procesar la solicitud.' },
-      502
-    )
+  if (!imgRes.ok) {
+    const detail = await imgRes.text().catch(() => '')
+    console.error('generate-product-image: Pollinations respondió', imgRes.status, detail)
+    // El tier anónimo limita a ~1 solicitud cada 15s — un 429 casi
+    // siempre significa "espera un momento", no una falla real.
+    const message =
+      imgRes.status === 429
+        ? 'Hay demasiadas solicitudes de generación en este momento. Espera unos segundos e intenta de nuevo.'
+        : 'El proveedor de generación de imágenes no pudo procesar la solicitud.'
+    return json({ configured: true, error: message }, 502)
   }
 
-  const geminiBody = await geminiRes.json()
-  const parts = geminiBody?.candidates?.[0]?.content?.parts ?? []
-  const imagePart = parts.find((p: { inlineData?: { data?: string } }) => p?.inlineData?.data)
-
-  if (!imagePart) {
-    console.error('generate-product-image: respuesta de Gemini sin imagen', JSON.stringify(geminiBody))
-    return json({ configured: true, error: 'El proveedor no devolvió ninguna imagen. Intenta con otra descripción.' }, 502)
-  }
-
-  const mimeType: string = imagePart.inlineData.mimeType ?? 'image/png'
-  const ext = mimeType.split('/')[1]?.split('+')[0] || 'png'
-  const base64 = imagePart.inlineData.data as string
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+  const mimeType = imgRes.headers.get('content-type')?.split(';')[0].trim() || 'image/jpeg'
+  const ext = mimeType.split('/')[1]?.split('+')[0] || 'jpg'
+  const bytes = new Uint8Array(await imgRes.arrayBuffer())
 
   const path = `products/${crypto.randomUUID()}.${ext}`
   const { error: uploadError } = await adminClient.storage

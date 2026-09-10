@@ -176,10 +176,10 @@ export function ProductsTab() {
   }
 
   // Backend real (Edge Function generate-product-image), gateado por el
-  // permiso media.manage — nunca finge una generación en el cliente. Llama
-  // a Gemini (gemini-2.5-flash-image) usando la clave guardada en Vault
-  // como `image_generation_api_key`; si no existe, la función responde
-  // configured:false con un mensaje claro en vez de fabricar una imagen.
+  // permiso media.manage — nunca finge una generación en el cliente.
+  // Genera con Pollinations.ai (sin API key, gratis) — antes intentaba
+  // Gemini, pero Google puso en 0 la cuota gratuita de generación de
+  // imágenes para ese modelo.
   async function handleGenerateImage() {
     if (!aiPrompt.trim()) return
     setAiGenerating(true)
