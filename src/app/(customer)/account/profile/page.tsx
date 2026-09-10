@@ -12,6 +12,12 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+function initialsFor(name?: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
+}
+
 export default function ProfilePage() {
   const { user, profile, refreshProfile, signOut } = useAuth()
   const { t } = useLanguage()
@@ -63,18 +69,31 @@ export default function ProfilePage() {
         <p className="text-sm text-ink-400">{t('account.profileSubtitle')}</p>
       </div>
 
-      <Card className="max-w-lg space-y-4 p-6">
-        <div>
-          <Label htmlFor="profile-email">{t('auth.email')}</Label>
-          <Input id="profile-email" value={user?.email ?? ''} disabled />
+      <Card className="max-w-lg space-y-5 p-6">
+        <div className="flex justify-center">
+          <span className="grid h-20 w-20 place-items-center rounded-full bg-brand-500 text-2xl font-extrabold text-white">
+            {initialsFor(fullName || user?.email)}
+          </span>
         </div>
-        <div>
-          <Label htmlFor="profile-name">{t('auth.fullName')}</Label>
-          <Input id="profile-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-ink-400">{t('account.personalInfo')}</p>
+          <div>
+            <Label htmlFor="profile-name">{t('auth.fullName')}</Label>
+            <Input id="profile-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
         </div>
-        <div>
-          <Label htmlFor="profile-phone">{t('auth.phone')}</Label>
-          <Input id="profile-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+
+        <div className="space-y-3 border-t border-ink-100 pt-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-ink-400">{t('account.contactInfo')}</p>
+          <div>
+            <Label htmlFor="profile-phone">{t('auth.phone')}</Label>
+            <Input id="profile-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="profile-email">{t('auth.email')}</Label>
+            <Input id="profile-email" value={user?.email ?? ''} disabled />
+          </div>
         </div>
 
         {error && <p role="alert" className="text-xs font-semibold text-danger-500">{error}</p>}
