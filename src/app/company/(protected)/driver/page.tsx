@@ -16,6 +16,7 @@ import {
   KeyRound,
   MessageCircleWarning,
   LocateFixed,
+  Clock,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -29,6 +30,7 @@ import { PageHeader } from '@/components/company/page-header'
 import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { cn } from '@/lib/utils'
 import type { Address, DeliveryAssignment, Driver, DriverShift, Order } from '@/lib/types'
 
 type AssignmentWithOrder = DeliveryAssignment & { order: Order; address: Address | null }
@@ -96,12 +98,16 @@ export default function DriverPage() {
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [togglingStatus, setTogglingStatus] = useState(false)
   const [routeCompletedFlash, setRouteCompletedFlash] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
-  // Registro de asistencia del turno — independiente del toggle Disponible/
-  // Offline (ese es "puedo recibir una entrega ahora"; esto es "estoy en
-  // mi turno de trabajo", para llevar la hora de entrada/salida).
+  // Un solo registro de turno: antes había dos controles separados
+  // (Disponible/Offline arriba, Marcar entrada/salida en su propia
+  // tarjeta) que confundían — "estoy trabajando" y "puedo recibir una
+  // entrega" son, en la práctica, la misma decisión para un conductor de
+  // esta cocina. Marcar entrada abre el turno Y pone status=available a
+  // la vez; marcar salida cierra el turno Y pone status=offline. El
+  // estado "on_delivery" sigue siendo del sistema, no algo que el
+  // conductor active a mano — por eso no tiene botón, solo una etiqueta.
   const [openShift, setOpenShift] = useState<DriverShift | null>(null)
   const [shiftBusy, setShiftBusy] = useState(false)
 
@@ -152,19 +158,13 @@ export default function DriverPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isDriver])
 
-  async function toggleAvailability() {
-    if (!user || !driver) return
-    setTogglingStatus(true)
-    const next = driver.status === 'available' ? 'offline' : 'available'
-    await supabase.from('drivers').update({ status: next }).eq('user_id', user.id)
-    setTogglingStatus(false)
-    loadAll()
-  }
-
   async function clockIn() {
     if (!user) return
     setShiftBusy(true)
-    await supabase.from('driver_shifts').insert({ driver_id: user.id })
+    await Promise.all([
+      supabase.from('driver_shifts').insert({ driver_id: user.id }),
+      supabase.from('drivers').update({ status: 'available' }).eq('user_id', user.id),
+    ])
     setShiftBusy(false)
     loadAll()
   }
@@ -172,7 +172,10 @@ export default function DriverPage() {
   async function clockOut() {
     if (!user || !openShift) return
     setShiftBusy(true)
-    await supabase.from('driver_shifts').update({ clock_out_at: new Date().toISOString() }).eq('id', openShift.id)
+    await Promise.all([
+      supabase.from('driver_shifts').update({ clock_out_at: new Date().toISOString() }).eq('id', openShift.id),
+      supabase.from('drivers').update({ status: 'offline' }).eq('user_id', user.id),
+    ])
     setShiftBusy(false)
     loadAll()
   }
@@ -230,6 +233,8 @@ export default function DriverPage() {
   if (loading) return <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
 
   const [current, ...queue] = active
+  const isOnDelivery = driver?.status === 'on_delivery'
+  const isClockedIn = !!openShift
 
   return (
     <div className="space-y-5">
@@ -240,42 +245,42 @@ export default function DriverPage() {
             ? t('driverPage.greeting', { name: profile.full_name.split(' ')[0] })
             : t('driverPage.subtitleFallback')
         }
-        actions={
-          <Button
-            size="sm"
-            variant={driver?.status === 'available' ? 'default' : 'secondary'}
-            disabled={togglingStatus || driver?.status === 'on_delivery'}
-            onClick={toggleAvailability}
-          >
-            {driver?.status === 'on_delivery'
-              ? t('driverPage.statusOnDelivery')
-              : driver?.status === 'available'
-                ? t('driverPage.statusAvailable')
-                : t('driverPage.statusOffline')}
-          </Button>
-        }
       />
 
-      {current && (locationSharing === 'denied' || locationSharing === 'unsupported') && (
-        <p className="flex items-center gap-2 rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-warning-500">
-          <LocateFixed size={16} className="shrink-0" aria-hidden="true" />
-          {locationSharing === 'denied' ? t('driverPage.locationSharingDenied') : t('driverPage.locationSharingUnsupported')}
-        </p>
-      )}
-
-      {/* Registro de entrada/salida del turno — para llevar la hora
-          trabajada, independiente del toggle Disponible/Offline de
-          arriba (ese es solo "puedo recibir una entrega ahora mismo"). */}
-      <Card className="flex items-center justify-between p-4">
-        <div>
-          <p className="text-sm font-bold text-ink-900">
-            {openShift ? t('driverPage.shiftActive') : t('driversAdmin.noShiftStarted')}
-          </p>
-          {openShift && (
-            <p className="text-xs text-ink-400">{t('teamAdmin.sinceDate', { date: formatDate(openShift.clock_in_at) })}</p>
-          )}
+      {/* Un solo control de turno/disponibilidad — ver nota junto a
+          openShift más arriba sobre por qué se fusionaron los dos que
+          había antes. */}
+      <Card
+        className={cn(
+          'flex items-center justify-between gap-3 border-l-4 p-4',
+          isOnDelivery
+            ? 'border-l-brand-500 bg-brand-50'
+            : isClockedIn
+              ? 'border-l-success-500 bg-success-500/5'
+              : 'border-l-ink-200'
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className={cn(
+              'grid h-11 w-11 shrink-0 place-items-center rounded-2xl',
+              isOnDelivery ? 'bg-brand-500 text-white' : isClockedIn ? 'bg-success-500 text-white' : 'bg-ink-100 text-ink-400'
+            )}
+          >
+            {isClockedIn ? <Bike size={20} aria-hidden="true" /> : <Clock size={20} aria-hidden="true" />}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold text-ink-900">
+              {isOnDelivery ? t('driverPage.statusOnDelivery') : isClockedIn ? t('driverPage.shiftActive') : t('driversAdmin.noShiftStarted')}
+            </p>
+            <p className="truncate text-xs text-ink-400">
+              {openShift ? t('teamAdmin.sinceDate', { date: formatDate(openShift.clock_in_at) }) : t('driverPage.shiftPromptOffline')}
+            </p>
+          </div>
         </div>
-        {openShift ? (
+        {isOnDelivery ? (
+          <Badge variant="brand">{t('driverPage.statusOnDelivery')}</Badge>
+        ) : isClockedIn ? (
           <Button size="sm" variant="secondary" disabled={shiftBusy} onClick={clockOut}>
             {shiftBusy ? t('menuMgmt.savingButton') : t('driverPage.clockOut')}
           </Button>
@@ -285,6 +290,13 @@ export default function DriverPage() {
           </Button>
         )}
       </Card>
+
+      {current && (locationSharing === 'denied' || locationSharing === 'unsupported') && (
+        <p className="flex items-center gap-2 rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-warning-500">
+          <LocateFixed size={16} className="shrink-0" aria-hidden="true" />
+          {locationSharing === 'denied' ? t('driverPage.locationSharingDenied') : t('driverPage.locationSharingUnsupported')}
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-danger-500">
@@ -304,9 +316,7 @@ export default function DriverPage() {
             <>
               <Package size={24} className="text-ink-200" aria-hidden="true" />
               <p className="text-sm text-ink-400">
-                {driver?.status === 'available'
-                  ? t('driverPage.noAssignmentsAvailable')
-                  : t('driverPage.goAvailablePrompt')}
+                {isClockedIn ? t('driverPage.noAssignmentsAvailable') : t('driverPage.goAvailablePrompt')}
               </p>
             </>
           )}
@@ -314,100 +324,109 @@ export default function DriverPage() {
       ) : (
         <div className="space-y-3">
           {/* Entrega actual — la única en la que el conductor debería estar
-              pensando en este momento. Navegar/Llamar/Chat aquí mismo,
-              nada de modales de por medio. */}
-          <Card className="space-y-4 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-base font-extrabold text-ink-900">#{current.order.order_number}</span>
-              <Badge variant={current.status === 'en_route' ? 'brand' : 'warning'}>
+              pensando en este momento. La franja de color de arriba marca
+              de un vistazo en qué paso de la entrega va (recoger vs en
+              camino), como en cualquier app de reparto de verdad — antes
+              era solo un badge chico flotando en una tarjeta blanca plana. */}
+          <Card className="overflow-hidden p-0">
+            <div
+              className={cn(
+                'flex items-center justify-between px-4 py-3',
+                current.status === 'en_route' ? 'bg-brand-500 text-white' : 'bg-ink-900 text-white'
+              )}
+            >
+              <span className="text-base font-extrabold">#{current.order.order_number}</span>
+              <span className="text-xs font-bold uppercase tracking-wide text-white/90">
                 {current.status === 'en_route' ? t('driverPage.enRoute') : t('driverPage.toPickup')}
-              </Badge>
+              </span>
             </div>
 
-            <div className="space-y-2 text-sm text-ink-600">
-              <p className="flex items-start gap-2">
-                <MapPin size={16} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
-                <span>
-                  {current.order.address || t('driverPage.noAddress')}
-                  {current.address?.apartment && ` · ${t('driverPage.apartmentPrefix')} ${current.address.apartment}`}
-                </span>
-              </p>
-              {current.address?.access_code && (
-                <p className="flex items-center gap-2 text-warning-500">
-                  <KeyRound size={16} className="shrink-0" aria-hidden="true" />
-                  {t('driverPage.accessCode')} <span className="font-bold">{current.address.access_code}</span>
+            <div className="space-y-4 p-4">
+              <div className="space-y-2 text-sm text-ink-600">
+                <p className="flex items-start gap-2">
+                  <MapPin size={16} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
+                  <span>
+                    {current.order.address || t('driverPage.noAddress')}
+                    {current.address?.apartment && ` · ${t('driverPage.apartmentPrefix')} ${current.address.apartment}`}
+                  </span>
                 </p>
-              )}
-              {current.address?.dog_warning && (
-                <p className="flex items-center gap-2 font-semibold text-danger-500">
-                  <Dog size={16} className="shrink-0" aria-hidden="true" /> {t('driverPage.dogWarning')}
-                </p>
-              )}
-              {(current.address?.instructions || current.address?.delivery_notes) && (
-                <p className="rounded-2xl bg-ink-50 p-3 text-xs text-ink-600">
-                  {current.address?.instructions}
-                  {current.address?.instructions && current.address?.delivery_notes ? ' · ' : ''}
-                  {current.address?.delivery_notes}
-                </p>
-              )}
-              {current.notes && (
-                <p className="rounded-2xl bg-amber-50 p-3 text-xs text-warning-500">
-                  {t('driverPage.orderNote')} {current.notes}
-                </p>
-              )}
-              <p className="font-bold text-ink-900">{formatCurrency(current.order.total)}</p>
-            </div>
+                {current.address?.access_code && (
+                  <p className="flex items-center gap-2 text-warning-500">
+                    <KeyRound size={16} className="shrink-0" aria-hidden="true" />
+                    {t('driverPage.accessCode')} <span className="font-bold">{current.address.access_code}</span>
+                  </p>
+                )}
+                {current.address?.dog_warning && (
+                  <p className="flex items-center gap-2 font-semibold text-danger-500">
+                    <Dog size={16} className="shrink-0" aria-hidden="true" /> {t('driverPage.dogWarning')}
+                  </p>
+                )}
+                {(current.address?.instructions || current.address?.delivery_notes) && (
+                  <p className="rounded-2xl bg-ink-50 p-3 text-xs text-ink-600">
+                    {current.address?.instructions}
+                    {current.address?.instructions && current.address?.delivery_notes ? ' · ' : ''}
+                    {current.address?.delivery_notes}
+                  </p>
+                )}
+                {current.notes && (
+                  <p className="rounded-2xl bg-amber-50 p-3 text-xs text-warning-500">
+                    {t('driverPage.orderNote')} {current.notes}
+                  </p>
+                )}
+                <p className="text-lg font-extrabold text-ink-900">{formatCurrency(current.order.total)}</p>
+              </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button asChild fullWidth variant="secondary">
-                <a href={navigateUrl(current.order.address || '')} target="_blank" rel="noopener noreferrer">
-                  <Navigation size={16} aria-hidden="true" /> {t('driverPage.navigate')}
-                </a>
-              </Button>
-              {current.order.phone ? (
-                <Button asChild fullWidth variant="secondary">
-                  <a href={`tel:${current.order.phone}`}>
-                    <Phone size={16} aria-hidden="true" /> {t('driverPage.call')}
+              <div className="grid grid-cols-2 gap-2">
+                <Button asChild fullWidth>
+                  <a href={navigateUrl(current.order.address || '')} target="_blank" rel="noopener noreferrer">
+                    <Navigation size={16} aria-hidden="true" /> {t('driverPage.navigate')}
                   </a>
                 </Button>
-              ) : (
-                <Button fullWidth variant="secondary" disabled>
-                  <Phone size={16} aria-hidden="true" /> {t('driverPage.noPhone')}
-                </Button>
-              )}
-            </div>
-
-            <DeliveryChat assignmentId={current.id} role="driver" active />
-
-            <Button fullWidth variant="secondary" onClick={() => setReportOpen(true)}>
-              <MessageCircleWarning size={16} aria-hidden="true" /> {t('driverPage.reportProblem')}
-            </Button>
-
-            <div className="flex gap-2 border-t border-ink-100 pt-3">
-              {current.status === 'assigned' && (
-                <Button
-                  fullWidth
-                  disabled={busyId === current.id}
-                  onClick={() => updateAssignment(current.id, 'en_route')}
-                >
-                  {t('driverPage.onTheWay')}
-                </Button>
-              )}
-              {current.status === 'en_route' && (
-                <>
-                  <Button fullWidth disabled={busyId === current.id} onClick={() => updateAssignment(current.id, 'delivered')}>
-                    <CheckCircle2 size={16} aria-hidden="true" /> {t('driverPage.delivered')}
+                {current.order.phone ? (
+                  <Button asChild fullWidth variant="secondary">
+                    <a href={`tel:${current.order.phone}`}>
+                      <Phone size={16} aria-hidden="true" /> {t('driverPage.call')}
+                    </a>
                   </Button>
+                ) : (
+                  <Button fullWidth variant="secondary" disabled>
+                    <Phone size={16} aria-hidden="true" /> {t('driverPage.noPhone')}
+                  </Button>
+                )}
+              </div>
+
+              <DeliveryChat assignmentId={current.id} role="driver" active />
+
+              <Button fullWidth variant="secondary" onClick={() => setReportOpen(true)}>
+                <MessageCircleWarning size={16} aria-hidden="true" /> {t('driverPage.reportProblem')}
+              </Button>
+
+              <div className="flex gap-2 border-t border-ink-100 pt-3">
+                {current.status === 'assigned' && (
                   <Button
-                    variant="secondary"
+                    fullWidth
                     disabled={busyId === current.id}
-                    onClick={() => markFailed(current.id)}
-                    aria-label={t('driverPage.cannotDeliverAria')}
+                    onClick={() => updateAssignment(current.id, 'en_route')}
                   >
-                    <X size={16} aria-hidden="true" />
+                    {t('driverPage.onTheWay')}
                   </Button>
-                </>
-              )}
+                )}
+                {current.status === 'en_route' && (
+                  <>
+                    <Button fullWidth disabled={busyId === current.id} onClick={() => updateAssignment(current.id, 'delivered')}>
+                      <CheckCircle2 size={16} aria-hidden="true" /> {t('driverPage.delivered')}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={busyId === current.id}
+                      onClick={() => markFailed(current.id)}
+                      aria-label={t('driverPage.cannotDeliverAria')}
+                    >
+                      <X size={16} aria-hidden="true" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </Card>
 
@@ -419,7 +438,10 @@ export default function DriverPage() {
           />
 
           {/* Cola de siguientes entregas — orden manual del conductor
-              (sube/baja), no una ruta óptima calculada (ver nota arriba). */}
+              (sube/baja), no una ruta óptima calculada (ver nota arriba).
+              El número en el círculo continúa la numeración de la entrega
+              actual (que es la "1" implícita), para que se sienta como
+              una sola ruta y no una lista suelta de pedidos. */}
           {queue.length > 0 && (
             <div>
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
@@ -430,28 +452,31 @@ export default function DriverPage() {
                   const queueIndex = i + 1 // índice real dentro de `active`
                   return (
                     <Card key={a.id} className="flex items-center gap-3 p-3">
-                      <div className="flex shrink-0 flex-col">
-                        <button
-                          onClick={() => moveInQueue(queueIndex, -1)}
-                          aria-label={t('driverPage.moveUpAria')}
-                          className="grid h-6 w-6 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900"
-                        >
-                          <ChevronUp size={14} />
-                        </button>
-                        <button
-                          onClick={() => moveInQueue(queueIndex, 1)}
-                          disabled={i === queue.length - 1}
-                          aria-label={t('driverPage.moveDownAria')}
-                          className="grid h-6 w-6 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900 disabled:opacity-30"
-                        >
-                          <ChevronDown size={14} />
-                        </button>
-                      </div>
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink-100 text-sm font-extrabold text-ink-600">
+                        {i + 2}
+                      </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-ink-900">
                           #{a.order.order_number} · {a.order.address || t('driverPage.noAddressShort')}
                         </p>
                         <p className="text-xs text-ink-400">{formatCurrency(a.order.total)}</p>
+                      </div>
+                      <div className="flex shrink-0 flex-col">
+                        <button
+                          onClick={() => moveInQueue(queueIndex, -1)}
+                          aria-label={t('driverPage.moveUpAria')}
+                          className="grid h-7 w-7 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900"
+                        >
+                          <ChevronUp size={16} />
+                        </button>
+                        <button
+                          onClick={() => moveInQueue(queueIndex, 1)}
+                          disabled={i === queue.length - 1}
+                          aria-label={t('driverPage.moveDownAria')}
+                          className="grid h-7 w-7 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900 disabled:opacity-30"
+                        >
+                          <ChevronDown size={16} />
+                        </button>
                       </div>
                     </Card>
                   )
@@ -467,8 +492,14 @@ export default function DriverPage() {
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-600">{t('driverPage.recentHeading')}</h2>
           <Card className="divide-y divide-ink-100 p-0">
             {history.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-5 py-3">
-                <div>
+              <div
+                key={a.id}
+                className={cn(
+                  'flex items-center justify-between gap-3 border-l-4 px-4 py-3',
+                  a.status === 'delivered' ? 'border-l-success-500' : 'border-l-danger-500'
+                )}
+              >
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-900">#{a.order.order_number}</p>
                   <p className="text-xs text-ink-400">{formatDate(a.assigned_at)}</p>
                 </div>

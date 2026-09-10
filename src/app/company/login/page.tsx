@@ -37,7 +37,7 @@ export default function CompanyLoginPage() {
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData.user?.id
     const { data: profile } = userId
-      ? await supabase.from('profiles').select('is_company_staff').eq('id', userId).maybeSingle()
+      ? await supabase.from('profiles').select('is_company_staff, company_role').eq('id', userId).maybeSingle()
       : { data: null }
 
     setLoading(false)
@@ -48,7 +48,11 @@ export default function CompanyLoginPage() {
       return
     }
 
-    router.push('/company/dashboard')
+    // Un conductor no tiene el permiso orders.view (ver permissions.ts) —
+    // mandarlo siempre a /company/dashboard le mostraba "No tienes
+    // permiso para ver esta sección" apenas iniciaba sesión, antes de que
+    // pudiera llegar a mano a "Mis entregas".
+    router.push(profile.company_role === 'driver' ? '/company/driver' : '/company/dashboard')
   }
 
   return (
