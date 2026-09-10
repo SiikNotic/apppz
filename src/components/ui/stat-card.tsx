@@ -29,8 +29,13 @@ export function StatCard({ label, value, icon, tone = 'brand', hint, trend }: St
 
   return (
     <Card className={cn('p-5', highlight && 'border-transparent bg-brand-500 text-white shadow-pop')}>
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-2">
+        {/* min-w-0: sin esto, una cifra larga sin espacios (ej. "$12,345.00")
+            no se puede achicar por debajo de su ancho intrínseco dentro de un
+            flex item — en pantallas angostas eso empuja toda la tarjeta (y la
+            grilla que la contiene) más allá del viewport. break-words como
+            respaldo por si aun así no cabe en una sola línea. */}
+        <div className="min-w-0">
           <p
             className={cn(
               'text-xs font-semibold uppercase tracking-wide',
@@ -39,7 +44,7 @@ export function StatCard({ label, value, icon, tone = 'brand', hint, trend }: St
           >
             {label}
           </p>
-          <p className={cn('mt-1.5 text-2xl font-extrabold', highlight ? 'text-white' : 'text-foreground')}>
+          <p className={cn('mt-1.5 break-words text-2xl font-extrabold', highlight ? 'text-white' : 'text-foreground')}>
             {value}
           </p>
           {hint && <p className={cn('mt-1 text-xs', highlight ? 'text-white/80' : 'text-muted-foreground')}>{hint}</p>}

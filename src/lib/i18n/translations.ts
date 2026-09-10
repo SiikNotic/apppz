@@ -402,6 +402,8 @@ export const translations = {
       chooseDriverPlaceholder: 'Elegir repartidor',
       sending: 'Enviando…',
       confirmAndSend: 'Confirmar y enviar',
+      actionFailed: 'No se pudo actualizar el pedido. Se recargó la lista — intenta de nuevo.',
+      colCompleted: 'Completados hoy',
     },
     ordersAdmin: {
       title: 'Pedidos',
@@ -1337,6 +1339,8 @@ export const translations = {
       chooseDriverPlaceholder: 'Choose driver',
       sending: 'Sending…',
       confirmAndSend: 'Confirm and send',
+      actionFailed: "Couldn't update the order. The list was reloaded — try again.",
+      colCompleted: 'Completed today',
     },
     ordersAdmin: {
       title: 'Orders',

@@ -276,7 +276,7 @@ export default function DashboardPage() {
               </span>
             </div>
           </div>
-          <div className="h-64 w-full">
+          <div className="h-64 w-full overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -296,7 +296,7 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">{t('dashboardHome.noDataYet')}</p>
           ) : (
             <>
-              <div className="relative h-44 w-full">
+              <div className="relative h-44 w-full overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={80} paddingAngle={2} strokeWidth={0}>
@@ -341,40 +341,68 @@ export default function DashboardPage() {
           {recentOrders.length === 0 ? (
             <p className="p-5 text-sm text-muted-foreground">{t('dashboardHome.noOrdersYet')}</p>
           ) : (
-            <Table className="mt-3">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('ordersAdmin.orderLabel')}</TableHead>
-                  <TableHead>{t('ordersAdmin.customer')}</TableHead>
-                  <TableHead>{t('checkout.total')}</TableHead>
-                  <TableHead>{t('ordersAdmin.status')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Móvil: tarjetas — la tabla de abajo necesitaba scroll
+                  horizontal para ver cliente/total/estado a la vez, justo lo
+                  que se quiere evitar en el teléfono (mismo patrón que ya se
+                  usa en el historial de pedidos del cliente). */}
+              <div className="space-y-2 p-3 md:hidden">
                 {recentOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>
-                      <p className="font-semibold text-foreground">#{order.order_number}</p>
-                      <p className="text-xs text-muted-foreground">
+                  <div key={order.id} className="rounded-2xl border border-border bg-muted/30 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground">#{order.order_number}</p>
+                        <p className="truncate text-xs text-muted-foreground">{order.customer_name}</p>
+                      </div>
+                      <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>
+                        {t(`orderStatus.${order.status}`)}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>
                         {t('dashboardHome.itemsSuffix', { count: order.itemCount })} · {formatDate(order.created_at)}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-ink-600">{order.customer_name}</TableCell>
-                    <TableCell className="font-bold text-foreground">{formatCurrency(order.total)}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>{t(`orderStatus.${order.status}`)}</Badge>
-                    </TableCell>
-                  </TableRow>
+                      </span>
+                      <span className="shrink-0 font-bold text-foreground">{formatCurrency(order.total)}</span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              <Table className="mt-3 hidden md:table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('ordersAdmin.orderLabel')}</TableHead>
+                    <TableHead>{t('ordersAdmin.customer')}</TableHead>
+                    <TableHead>{t('checkout.total')}</TableHead>
+                    <TableHead>{t('ordersAdmin.status')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        <p className="font-semibold text-foreground">#{order.order_number}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t('dashboardHome.itemsSuffix', { count: order.itemCount })} · {formatDate(order.created_at)}
+                        </p>
+                      </TableCell>
+                      <TableCell className="text-ink-600">{order.customer_name}</TableCell>
+                      <TableCell className="font-bold text-foreground">{formatCurrency(order.total)}</TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>{t(`orderStatus.${order.status}`)}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </Card>
 
-        <Card className="p-5">
+        <Card className="min-w-0 p-5">
           <h2 className="mb-1 text-base font-extrabold text-foreground">{t('dashboardHome.salesAnalytics')}</h2>
-          <p className="mb-4 text-xl font-extrabold text-foreground">{formatCurrency(revenueThisWeek)}</p>
-          <div className="h-32 w-full">
+          <p className="mb-4 break-words text-xl font-extrabold text-foreground">{formatCurrency(revenueThisWeek)}</p>
+          <div className="h-32 w-full overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} />

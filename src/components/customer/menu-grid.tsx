@@ -31,7 +31,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {items.map((item) => {
         const isBuilder = item.is_customizable_pizza
         const sizes = sizesByItem.get(item.id) ?? []
@@ -41,30 +41,43 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
           <div
             key={item.id}
             className={cn(
-              'flex items-center gap-3 rounded-3xl border p-3.5 transition duration-200 hover:-translate-y-0.5 hover:shadow-pop',
+              'group flex flex-col overflow-hidden rounded-3xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-pop active:scale-[0.98]',
               isBuilder ? 'border-brand-300 bg-brand-50/60' : 'border-ink-100/60 bg-white shadow-card'
             )}
           >
-            <Link href={`/product/${item.id}`} className="shrink-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500">
-              <ItemThumb name={item.name} imageUrl={item.image_url} size="md" />
+            <Link
+              href={`/product/${item.id}`}
+              className={cn(
+                'relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-cream-100 to-brand-50 p-4 pb-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500',
+                isBuilder && 'from-brand-100 to-brand-200'
+              )}
+            >
+              {isBuilder && (
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-brand-900 shadow-sm">
+                  <Sparkles size={11} aria-hidden="true" /> {t('menuMgmt.customizableBadge')}
+                </span>
+              )}
+              <ItemThumb
+                name={item.name}
+                imageUrl={item.image_url}
+                size="lg"
+                className="transition-transform duration-200 group-hover:scale-105"
+              />
             </Link>
-            <div className="min-w-0 flex-1">
+            <div className="flex flex-1 flex-col p-3">
               <Link href={`/product/${item.id}`} className="block">
-                <div className="flex items-center gap-1.5">
-                  {isBuilder && <Sparkles size={14} className="shrink-0 text-brand-900" aria-hidden="true" />}
-                  <h3 className="truncate text-sm font-bold text-ink-900 hover:underline">{item.name}</h3>
-                </div>
+                <h3 className="truncate text-sm font-bold text-ink-900 hover:underline">{item.name}</h3>
                 {item.description && (
-                  <p className="mt-0.5 line-clamp-2 text-xs text-ink-400">{item.description}</p>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-ink-400">{item.description}</p>
                 )}
               </Link>
-              <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-sm font-extrabold text-brand-900">
+              <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+                <span className="truncate text-sm font-extrabold text-brand-900">
                   {isBuilder ? t('product.from') : ''}
                   {formatCurrency(displayPrice)}
                 </span>
                 {isBuilder ? (
-                  <Button size="sm" onClick={() => setBuilderItem(item)}>
+                  <Button size="sm" onClick={() => setBuilderItem(item)} className="shrink-0">
                     {t('product.createNow')}
                   </Button>
                 ) : (
@@ -79,7 +92,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
                         toppings: [],
                       })
                     }
-                    className="grid h-8 w-8 place-items-center rounded-full bg-brand-500 text-white transition active:scale-90 hover:bg-brand-600"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-500 text-white transition active:scale-90 hover:bg-brand-600"
                     aria-label={t('product.addToCartAria', { name: item.name })}
                   >
                     <Plus size={16} aria-hidden="true" />

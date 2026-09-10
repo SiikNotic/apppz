@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { useMenuData } from '@/hooks/useMenuData'
 import { MenuGrid } from '@/components/customer/menu-grid'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
+import { LanguageToggle } from '@/components/ui/language-toggle'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { categoryEmoji } from '@/lib/category-icon'
 
@@ -41,21 +42,31 @@ function MenuPageContent() {
   return (
     <div>
       <h1 className="sr-only">{t('product.fullMenu')}</h1>
-      <div role="tablist" aria-label={t('product.categoriesLabel')} className="no-scrollbar mb-5 flex gap-2 overflow-x-auto pb-1">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            role="tab"
-            aria-selected={currentCategory === cat.id}
-            onClick={() => selectCategory(cat.id)}
-            className={cn(
-              'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition',
-              currentCategory === cat.id ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
-            )}
-          >
-            <span aria-hidden="true">{categoryEmoji(cat.name)}</span> {cat.name}
-          </button>
-        ))}
+      <div className="mb-5 flex items-center gap-2">
+        <div
+          role="tablist"
+          aria-label={t('product.categoriesLabel')}
+          className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1"
+        >
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              role="tab"
+              aria-selected={currentCategory === cat.id}
+              onClick={() => selectCategory(cat.id)}
+              className={cn(
+                'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95',
+                currentCategory === cat.id ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
+              )}
+            >
+              <span aria-hidden="true">{categoryEmoji(cat.name)}</span> {cat.name}
+            </button>
+          ))}
+        </div>
+        {/* El selector de idioma vivía solo hasta abajo del todo, en el pie
+            de página — al hojear el menú nunca se veía sin hacer scroll
+            hasta el final. Acá queda a la mano mientras se navega. */}
+        <LanguageToggle className="shrink-0" />
       </div>
 
       <MenuGrid

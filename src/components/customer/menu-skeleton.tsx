@@ -14,14 +14,16 @@ export function MenuSkeleton({ withHero = false }: { withHero?: boolean }) {
           <div key={i} className="h-14 w-28 shrink-0 animate-pulse rounded-2xl bg-ink-100" />
         ))}
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-3xl bg-white p-3.5 shadow-card">
-            <div className="h-16 w-16 shrink-0 animate-pulse rounded-2xl bg-ink-100" />
-            <div className="flex-1 space-y-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-3xl bg-white shadow-card">
+            <div className="flex items-center justify-center bg-ink-50 p-4 pb-3">
+              <div className="h-28 w-28 shrink-0 animate-pulse rounded-full bg-ink-100" />
+            </div>
+            <div className="space-y-2 p-3">
               <div className="h-3.5 w-2/3 animate-pulse rounded bg-ink-100" />
               <div className="h-3 w-full animate-pulse rounded bg-ink-100" />
-              <div className="h-3 w-1/3 animate-pulse rounded bg-ink-100" />
+              <div className="h-6 w-full animate-pulse rounded-full bg-ink-100" />
             </div>
           </div>
         ))}

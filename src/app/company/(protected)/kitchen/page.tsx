@@ -19,6 +19,12 @@ import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
 type AvailableDriver = { user_id: string; full_name: string }
 
+const STATUS_VARIANT: Record<string, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
+  pending: 'warning',
+  preparing: 'brand',
+  ready: 'success',
+}
+
 function minutesAgo(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
 }
@@ -39,6 +45,7 @@ export default function KitchenViewPage() {
   const [orders, setOrders] = useState<KitchenOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [completedToday, setCompletedToday] = useState(0)
   const [, forceTick] = useState(0)
 
   const [labelOrder, setLabelOrder] = useState<KitchenOrder | null>(null)
@@ -58,6 +65,21 @@ export default function KitchenViewPage() {
       .order('created_at')
     setOrders((data ?? []) as KitchenOrder[])
     setLoading(false)
+  }
+
+  // Con la sección de Pedidos fuera del dashboard, Cocina es el único
+  // lugar donde el equipo pasa el día — sin esto, un pedido "completada"
+  // (entregado o recogido) simplemente desaparece de la vista sin dejar
+  // ningún rastro de cuánto se ha resuelto hoy.
+  async function loadCompletedToday() {
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+    const { count } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'delivered')
+      .gte('updated_at', startOfDay.toISOString())
+    setCompletedToday(count ?? 0)
   }
 
   useEffect(() => {
@@ -95,9 +117,13 @@ export default function KitchenViewPage() {
   useEffect(() => {
     load()
     loadAvailableDrivers()
+    loadCompletedToday()
     const ordersChannel = supabase
       .channel('kitchen-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        load()
+        loadCompletedToday()
+      })
       .subscribe()
     const driversChannel = supabase
       .channel('kitchen-drivers')
@@ -122,9 +148,17 @@ export default function KitchenViewPage() {
     }
     const { error } = await supabase.from('orders').update({ status: next }).eq('id', order.id)
     setBusyId(null)
+    if (error) {
+      // Antes esto fallaba en silencio (el pedido se quedaba pegado en su
+      // columna sin ningún aviso) — ahora se informa y se resincroniza la
+      // lista, por si el estado ya había cambiado desde otra pantalla.
+      alert(t('kitchen.actionFailed'))
+      load()
+      return
+    }
     // La orden YA avanzó de estado sin importar lo que pase con la
     // impresión — imprimir es best-effort y nunca debe bloquearla.
-    if (!error && next === 'ready' && autoPrintRef.current && !order.label_printed_at) {
+    if (next === 'ready' && autoPrintRef.current && !order.label_printed_at) {
       printLabel(order)
     }
   }
@@ -135,8 +169,12 @@ export default function KitchenViewPage() {
   async function cancelOrder(order: KitchenOrder) {
     if (!confirm(t('ordersAdmin.confirmCancel', { number: order.order_number }))) return
     setBusyId(order.id)
-    await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
+    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
     setBusyId(null)
+    if (error) {
+      alert(t('kitchen.actionFailed'))
+      load()
+    }
   }
 
   function printLabel(order: KitchenOrder) {
@@ -187,7 +225,12 @@ export default function KitchenViewPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title={t('kitchen.title')} subtitle={t('kitchen.subtitle')} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageHeader title={t('kitchen.title')} subtitle={t('kitchen.subtitle')} />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-500/10 px-3.5 py-1.5 text-xs font-bold text-success-500">
+          {t('kitchen.colCompleted')}: {completedToday}
+        </span>
+      </div>
 
       {needsUnlock && (
         <button
@@ -229,10 +272,18 @@ export default function KitchenViewPage() {
                   const elapsed = minutesAgo(order.created_at)
                   const priority = elapsed > 20
                   return (
-                    <Card key={order.id} className={`p-4 ${priority ? 'border-2 border-danger-500' : ''}`}>
+                    <Card
+                      key={order.id}
+                      className={`animate-in fade-in slide-in-from-top-2 duration-300 p-4 ${priority ? 'border-2 border-danger-500' : ''}`}
+                    >
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <span className="block text-base font-extrabold text-ink-900">#{order.order_number}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-base font-extrabold text-ink-900">#{order.order_number}</span>
+                            <Badge variant={STATUS_VARIANT[order.status] ?? 'neutral'}>
+                              {t(`orderStatus.${order.status}`)}
+                            </Badge>
+                          </div>
                           {/* Antes este contexto solo se veía en la pantalla
                               aparte de Pedidos — al quitarla, Cocina necesita
                               mostrarlo directamente. */}
