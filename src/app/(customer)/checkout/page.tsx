@@ -236,8 +236,8 @@ export default function CheckoutPage() {
         ))}
       </div>
 
-      <div>
-        <Card className="sticky top-24 space-y-4 p-5">
+      <div className="sticky top-24 space-y-4">
+        <Card className="space-y-4 p-5">
           <h2 className="text-base font-extrabold text-ink-900">{t('checkout.deliveryDetails')}</h2>
 
           <div className="grid grid-cols-2 gap-2">
@@ -347,53 +347,60 @@ export default function CheckoutPage() {
             />
           </div>
 
-          <div className="space-y-1.5 border-t border-ink-100 pt-3 text-sm">
-            {pricingLoading ? (
-              <p className="text-ink-400">{t('checkout.calculatingTotal')}</p>
-            ) : pricingError ? (
-              <p role="alert" className="text-xs font-semibold text-danger-500">{pricingError}</p>
-            ) : pricing ? (
-              <>
-                <div className="flex justify-between text-ink-600">
-                  <span>{t('checkout.subtotal')}</span>
-                  <span>{formatCurrency(pricing.subtotal)}</span>
-                </div>
-                {pricing.discount > 0 && (
-                  <div className="flex justify-between text-success-500">
-                    <span>{t('checkout.discount')}</span>
-                    <span>-{formatCurrency(pricing.discount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-ink-600">
-                  <span>{t('checkout.shipping')}</span>
-                  <span>{pricing.delivery_fee > 0 ? formatCurrency(pricing.delivery_fee) : t('checkout.free')}</span>
-                </div>
-                {pricing.tax > 0 && (
-                  <div className="flex justify-between text-ink-600">
-                    <span>{t('checkout.tax')}</span>
-                    <span>{formatCurrency(pricing.tax)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-base font-extrabold text-ink-900">
-                  <span>{t('checkout.total')}</span>
-                  <span>{formatCurrency(pricing.total)}</span>
-                </div>
-              </>
-            ) : null}
-          </div>
-
           {formError && (
             <p role="alert" className="text-xs font-semibold text-danger-500">
               {formError}
             </p>
           )}
+        </Card>
 
-          <Button fullWidth size="lg" variant="dark" onClick={handleSubmit} disabled={!canSubmit}>
-            {submitting
-              ? t('checkout.submitting')
-              : pricing
-                ? `${t('checkout.confirmOrder')} · ${formatCurrency(pricing.total)}`
-                : t('checkout.confirmOrder')}
+        {/* Resumen + confirmar en su propia tarjeta roja — estilo la
+            referencia (bloque de totales en sólido con el botón de
+            confirmar en blanco encima). */}
+        <Card className="space-y-3 border-transparent bg-brand-500 p-5 text-white shadow-pop">
+          {pricingLoading ? (
+            <p className="text-sm text-white/80">{t('checkout.calculatingTotal')}</p>
+          ) : pricingError ? (
+            <p role="alert" className="text-sm font-semibold text-white">
+              {pricingError}
+            </p>
+          ) : pricing ? (
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between text-white/80">
+                <span>{t('checkout.subtotal')}</span>
+                <span>{formatCurrency(pricing.subtotal)}</span>
+              </div>
+              {pricing.discount > 0 && (
+                <div className="flex justify-between text-white">
+                  <span>{t('checkout.discount')}</span>
+                  <span>-{formatCurrency(pricing.discount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-white/80">
+                <span>{t('checkout.shipping')}</span>
+                <span>{pricing.delivery_fee > 0 ? formatCurrency(pricing.delivery_fee) : t('checkout.free')}</span>
+              </div>
+              {pricing.tax > 0 && (
+                <div className="flex justify-between text-white/80">
+                  <span>{t('checkout.tax')}</span>
+                  <span>{formatCurrency(pricing.tax)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-white/20 pt-1.5 text-base font-extrabold text-white">
+                <span>{t('checkout.total')}</span>
+                <span>{formatCurrency(pricing.total)}</span>
+              </div>
+            </div>
+          ) : null}
+
+          <Button
+            fullWidth
+            size="lg"
+            className="bg-white text-brand-900 hover:bg-white/90"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+          >
+            {submitting ? t('checkout.submitting') : t('checkout.confirmOrder')}
           </Button>
         </Card>
       </div>
