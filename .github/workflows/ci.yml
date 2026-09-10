@@ -17,11 +17,6 @@ env:
   # cualquier forma), así que no hace falta guardarlo como secret.
   NEXT_PUBLIC_SUPABASE_URL: https://zfegecwnyhtihqugyljs.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_CRXjUaIKjKN-KHgHw08mmQ__sXaHD5u
-  # Token público de Mapbox — mismo razonamiento que el anon key de arriba
-  # (pensado para el navegador, no hace falta guardarlo como secret).
-  # Vacío hasta que el negocio genere el suyo en mapbox.com; sin él el
-  # mapa de seguimiento simplemente no se muestra.
-  NEXT_PUBLIC_MAPBOX_TOKEN: ''
 
 jobs:
   quality:

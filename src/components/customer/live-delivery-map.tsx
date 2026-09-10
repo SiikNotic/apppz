@@ -8,14 +8,16 @@
 // real requeriría una API de enrutamiento aparte (costo/proveedor extra
 // que no se justificaba solo para esto).
 //
+// Usa Leaflet + tiles de OpenStreetMap — no Mapbox: Mapbox exige una
+// cuenta con correo "de trabajo" (rechaza correos personales), lo cual
+// bloqueaba poder configurar esto. Leaflet/OSM no piden cuenta ni token.
 // Se importa siempre vía next/dynamic con ssr:false (ver order/page.tsx)
-// porque mapbox-gl necesita `window`, y esta app usa export estático —
+// porque Leaflet necesita `window`, y esta app usa export estático —
 // evaluarlo durante el build rompería el prerenderizado.
 import { useEffect, useRef, useState } from 'react'
-import mapboxgl from 'mapbox-gl'
-import 'mapbox-gl/dist/mapbox-gl.css'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { supabase } from '@/lib/supabase'
-import { MAPBOX_TOKEN } from '@/lib/mapbox'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface LatLng {
@@ -29,12 +31,25 @@ interface LiveDeliveryMapProps {
   destination: LatLng | null
 }
 
+function dotIcon(className: string, emoji?: string) {
+  return L.divIcon({
+    className: 'border-0 bg-transparent',
+    html: `<div class="${className}">${emoji ?? ''}</div>`,
+    iconSize: emoji ? [36, 36] : [16, 16],
+    iconAnchor: emoji ? [18, 18] : [8, 8],
+  })
+}
+
+const RESTAURANT_ICON = dotIcon('grid h-4 w-4 place-items-center rounded-full bg-brand-500 ring-2 ring-white shadow-pop')
+const DESTINATION_ICON = dotIcon('grid h-4 w-4 place-items-center rounded-full bg-ink-900 ring-2 ring-white shadow-pop')
+const DRIVER_ICON = dotIcon('grid h-9 w-9 place-items-center rounded-full bg-brand-500 text-lg shadow-pop', '🛵')
+
 export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliveryMapProps) {
   const { t } = useLanguage()
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<mapboxgl.Map | null>(null)
-  const driverMarkerRef = useRef<mapboxgl.Marker | null>(null)
-  const styleLoadedRef = useRef(false)
+  const mapRef = useRef<L.Map | null>(null)
+  const driverMarkerRef = useRef<L.Marker | null>(null)
+  const routeLineRef = useRef<L.Polyline | null>(null)
   const [driverPos, setDriverPos] = useState<LatLng | null>(null)
 
   // Posición inicial (última conocida en la DB) + suscripción en vivo.
@@ -73,35 +88,18 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
 
   // Inicializa el mapa una sola vez.
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN) return
-    mapboxgl.accessToken = MAPBOX_TOKEN
+    if (!containerRef.current || mapRef.current) return
     const initialCenter = destination ?? restaurant ?? { lat: 19.4326, lng: -99.1332 }
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [initialCenter.lng, initialCenter.lat],
-      zoom: 13,
-    })
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
-    map.on('load', () => {
-      map.addSource('delivery-route', {
-        type: 'geojson',
-        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
-      })
-      map.addLayer({
-        id: 'delivery-route',
-        type: 'line',
-        source: 'delivery-route',
-        paint: { 'line-color': '#f2601c', 'line-width': 3, 'line-dasharray': [2, 2] },
-      })
-      styleLoadedRef.current = true
-    })
+    const map = L.map(containerRef.current, { zoomControl: true }).setView([initialCenter.lat, initialCenter.lng], 13)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map)
     mapRef.current = map
 
     return () => {
       map.remove()
       mapRef.current = null
-      styleLoadedRef.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo se inicializa una vez
   }, [])
@@ -110,13 +108,9 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    const markers: mapboxgl.Marker[] = []
-    if (restaurant) {
-      markers.push(new mapboxgl.Marker({ color: '#f2601c' }).setLngLat([restaurant.lng, restaurant.lat]).addTo(map))
-    }
-    if (destination) {
-      markers.push(new mapboxgl.Marker({ color: '#171310' }).setLngLat([destination.lng, destination.lat]).addTo(map))
-    }
+    const markers: L.Marker[] = []
+    if (restaurant) markers.push(L.marker([restaurant.lat, restaurant.lng], { icon: RESTAURANT_ICON }).addTo(map))
+    if (destination) markers.push(L.marker([destination.lat, destination.lng], { icon: DESTINATION_ICON }).addTo(map))
     return () => markers.forEach((m) => m.remove())
   }, [restaurant, destination])
 
@@ -126,36 +120,27 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
     if (!map || !driverPos) return
 
     if (!driverMarkerRef.current) {
-      const el = document.createElement('div')
-      el.setAttribute('aria-hidden', 'true')
-      el.className = 'grid h-9 w-9 place-items-center rounded-full bg-brand-500 text-lg shadow-pop'
-      el.textContent = '🛵'
-      driverMarkerRef.current = new mapboxgl.Marker({ element: el })
-        .setLngLat([driverPos.lng, driverPos.lat])
-        .addTo(map)
+      driverMarkerRef.current = L.marker([driverPos.lat, driverPos.lng], { icon: DRIVER_ICON }).addTo(map)
     } else {
-      driverMarkerRef.current.setLngLat([driverPos.lng, driverPos.lat])
+      driverMarkerRef.current.setLatLng([driverPos.lat, driverPos.lng])
     }
 
     const points: [number, number][] = [
-      restaurant ? ([restaurant.lng, restaurant.lat] as [number, number]) : null,
-      [driverPos.lng, driverPos.lat],
-      destination ? ([destination.lng, destination.lat] as [number, number]) : null,
+      restaurant ? ([restaurant.lat, restaurant.lng] as [number, number]) : null,
+      [driverPos.lat, driverPos.lng],
+      destination ? ([destination.lat, destination.lng] as [number, number]) : null,
     ].filter((p): p is [number, number] => p !== null)
 
-    if (styleLoadedRef.current) {
-      const source = map.getSource('delivery-route') as mapboxgl.GeoJSONSource | undefined
-      source?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: points }, properties: {} })
+    if (routeLineRef.current) {
+      routeLineRef.current.setLatLngs(points)
+    } else {
+      routeLineRef.current = L.polyline(points, { color: '#f2601c', weight: 3, dashArray: '6 6' }).addTo(map)
     }
 
     if (points.length > 1) {
-      const bounds = new mapboxgl.LngLatBounds(points[0], points[0])
-      points.forEach((p) => bounds.extend(p))
-      map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 500 })
+      map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 15 })
     }
   }, [driverPos, restaurant, destination])
-
-  if (!MAPBOX_TOKEN) return null
 
   return (
     <div className="overflow-hidden rounded-3xl border border-border">

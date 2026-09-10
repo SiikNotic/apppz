@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react'
 import { MapPin, Save } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { geocodeAddress, MAPBOX_TOKEN } from '@/lib/mapbox'
+import { geocodeAddress } from '@/lib/geo'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -69,12 +69,6 @@ export function RestaurantLocationCard({ canManage }: { canManage: boolean }) {
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">{t('restaurantLocation.hint')}</p>
       </div>
-
-      {!MAPBOX_TOKEN && (
-        <p className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-warning-500">
-          {t('restaurantLocation.noTokenWarning')}
-        </p>
-      )}
 
       <div>
         <Label htmlFor="restaurant-address">{t('restaurantLocation.addressLabel')}</Label>

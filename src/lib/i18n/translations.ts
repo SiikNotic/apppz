@@ -538,7 +538,6 @@ export const translations = {
       locating: 'Ubicando…',
       locatedConfirm: 'Ubicado en el mapa.',
       geocodeFailed: 'No se pudo encontrar esa dirección en el mapa. Verifica que esté completa (calle, ciudad, estado).',
-      noTokenWarning: 'Falta configurar el token de Mapbox (NEXT_PUBLIC_MAPBOX_TOKEN) — el mapa de seguimiento no se mostrará hasta entonces.',
     },
     dashboardHome: {
       title: 'Dashboard',
@@ -1407,7 +1406,6 @@ export const translations = {
       locating: 'Locating…',
       locatedConfirm: 'Located on the map.',
       geocodeFailed: "Couldn't find that address on the map. Make sure it's complete (street, city, state).",
-      noTokenWarning: 'Mapbox token not configured yet (NEXT_PUBLIC_MAPBOX_TOKEN) — the tracking map will not show until then.',
     },
     dashboardHome: {
       title: 'Dashboard',
