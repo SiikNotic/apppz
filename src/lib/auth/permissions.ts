@@ -66,7 +66,6 @@ export function roleHasPermission(role: CompanyRole | null | undefined, permissi
 
 export const NAV_ITEMS_BY_PERMISSION: { href: string; label: string; permission: PermissionKey }[] = [
   { href: '/company/dashboard', label: 'Dashboard', permission: PERMISSIONS.ORDERS_VIEW },
-  { href: '/company/orders', label: 'Orders', permission: PERMISSIONS.ORDERS_VIEW },
   { href: '/company/kitchen', label: 'Kitchen', permission: PERMISSIONS.KITCHEN_VIEW },
   { href: '/company/menu', label: 'Menu', permission: PERMISSIONS.PRODUCTS_VIEW },
   { href: '/company/customers', label: 'Customers', permission: PERMISSIONS.CUSTOMERS_VIEW },

@@ -22,6 +22,15 @@ export const registerSchema = z
     fullName: z.string().trim().min(2, 'Escribe tu nombre completo'),
     email: emailSchema,
     phone: phoneSchema,
+    // Dirección de entrega: se pide desde el registro para que la
+    // primera compra no se tope con un carrito vacío de direcciones —
+    // el cliente igual puede agregar más o editarla después en Mi
+    // cuenta > Direcciones.
+    street: z.string().trim().min(3, 'Escribe la calle y número'),
+    apartment: z.string().trim().optional(),
+    city: z.string().trim().min(2, 'Escribe la ciudad'),
+    state: z.string().trim().min(2, 'Escribe el estado'),
+    zip: z.string().trim().min(3, 'Código postal inválido'),
     password: passwordSchema,
     confirmPassword: z.string(),
   })

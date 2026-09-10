@@ -7,6 +7,14 @@ import type { Profile } from '@/lib/types'
 import { roleHasPermission, type PermissionKey } from '@/lib/auth/permissions'
 import { clearLastOrderId } from '@/lib/active-order'
 
+interface PendingAddress {
+  street: string
+  apartment?: string
+  city: string
+  state: string
+  zip: string
+}
+
 interface AuthContextValue {
   session: Session | null
   user: User | null
@@ -20,7 +28,8 @@ interface AuthContextValue {
     email: string,
     password: string,
     fullName: string,
-    phone?: string
+    phone?: string,
+    address?: PendingAddress
   ) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: string | null }>
@@ -70,16 +79,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
 
+  // Materializa la dirección que se guardó en el registro (ver signUp) en
+  // cuanto hay una sesión real — la primera vez que el cliente inicia
+  // sesión después de confirmar su correo. Se limpia el metadata después
+  // para que no se vuelva a intentar en logins futuros.
+  useEffect(() => {
+    const pending = session?.user?.user_metadata?.pending_address as PendingAddress | null | undefined
+    if (!session?.user || !pending) return
+    const userId = session.user.id
+    supabase
+      .from('addresses')
+      .insert({
+        user_id: userId,
+        label: 'Home',
+        street: pending.street,
+        apartment: pending.apartment || null,
+        city: pending.city,
+        state: pending.state,
+        zip: pending.zip,
+        is_default: true,
+        contact_preference: 'call',
+        dog_warning: false,
+      })
+      .then(() => supabase.auth.updateUser({ data: { pending_address: null } }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id])
+
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error: error?.message ?? null }
   }
 
-  async function signUp(email: string, password: string, fullName: string, phone?: string) {
+  async function signUp(email: string, password: string, fullName: string, phone?: string, address?: PendingAddress) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, phone } },
+      // pending_address: con confirmación de correo activada, signUp()
+      // NO deja sesión activa — insertar en `addresses` aquí mismo
+      // fallaría contra RLS (auth.uid() todavía no existe). Se guarda en
+      // el metadata del usuario y se crea de verdad la primera vez que
+      // haya sesión real (ver el efecto de abajo), después se limpia
+      // para no reintentarlo en cada login futuro.
+      options: { data: { full_name: fullName, phone, pending_address: address ?? null } },
     })
     return { error: error?.message ?? null }
   }

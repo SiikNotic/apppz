@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Flame, Clock, Printer, Send, BellRing, Volume2, X } from 'lucide-react'
+import { Flame, Clock, Printer, Send, BellRing, Volume2, X, Ban } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { deductInventoryForOrder } from '@/lib/inventoryDeduction'
+import { useAuth } from '@/contexts/AuthContext'
 import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,8 +25,14 @@ function minutesAgo(dateStr: string): number {
 
 export default function KitchenViewPage() {
   const { t } = useLanguage()
+  const { can } = useAuth()
+  const canCancel = can('orders.cancel')
+  // El pedido llega directo a Cocina como "Nuevo" (pending) — el paso
+  // aparte de "Pedidos" que antes lo aceptaba primero (pending ->
+  // confirmed) se quitó del dashboard, así que "Aceptar" acá mismo
+  // ahora hace ese trabajo (pending -> preparing) de una vez.
   const COLUMNS: { status: OrderStatus; label: string; action: OrderStatus | null; actionLabel: string }[] = [
-    { status: 'confirmed', label: t('kitchen.colNew'), action: 'preparing', actionLabel: t('kitchen.accept') },
+    { status: 'pending', label: t('kitchen.colNew'), action: 'preparing', actionLabel: t('kitchen.accept') },
     { status: 'preparing', label: t('kitchen.colPreparing'), action: 'ready', actionLabel: t('kitchen.ready') },
     { status: 'ready', label: t('kitchen.colReady'), action: null, actionLabel: '' },
   ]
@@ -47,7 +54,7 @@ export default function KitchenViewPage() {
     const { data } = await supabase
       .from('orders')
       .select('*, order_items(*, order_item_toppings(*))')
-      .in('status', ['confirmed', 'preparing', 'ready'])
+      .in('status', ['pending', 'preparing', 'ready'])
       .order('created_at')
     setOrders((data ?? []) as KitchenOrder[])
     setLoading(false)
@@ -64,9 +71,9 @@ export default function KitchenViewPage() {
       })
   }, [])
 
-  // Suena y avisa en cuanto un pedido entra a "Nuevos" (confirmed) — es
+  // Suena y avisa en cuanto un pedido entra a "Nuevos" (pending) — es
   // justo cuando Cocina tiene que enterarse de que hay algo que aceptar.
-  const newOrderIds = orders.filter((o) => o.status === 'confirmed').map((o) => o.id)
+  const newOrderIds = orders.filter((o) => o.status === 'pending').map((o) => o.id)
   const { alertActive, needsUnlock, unlock, dismiss } = useNewOrderAlert(newOrderIds)
 
   async function loadAvailableDrivers() {
@@ -107,9 +114,10 @@ export default function KitchenViewPage() {
 
   async function advance(order: KitchenOrder, next: OrderStatus) {
     setBusyId(order.id)
-    // El inventario ya se descontó al confirmar (pending -> confirmed); al
-    // pasar a "listo" se vuelve a comprobar por si hubo un ajuste manual.
-    if (order.status === 'preparing' && next === 'ready') {
+    // El inventario se descuenta al aceptar (pending -> preparing, la
+    // primera vez que el pedido se compromete a hacerse) y de nuevo al
+    // pasar a "listo" por si hubo un ajuste manual mientras se preparaba.
+    if ((order.status === 'pending' && next === 'preparing') || (order.status === 'preparing' && next === 'ready')) {
       await deductInventoryForOrder(order.id)
     }
     const { error } = await supabase.from('orders').update({ status: next }).eq('id', order.id)
@@ -119,6 +127,16 @@ export default function KitchenViewPage() {
     if (!error && next === 'ready' && autoPrintRef.current && !order.label_printed_at) {
       printLabel(order)
     }
+  }
+
+  // Con la sección de Pedidos fuera del dashboard (ver nota arriba),
+  // cancelar un pedido nuevo o en preparación solo se puede hacer desde
+  // acá — antes vivía en esa pantalla aparte.
+  async function cancelOrder(order: KitchenOrder) {
+    if (!confirm(t('ordersAdmin.confirmCancel', { number: order.order_number }))) return
+    setBusyId(order.id)
+    await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
+    setBusyId(null)
   }
 
   function printLabel(order: KitchenOrder) {
@@ -212,9 +230,15 @@ export default function KitchenViewPage() {
                   const priority = elapsed > 20
                   return (
                     <Card key={order.id} className={`p-4 ${priority ? 'border-2 border-danger-500' : ''}`}>
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-base font-extrabold text-ink-900">#{order.order_number}</span>
-                        <div className="flex items-center gap-2">
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="block text-base font-extrabold text-ink-900">#{order.order_number}</span>
+                          {/* Antes este contexto solo se veía en la pantalla
+                              aparte de Pedidos — al quitarla, Cocina necesita
+                              mostrarlo directamente. */}
+                          <span className="block truncate text-xs text-ink-400">{order.customer_name}</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
                           <span
                             className={`flex items-center gap-1 text-xs font-bold ${priority ? 'text-danger-500' : 'text-ink-400'}`}
                           >
@@ -228,6 +252,16 @@ export default function KitchenViewPage() {
                           >
                             <Printer size={13} aria-hidden="true" />
                           </button>
+                          {canCancel && col.status !== 'ready' && (
+                            <button
+                              onClick={() => cancelOrder(order)}
+                              disabled={busyId === order.id}
+                              aria-label={t('common.cancel')}
+                              className="grid h-7 w-7 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
+                            >
+                              <Ban size={13} aria-hidden="true" />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <ul className="space-y-2 text-sm">

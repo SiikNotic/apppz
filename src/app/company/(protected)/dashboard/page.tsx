@@ -334,7 +334,7 @@ export default function DashboardPage() {
         <Card className="p-0">
           <div className="flex items-center justify-between p-5 pb-0">
             <h2 className="text-base font-extrabold text-foreground">{t('dashboardHome.recentOrders')}</h2>
-            <Link href="/company/orders" className="text-xs font-bold text-brand-900">
+            <Link href="/company/kitchen" className="text-xs font-bold text-brand-900">
               {t('dashboardHome.viewAll')}
             </Link>
           </div>

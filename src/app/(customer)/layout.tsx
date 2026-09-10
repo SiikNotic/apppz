@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ChevronLeft } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { ActiveOrderBanner } from '@/components/customer/active-order-banner'
 import { HomeTopBar } from '@/components/customer/home-top-bar'
@@ -30,6 +31,22 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
           Home lleva hamburguesa+ubicación+avatar, el resto lleva solo un
           botón de "atrás" sobre el patrón decorativo de marca. */}
       {isHome && <HomeTopBar />}
+      {isAuthPage && (
+        // Login/Registro/etc. no llevan tab bar ni footer — sin esto no
+        // había NINGUNA forma de volver al sitio salvo el botón "atrás"
+        // del navegador. Explícitamente va a "/" (no router.back()): el
+        // pedido fue "un botón para regresar a la página principal".
+        <div className="px-4 pt-5 sm:px-6">
+          <Link
+            href="/"
+            className="inline-grid h-10 w-10 place-items-center rounded-2xl bg-brand-50 text-brand-500 transition hover:bg-brand-100"
+            aria-label={t('common.backToHome')}
+            title={t('common.backToHome')}
+          >
+            <ChevronLeft size={20} aria-hidden="true" />
+          </Link>
+        </div>
+      )}
       {!isHome && !isAuthPage && (
         <div className="relative overflow-hidden bg-cream-100 px-4 pb-1 pt-5 sm:px-6">
           <DecorativeFoodPattern />

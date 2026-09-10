@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Package,
   UtensilsCrossed,
-  ClipboardList,
   BarChart3,
   LogOut,
   ChefHat,
@@ -42,7 +41,6 @@ import { NAV_ITEMS_BY_PERMISSION } from '@/lib/auth/permissions'
 // consumidores) ni perder el fallback si alguna ruta nueva no está mapeada.
 const NAV_LABEL_KEYS: Record<string, string> = {
   '/company/dashboard': 'dashboard',
-  '/company/orders': 'orders',
   '/company/kitchen': 'kitchen',
   '/company/menu': 'menu',
   '/company/customers': 'customers',
@@ -60,7 +58,6 @@ const NAV_LABEL_KEYS: Record<string, string> = {
 // Rutas que ya tienen página implementada — controla qué aparece en el nav.
 const IMPLEMENTED_ROUTES = new Set([
   '/company/dashboard',
-  '/company/orders',
   '/company/kitchen',
   '/company/menu',
   '/company/customers',
@@ -76,7 +73,6 @@ const IMPLEMENTED_ROUTES = new Set([
 
 const ICONS: Record<string, LucideIcon> = {
   '/company/dashboard': LayoutDashboard,
-  '/company/orders': ClipboardList,
   '/company/kitchen': Flame,
   '/company/menu': UtensilsCrossed,
   '/company/customers': Users,
