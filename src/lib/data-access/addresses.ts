@@ -30,6 +30,8 @@ export async function createAddress(userId: string, input: AddressInput): Promis
       dog_warning: input.dogWarning,
       contact_preference: input.contactPreference,
       is_default: input.isDefault,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
     })
     .select()
     .single()
@@ -53,6 +55,8 @@ export async function updateAddress(id: string, input: Partial<AddressInput>): P
       dog_warning: input.dogWarning,
       contact_preference: input.contactPreference,
       is_default: input.isDefault,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
     })
     .eq('id', id)
     .select()

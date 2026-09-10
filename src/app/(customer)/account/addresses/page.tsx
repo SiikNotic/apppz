@@ -1,11 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Plus, Pencil, Trash2, Home, Briefcase, MapPin, Dog } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchUserAddresses, createAddress, updateAddress, deleteAddress } from '@/lib/data-access/addresses'
 import { addressSchema, firstFieldErrors, type AddressInput } from '@/lib/validation/address.schema'
 import { Card } from '@/components/ui/card'
+
+// Leaflet necesita `window` — con export estático hay que saltarlo del
+// prerenderizado (mismo patrón que LiveDeliveryMap).
+const LocationPickerDialog = dynamic(
+  () => import('@/components/customer/location-picker-dialog').then((m) => m.LocationPickerDialog),
+  { ssr: false }
+)
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -30,6 +38,8 @@ const EMPTY: AddressInput = {
   dogWarning: false,
   contactPreference: 'call',
   isDefault: false,
+  lat: null,
+  lng: null,
 }
 
 const LABEL_ICON = { Home, Work: Briefcase, Other: MapPin }
@@ -44,6 +54,8 @@ export default function AddressesPage() {
   const [form, setForm] = useState<AddressInput>(EMPTY)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof AddressInput, string>>>({})
   const [saving, setSaving] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [locatedNotice, setLocatedNotice] = useState(false)
 
   async function load() {
     if (!user) return
@@ -61,6 +73,7 @@ export default function AddressesPage() {
     setEditingId(null)
     setForm(EMPTY)
     setFieldErrors({})
+    setLocatedNotice(false)
     setFormOpen(true)
   }
 
@@ -79,9 +92,33 @@ export default function AddressesPage() {
       dogWarning: address.dog_warning,
       contactPreference: (address.contact_preference as AddressInput['contactPreference']) ?? 'call',
       isDefault: address.is_default,
+      lat: address.lat,
+      lng: address.lng,
     })
     setFieldErrors({})
+    setLocatedNotice(false)
     setFormOpen(true)
+  }
+
+  function handleLocationConfirm({
+    lat,
+    lng,
+    address,
+  }: {
+    lat: number
+    lng: number
+    address: { street: string; city: string; state: string; zip: string } | null
+  }) {
+    setForm((prev) => ({
+      ...prev,
+      lat,
+      lng,
+      street: address?.street || prev.street,
+      city: address?.city || prev.city,
+      state: address?.state || prev.state,
+      zip: address?.zip || prev.zip,
+    }))
+    setLocatedNotice(true)
   }
 
   async function handleSave() {
@@ -188,6 +225,22 @@ export default function AddressesPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  setFormOpen(false)
+                  setPickerOpen(true)
+                }}
+              >
+                <MapPin size={16} aria-hidden="true" /> {t('account.pickOnMapButton')}
+              </Button>
+              {locatedNotice && (
+                <p className="text-xs font-semibold text-success-500">{t('account.locatedFromMap')}</p>
+              )}
+
               <div>
                 <Label htmlFor="addr-street">{t('account.street')}</Label>
                 <Input id="addr-street" value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} />
@@ -241,6 +294,16 @@ export default function AddressesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <LocationPickerDialog
+        open={pickerOpen}
+        initial={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+        onClose={() => {
+          setPickerOpen(false)
+          setFormOpen(true)
+        }}
+        onConfirm={handleLocationConfirm}
+      />
     </div>
   )
 }

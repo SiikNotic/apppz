@@ -13,6 +13,11 @@ export const addressSchema = z.object({
   dogWarning: z.boolean().default(false),
   contactPreference: z.enum(['call', 'text', 'app']).default('call'),
   isDefault: z.boolean().default(false),
+  // Se llenan solos cuando el cliente ubica la dirección en el mapa (ver
+  // LocationPickerDialog) — opcionales porque la dirección también se
+  // puede seguir escribiendo a mano, como siempre.
+  lat: z.number().nullable().optional(),
+  lng: z.number().nullable().optional(),
 })
 
 export type AddressInput = z.infer<typeof addressSchema>
