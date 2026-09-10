@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { CheckCircle2, Circle, RotateCcw, MessageCircleWarning } from 'lucide-react'
+import { CheckCircle2, Circle, Receipt, RotateCcw, MessageCircleWarning } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useCart } from '@/contexts/CartContext'
 import { fetchOrderById } from '@/lib/data-access/orders'
@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DriverCard } from '@/components/customer/driver-card'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
+import { ReceiptDialog } from '@/components/customer/receipt-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { ORDER_STATUS_FLOW, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
 import type { DeliveryAssignment, Order, OrderItem, OrderStatus, Profile } from '@/lib/types'
@@ -48,6 +49,7 @@ function OrderStatusContent() {
   const [reordering, setReordering] = useState(false)
   const [reorderNotice, setReorderNotice] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
+  const [receiptOpen, setReceiptOpen] = useState(false)
 
   useEffect(() => {
     if (!orderId) {
@@ -304,12 +306,19 @@ function OrderStatusContent() {
         </Button>
       </div>
 
+      <Button fullWidth variant="ghost" onClick={() => setReceiptOpen(true)}>
+        <Receipt size={16} aria-hidden="true" />
+        {t('receipt.viewReceipt')}
+      </Button>
+
       <ReportProblemDialog
         open={reportOpen}
         onOpenChange={setReportOpen}
         orderId={order.id}
         customerId={order.customer_id}
       />
+
+      <ReceiptDialog order={receiptOpen ? order : null} onOpenChange={(open) => setReceiptOpen(open)} />
 
       <Button fullWidth variant="ghost" onClick={() => router.push('/menu')}>
         Volver al menú

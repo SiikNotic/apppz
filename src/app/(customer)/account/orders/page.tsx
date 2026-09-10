@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ClipboardList, RotateCcw } from 'lucide-react'
+import { ClipboardList, Receipt, RotateCcw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCart } from '@/contexts/CartContext'
 import { fetchCustomerOrders } from '@/lib/data-access/orders'
@@ -10,6 +10,7 @@ import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ReceiptDialog } from '@/components/customer/receipt-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { ORDER_TERMINAL_STATUSES, type Order, type OrderStatus } from '@/lib/types'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -35,6 +36,7 @@ export default function OrdersHistoryPage() {
   const [loading, setLoading] = useState(true)
   const [reorderingId, setReorderingId] = useState<string | null>(null)
   const [reorderNotice, setReorderNotice] = useState<string | null>(null)
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -99,6 +101,7 @@ export default function OrdersHistoryPage() {
               title={t('orderHistory.sectionActive')}
               orders={active}
               onReorder={handleReorder}
+              onViewReceipt={setReceiptOrder}
               reorderingId={reorderingId}
               router={router}
             />
@@ -108,6 +111,7 @@ export default function OrdersHistoryPage() {
               title={t('orderHistory.sectionPast')}
               orders={past}
               onReorder={handleReorder}
+              onViewReceipt={setReceiptOrder}
               reorderingId={reorderingId}
               router={router}
             />
@@ -117,12 +121,15 @@ export default function OrdersHistoryPage() {
               title={t('orderHistory.sectionCancelled')}
               orders={cancelled}
               onReorder={handleReorder}
+              onViewReceipt={setReceiptOrder}
               reorderingId={reorderingId}
               router={router}
             />
           )}
         </>
       )}
+
+      <ReceiptDialog order={receiptOrder} onOpenChange={(open) => !open && setReceiptOrder(null)} />
     </div>
   )
 }
@@ -131,12 +138,14 @@ function OrderSection({
   title,
   orders,
   onReorder,
+  onViewReceipt,
   reorderingId,
   router,
 }: {
   title: string
   orders: Order[]
   onReorder: (o: Order) => void
+  onViewReceipt: (o: Order) => void
   reorderingId: string | null
   router: ReturnType<typeof useRouter>
 }) {
@@ -161,17 +170,23 @@ function OrderSection({
                 {t(`orderStatus.${order.status as OrderStatus}`)}
               </Badge>
             </div>
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-3 flex items-center justify-between gap-2">
               <span className="text-sm font-extrabold text-ink-900">{formatCurrency(order.total)}</span>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => onReorder(order)}
-                disabled={reorderingId === order.id}
-              >
-                <RotateCcw size={14} aria-hidden="true" />
-                {reorderingId === order.id ? t('orderHistory.adding') : t('orderHistory.reorder')}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => onViewReceipt(order)}>
+                  <Receipt size={14} aria-hidden="true" />
+                  {t('receipt.viewReceipt')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => onReorder(order)}
+                  disabled={reorderingId === order.id}
+                >
+                  <RotateCcw size={14} aria-hidden="true" />
+                  {reorderingId === order.id ? t('orderHistory.adding') : t('orderHistory.reorder')}
+                </Button>
+              </div>
             </div>
           </Card>
         ))}
