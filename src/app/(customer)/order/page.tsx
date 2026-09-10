@@ -2,20 +2,35 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { CheckCircle2, Circle, RotateCcw, MessageCircleWarning } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useCart } from '@/contexts/CartContext'
 import { fetchOrderById } from '@/lib/data-access/orders'
 import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-order'
+import { geocodeAddress } from '@/lib/mapbox'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { DeliveryChat } from '@/components/shared/delivery-chat'
+import { DriverCard } from '@/components/customer/driver-card'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { ORDER_STATUS_FLOW, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
-import type { DeliveryAssignment, Order, OrderItem, OrderStatus } from '@/lib/types'
+import type { DeliveryAssignment, Order, OrderItem, OrderStatus, Profile } from '@/lib/types'
 import { useLanguage } from '@/contexts/LanguageContext'
+
+// mapbox-gl necesita `window` — con export estático, evaluarlo durante el
+// build de prerenderizado rompería el build. ssr:false lo salta del todo
+// en el servidor/build y solo se carga en el navegador.
+const LiveDeliveryMap = dynamic(
+  () => import('@/components/customer/live-delivery-map').then((m) => m.LiveDeliveryMap),
+  { ssr: false }
+)
+
+interface LatLng {
+  lat: number
+  lng: number
+}
 
 function OrderStatusContent() {
   const searchParams = useSearchParams()
@@ -26,6 +41,9 @@ function OrderStatusContent() {
   const [order, setOrder] = useState<Order | null>(null)
   const [items, setItems] = useState<OrderItem[]>([])
   const [assignment, setAssignment] = useState<DeliveryAssignment | null>(null)
+  const [driverProfile, setDriverProfile] = useState<Profile | null>(null)
+  const [restaurantLocation, setRestaurantLocation] = useState<LatLng | null>(null)
+  const [destinationLocation, setDestinationLocation] = useState<LatLng | null>(null)
   const [loading, setLoading] = useState(true)
   const [reordering, setReordering] = useState(false)
   const [reorderNotice, setReorderNotice] = useState<string | null>(null)
@@ -59,7 +77,17 @@ function OrderStatusContent() {
         .order('assigned_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (active) setAssignment(data)
+      if (!active) return
+      setAssignment(data)
+      // El perfil del repartidor (nombre/foto/teléfono) solo es legible
+      // por el cliente mientras la asignación siga activa (RLS) — ver
+      // migración customer_read_assigned_driver_info.
+      if (data?.driver_id) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.driver_id).maybeSingle()
+        if (active) setDriverProfile(profile as Profile | null)
+      } else {
+        setDriverProfile(null)
+      }
     }
 
     async function load() {
@@ -100,6 +128,58 @@ function OrderStatusContent() {
       supabase.removeChannel(channel)
     }
   }, [orderId])
+
+  // Punto de recogida fijo del mapa — se configura una sola vez desde
+  // Configuración → Ubicación del restaurante (ver RestaurantLocationCard)
+  // y es lectura pública, así que no depende de que haya un pedido.
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', ['restaurant.lat', 'restaurant.lng'])
+      .then(({ data }) => {
+        const byKey: Record<string, unknown> = {}
+        for (const row of data ?? []) byKey[row.key] = row.value
+        const lat = byKey['restaurant.lat']
+        const lng = byKey['restaurant.lng']
+        if (typeof lat === 'number' && typeof lng === 'number') setRestaurantLocation({ lat, lng })
+      })
+  }, [])
+
+  // Coordenadas del punto de entrega. addresses.lat/lng casi siempre está
+  // vacío hoy (nunca se geocodificó nada antes de esta función), así que
+  // si falta lo calculamos a partir del texto ya guardado en el pedido y
+  // lo persistimos en la dirección del cliente para no repetir la
+  // geocodificación en su próximo pedido a la misma dirección.
+  useEffect(() => {
+    if (!order || order.order_type !== 'delivery') return
+    let active = true
+
+    async function resolveDestination(current: Order) {
+      if (current.address_id) {
+        const { data: addr } = await supabase.from('addresses').select('*').eq('id', current.address_id).maybeSingle()
+        if (!active) return
+        if (addr?.lat != null && addr?.lng != null) {
+          setDestinationLocation({ lat: addr.lat, lng: addr.lng })
+          return
+        }
+        const geocoded = await geocodeAddress(current.address || '')
+        if (!active || !geocoded) return
+        setDestinationLocation(geocoded)
+        if (addr) {
+          await supabase.from('addresses').update({ lat: geocoded.lat, lng: geocoded.lng }).eq('id', addr.id)
+        }
+      } else if (current.address) {
+        const geocoded = await geocodeAddress(current.address)
+        if (active && geocoded) setDestinationLocation(geocoded)
+      }
+    }
+
+    resolveDestination(order)
+    return () => {
+      active = false
+    }
+  }, [order?.id, order?.address_id, order?.order_type, order?.address])
 
   if (loading) return <p className="py-16 text-center text-sm text-ink-400">Cargando pedido…</p>
 
@@ -168,7 +248,16 @@ function OrderStatusContent() {
       )}
 
       {assignment && (assignment.status === 'assigned' || assignment.status === 'en_route') && (
-        <DeliveryChat assignmentId={assignment.id} role="customer" active />
+        <div className="space-y-3">
+          {assignment.driver_id && (
+            <LiveDeliveryMap
+              driverId={assignment.driver_id}
+              restaurant={restaurantLocation}
+              destination={destinationLocation}
+            />
+          )}
+          <DriverCard profile={driverProfile} assignment={assignment} />
+        </div>
       )}
 
       <Card className="space-y-3 p-5">

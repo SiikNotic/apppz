@@ -15,6 +15,7 @@ import {
   Dog,
   KeyRound,
   MessageCircleWarning,
+  LocateFixed,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -25,6 +26,7 @@ import { DeliveryChat } from '@/components/shared/delivery-chat'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/company/page-header'
+import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Address, DeliveryAssignment, Driver, DriverShift, Order } from '@/lib/types'
@@ -102,6 +104,13 @@ export default function DriverPage() {
   // mi turno de trabajo", para llevar la hora de entrada/salida).
   const [openShift, setOpenShift] = useState<DriverShift | null>(null)
   const [shiftBusy, setShiftBusy] = useState(false)
+
+  // Comparte la ubicación GPS en drivers.current_lat/lng mientras haya
+  // una entrega activa — es lo que alimenta el mapa en vivo del cliente
+  // (LiveDeliveryMap). Debe llamarse antes de cualquier return temprano
+  // (reglas de hooks), por eso vive aquí y no más abajo junto al resto
+  // del JSX que sí depende de `active`.
+  const locationSharing = useDriverLocationSharing(user?.id, active.length > 0)
 
   async function loadAll() {
     if (!user) return
@@ -246,6 +255,13 @@ export default function DriverPage() {
           </Button>
         }
       />
+
+      {current && (locationSharing === 'denied' || locationSharing === 'unsupported') && (
+        <p className="flex items-center gap-2 rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-warning-500">
+          <LocateFixed size={16} className="shrink-0" aria-hidden="true" />
+          {locationSharing === 'denied' ? t('driverPage.locationSharingDenied') : t('driverPage.locationSharingUnsupported')}
+        </p>
+      )}
 
       {/* Registro de entrada/salida del turno — para llevar la hora
           trabajada, independiente del toggle Disponible/Offline de

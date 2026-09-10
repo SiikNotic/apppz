@@ -1,0 +1,57 @@
+'use client'
+
+// Comparte la ubicación GPS del navegador del repartidor mientras tenga
+// una entrega activa, escribiéndola en drivers.current_lat/current_lng
+// (limitado a como mínimo cada MIN_INTERVAL_MS para no saturar la base de
+// datos con cada evento de watchPosition). El cliente la lee vía
+// postgres_changes en LiveDeliveryMap.
+//
+// Limitación real de PWA/web, no un descuido: esto solo funciona
+// mientras el navegador del repartidor sigue con esta pestaña abierta y
+// la pantalla encendida — a diferencia de una app nativa, no hay
+// tracking en segundo plano. Si el repartidor bloquea el teléfono, el
+// cliente deja de ver el punto moverse hasta que lo desbloquee de nuevo.
+import { useEffect, useRef, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+
+const MIN_INTERVAL_MS = 5000
+
+export type LocationSharingStatus = 'idle' | 'sharing' | 'denied' | 'unsupported'
+
+export function useDriverLocationSharing(userId: string | undefined, active: boolean): LocationSharingStatus {
+  const [status, setStatus] = useState<LocationSharingStatus>('idle')
+  const lastSentRef = useRef(0)
+
+  useEffect(() => {
+    if (!active || !userId) {
+      setStatus('idle')
+      return
+    }
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setStatus('unsupported')
+      return
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setStatus('sharing')
+        const now = Date.now()
+        if (now - lastSentRef.current < MIN_INTERVAL_MS) return
+        lastSentRef.current = now
+        supabase
+          .from('drivers')
+          .update({ current_lat: pos.coords.latitude, current_lng: pos.coords.longitude })
+          .eq('user_id', userId)
+          .then(() => {})
+      },
+      (err) => {
+        setStatus(err.code === err.PERMISSION_DENIED ? 'denied' : 'unsupported')
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    )
+
+    return () => navigator.geolocation.clearWatch(watchId)
+  }, [userId, active])
+
+  return status
+}

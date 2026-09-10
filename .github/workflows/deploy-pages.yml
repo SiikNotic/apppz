@@ -49,6 +49,11 @@ jobs:
           # guardarlo como secret.
           NEXT_PUBLIC_SUPABASE_URL: https://zfegecwnyhtihqugyljs.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_CRXjUaIKjKN-KHgHw08mmQ__sXaHD5u
+          # Token público de Mapbox — vacío hasta que el negocio genere el
+          # suyo en mapbox.com; sin él el mapa de seguimiento en vivo del
+          # pedido simplemente no se muestra (el resto de la app funciona
+          # igual). Reemplazar este valor cuando lo tengan.
+          NEXT_PUBLIC_MAPBOX_TOKEN: ''
         run: npm run build
 
       - name: Add .nojekyll

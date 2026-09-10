@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { PageHeader } from '@/components/company/page-header'
+import { RestaurantLocationCard } from '@/components/company/settings/restaurant-location-card'
 import type { Setting } from '@/lib/types'
 import type { Json } from '@/lib/database.types'
 
@@ -28,6 +29,7 @@ export default function CompanySettingsPage() {
       .from('settings')
       .select('*')
       .not('key', 'like', 'rewards.%')
+      .not('key', 'like', 'restaurant.%')
       .then(({ data }) => {
         setSettings(data ?? [])
         const d: Record<string, string> = {}
@@ -110,6 +112,8 @@ export default function CompanySettingsPage() {
           </div>
         )}
       </Card>
+
+      <RestaurantLocationCard canManage={canManage} />
     </div>
   )
 }
