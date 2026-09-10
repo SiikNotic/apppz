@@ -28,6 +28,8 @@ export const translations = {
       viewSite: 'Ver sitio del cliente',
       signOut: 'Cerrar sesión',
       companyDashboard: 'Panel de la compañía',
+      openMenu: 'Más opciones',
+      language: 'Idioma',
     },
     common: {
       save: 'Guardar',
@@ -925,6 +927,8 @@ export const translations = {
       viewSite: 'View customer site',
       signOut: 'Sign out',
       companyDashboard: 'Company dashboard',
+      openMenu: 'More options',
+      language: 'Language',
     },
     common: {
       save: 'Save',

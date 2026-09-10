@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-72px)] place-items-center px-4 py-10">
+    <div className="grid min-h-[70vh] place-items-center px-4 py-10">
       <Card className="w-full max-w-sm p-7">
         <div className="mb-6 flex flex-col items-center text-center">
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-white">

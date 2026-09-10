@@ -3,9 +3,9 @@
 import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChefHat } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
+import { AuthHero } from '@/components/customer/auth-hero'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -48,13 +48,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-72px)] place-items-center px-4 py-10">
+    <div className="grid min-h-[70vh] place-items-center px-4 py-10">
       <Card className="w-full max-w-sm p-7">
+        <AuthHero />
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-white">
-            <ChefHat size={24} aria-hidden="true" />
-          </span>
-          <h1 className="mt-3 text-lg font-extrabold text-ink-900">{t('auth.registerTitle')}</h1>
+          <h1 className="text-lg font-extrabold text-ink-900">{t('auth.registerTitle')}</h1>
           <p className="text-sm text-ink-400">{t('auth.registerSubtitle')}</p>
         </div>
 

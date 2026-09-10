@@ -9,7 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 export default function VerifyEmailPage() {
   const { t } = useLanguage()
   return (
-    <div className="grid min-h-[calc(100vh-72px)] place-items-center px-4 py-10">
+    <div className="grid min-h-[70vh] place-items-center px-4 py-10">
       <Card className="w-full max-w-sm p-7 text-center">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-white">
           <MailCheck size={24} aria-hidden="true" />

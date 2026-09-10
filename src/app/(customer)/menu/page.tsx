@@ -7,6 +7,7 @@ import { useMenuData } from '@/hooks/useMenuData'
 import { MenuGrid } from '@/components/customer/menu-grid'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { categoryEmoji } from '@/lib/category-icon'
 
 function MenuPageContent() {
   const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
@@ -52,7 +53,7 @@ function MenuPageContent() {
               currentCategory === cat.id ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
             )}
           >
-            {cat.name}
+            <span aria-hidden="true">{categoryEmoji(cat.name)}</span> {cat.name}
           </button>
         ))}
       </div>
