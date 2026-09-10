@@ -53,14 +53,14 @@ export default function HomePage() {
           </section>
         </>
       ) : (
-        <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-ink-900 sm:p-10">
-          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-ink-900/10 px-3 py-1 text-xs font-semibold">
+        <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-white sm:p-10">
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
             <MapPin size={12} aria-hidden="true" /> {t('home.deliveringArea')}
           </div>
           <h1 className="max-w-md text-3xl font-extrabold leading-tight sm:text-4xl">
             {t('home.heroTitle')}
           </h1>
-          <p className="mt-2 max-w-sm text-sm text-ink-900/75">{BRAND_TAGLINE}</p>
+          <p className="mt-2 max-w-sm text-sm text-white/80">{BRAND_TAGLINE}</p>
           <Link
             href="/menu"
             className="mt-5 inline-flex items-center rounded-full bg-ink-900 px-6 py-3 text-sm font-bold text-white shadow-pop hover:bg-ink-800"
@@ -129,7 +129,7 @@ export default function HomePage() {
               quita y regresa a Populares — nunca navega a otra pantalla. */}
           <section>
             <h2 className="mb-4 text-lg font-extrabold text-ink-900">{t('home.categories')}</h2>
-            <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
+            <div className="no-scrollbar flex gap-2.5 overflow-x-auto pb-1">
               {categories.map((cat) => {
                 const isActive = activeCategory === cat.id
                 return (
@@ -139,11 +139,13 @@ export default function HomePage() {
                     aria-pressed={isActive}
                     onClick={() => setActiveCategory((prev) => (prev === cat.id ? null : cat.id))}
                     className={cn(
-                      'shrink-0 rounded-2xl px-5 py-4 text-center shadow-card transition hover:shadow-pop',
-                      isActive ? 'bg-brand-500' : 'bg-white'
+                      'shrink-0 rounded-full border px-5 py-2.5 text-sm font-bold transition',
+                      isActive
+                        ? 'border-brand-500 bg-brand-500 text-white shadow-card'
+                        : 'border-brand-200 bg-white text-ink-900 hover:border-brand-500'
                     )}
                   >
-                    <span className="text-sm font-bold text-ink-900">{cat.name}</span>
+                    {cat.name}
                   </button>
                 )
               })}
