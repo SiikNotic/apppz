@@ -145,26 +145,32 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-5 flex items-start gap-4">
-        <ItemThumb name={item.name} imageUrl={item.image_url} size="lg" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h1 className="text-2xl font-extrabold text-ink-900">{item.name}</h1>
-            <button
-              onClick={toggleFavorite}
-              aria-pressed={isFavorite}
-              aria-label={isFavorite ? t('product.removeFavorite') : t('product.addFavorite')}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white shadow-card text-ink-600 hover:text-brand-900"
-            >
-              <Heart size={18} className={isFavorite ? 'fill-brand-900 text-brand-900' : ''} aria-hidden="true" />
-            </button>
+      <div className="relative mb-5 overflow-hidden rounded-3xl bg-brand-50">
+        {item.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.image_url} alt={item.name} className="h-56 w-full object-cover sm:h-72" />
+        ) : (
+          <div className="grid h-56 w-full place-items-center sm:h-72">
+            <ItemThumb name={item.name} size="lg" className="h-24 w-24" />
           </div>
-          {item.description && <p className="mt-1 text-sm text-ink-600">{item.description}</p>}
-          <p className="mt-2 text-lg font-extrabold text-brand-900">
-            {item.is_customizable_pizza ? t('product.from') : ''}
-            {formatCurrency(displayPrice)}
-          </p>
-        </div>
+        )}
+        <button
+          onClick={toggleFavorite}
+          aria-pressed={isFavorite}
+          aria-label={isFavorite ? t('product.removeFavorite') : t('product.addFavorite')}
+          className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white shadow-card text-ink-600 hover:text-brand-900"
+        >
+          <Heart size={18} className={isFavorite ? 'fill-brand-900 text-brand-900' : ''} aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className="mb-5">
+        <h1 className="text-2xl font-extrabold text-ink-900">{item.name}</h1>
+        {item.description && <p className="mt-1 text-sm text-ink-600">{item.description}</p>}
+        <p className="mt-2 text-lg font-extrabold text-brand-900">
+          {item.is_customizable_pizza ? t('product.from') : ''}
+          {formatCurrency(displayPrice)}
+        </p>
       </div>
 
       {item.is_customizable_pizza ? (
