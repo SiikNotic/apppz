@@ -8,10 +8,12 @@
 // Proveedor: Google Gemini API, modelo gemini-2.5-flash-image ("nano
 // banana") — elegido porque tiene un tier gratis generoso (~500
 // imágenes/día en AI Studio, sin tarjeta de crédito) y una API REST
-// simple de un solo request. La clave se guarda en Supabase Vault bajo
-// el secreto `image_generation_api_key` (mismo nombre que ya
-// verificaba el stub anterior) — se consigue gratis en
-// https://aistudio.google.com/apikey.
+// simple de un solo request. La clave se guarda como secreto de Edge
+// Functions (Project Settings → Edge Functions → Secrets, o
+// `supabase secrets set`) con el nombre `image_generation_api_key` —
+// se consigue gratis en https://aistudio.google.com/apikey. Va como
+// secreto de función (Deno.env), no en el Vault de la base de datos,
+// porque solo lo necesita esta función — nunca se lee desde SQL.
 //
 // Si el secreto no existe todavía, la función responde `configured:
 // false` con un mensaje claro en vez de fabricar una respuesta falsa.
@@ -77,9 +79,7 @@ Deno.serve(async (req: Request) => {
   // Existencia (no el valor) de una clave de proveedor de imágenes.
   // Mientras no exista, esta función es honesta sobre no estar
   // configurada en lugar de fabricar una respuesta.
-  const { data: apiKey } = await adminClient.rpc('get_decrypted_secret', {
-    secret_name: 'image_generation_api_key',
-  })
+  const apiKey = Deno.env.get('image_generation_api_key')
 
   if (!apiKey) {
     return json({
