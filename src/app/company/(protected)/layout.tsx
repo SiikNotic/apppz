@@ -38,6 +38,7 @@ import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { useStaffClock } from '@/hooks/useStaffClock'
 import { BRAND_NAME } from '@/lib/config'
 import { NAV_ITEMS_BY_PERMISSION } from '@/lib/auth/permissions'
+import type { Driver } from '@/lib/types'
 
 // Mapea cada ruta del nav a su clave en dashboardNav (translations.ts).
 // Las labels en NAV_ITEMS_BY_PERMISSION ya venían hardcodeadas en inglés
@@ -103,6 +104,20 @@ const ROLE_KEYS: Record<string, string> = {
   staff: 'teamAdmin.roleStaff',
 }
 
+// Estado real del conductor (drivers.status) para la píldora del menú móvil
+// estilo "app de reparto" — nada de niveles/insignias inventados, solo lo
+// que ya existe en el esquema.
+const DRIVER_STATUS_KEYS: Record<Driver['status'], string> = {
+  offline: 'driverPage.statusOffline',
+  available: 'driverPage.statusAvailable',
+  on_delivery: 'driverPage.statusOnDelivery',
+}
+const DRIVER_STATUS_DOT: Record<Driver['status'], string> = {
+  offline: 'bg-white/40',
+  available: 'bg-success-500',
+  on_delivery: 'bg-brand-500',
+}
+
 /** Iniciales para el avatar circular del sidebar — "Ana López" → "AL",
  *  sin nombre cae al correo, sin ninguno de los dos cae a "?". */
 function initialsFor(name?: string | null, email?: string | null): string {
@@ -120,6 +135,48 @@ function CompanyChrome({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { isDriver: isClockDriver, openShift, loading: clockLoading, busy: clockBusy, toggle: toggleClock } = useStaffClock()
+  const isDriverRole = profile?.company_role === 'driver'
+
+  // Datos reales para el encabezado del menú móvil del conductor (ver
+  // DriverMobileMenu más abajo) — conteo de entregas completadas y estado
+  // actual (drivers.status). Nunca niveles/insignias inventados, solo lo
+  // que ya existe en el esquema.
+  const [driverHero, setDriverHero] = useState<{ deliveredCount: number; status: Driver['status'] | null }>({
+    deliveredCount: 0,
+    status: null,
+  })
+  useEffect(() => {
+    if (!isDriverRole || !user) return
+    let active = true
+    async function loadDriverHero() {
+      if (!user) return
+      const [{ count }, { data: driverRow }] = await Promise.all([
+        supabase
+          .from('delivery_assignments')
+          .select('id', { count: 'exact', head: true })
+          .eq('driver_id', user.id)
+          .eq('status', 'delivered'),
+        supabase.from('drivers').select('status').eq('user_id', user.id).maybeSingle(),
+      ])
+      if (!active) return
+      setDriverHero({ deliveredCount: count ?? 0, status: driverRow?.status ?? null })
+    }
+    loadDriverHero()
+    const channel = supabase
+      .channel(`driver-hero-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'delivery_assignments', filter: `driver_id=eq.${user.id}` },
+        loadDriverHero
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers', filter: `user_id=eq.${user.id}` }, loadDriverHero)
+      .subscribe()
+    return () => {
+      active = false
+      supabase.removeChannel(channel)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDriverRole, user?.id])
 
   async function handleClockToggle() {
     const { error } = await toggleClock()
@@ -313,7 +370,82 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         </button>
       </header>
 
-      {mobileNavOpen && (
+      {mobileNavOpen && isDriverRole && (
+        // Menú del conductor: mismo overlay, pero con la cabecera tipo app
+        // de reparto que pidió el usuario — nombre, entregas completadas
+        // (dato real) y puesto/estado real en vez de niveles inventados.
+        // Solo se ve para company_role='driver'; cocina/admin/etc. siguen
+        // con el menú de abajo, sin tocar.
+        <div className="fixed inset-0 z-40 flex flex-col bg-ink-900 text-white lg:hidden">
+          <div className="relative bg-gradient-to-b from-[#12503f] to-ink-900 px-5 pb-6 pt-5">
+            <button
+              onClick={() => setMobileNavOpen(false)}
+              aria-label={t('common.closeMenu')}
+              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+            <p className="pr-12 text-[28px] font-black leading-tight">{profile?.full_name || user?.email}</p>
+            <p className="mt-1 text-sm text-white/70">
+              {t('driverPage.deliveriesCompletedStat', { count: driverHero.deliveredCount })}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-bold">
+                <Truck size={13} aria-hidden="true" /> {t(ROLE_KEYS.driver)}
+              </span>
+              {driverHero.status && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-bold">
+                  <span className={cn('h-1.5 w-1.5 rounded-full', DRIVER_STATUS_DOT[driverHero.status])} aria-hidden="true" />
+                  {t(DRIVER_STATUS_KEYS[driverHero.status])}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <nav aria-label={t('common.mainNav')} className="flex-1 space-y-1 overflow-y-auto px-4 py-3">
+            {items.map(({ href, label }) => {
+              const isActive = pathname === href
+              const Icon = ICONS[href] ?? Package
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setMobileNavOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition',
+                    isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  )}
+                >
+                  <Icon size={20} aria-hidden="true" />
+                  <span className="flex-1">{NAV_LABEL_KEYS[href] ? t(`dashboardNav.${NAV_LABEL_KEYS[href]}`) : label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="space-y-1 border-t border-white/10 px-4 py-4">
+            <Link
+              href="/"
+              onClick={() => setMobileNavOpen(false)}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+            >
+              <Home size={20} aria-hidden="true" />
+              {t('nav.viewSite')}
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+            >
+              <LogOut size={20} aria-hidden="true" />
+              {t('nav.signOut')}
+            </button>
+            <LanguageToggle className="mx-1 mt-2" variant="dark" />
+          </div>
+        </div>
+      )}
+
+      {mobileNavOpen && !isDriverRole && (
         <div className="fixed inset-0 z-40 flex flex-col bg-ink-900 text-white lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2.5">
