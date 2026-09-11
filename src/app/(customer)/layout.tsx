@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { ActiveOrderBanner } from '@/components/customer/active-order-banner'
+import { StoreStatusBanner } from '@/components/customer/store-status-banner'
 import { HomeTopBar } from '@/components/customer/home-top-bar'
 import { ScreenBackButton } from '@/components/customer/screen-back-button'
 import { DecorativeFoodPattern } from '@/components/customer/decorative-food-pattern'
@@ -57,6 +58,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
       )}
 
       <main className={cn('mx-auto max-w-5xl space-y-4 px-4 pt-5 sm:px-6', isAuthPage && 'pb-10')}>
+        {!isAuthPage && <StoreStatusBanner />}
         <ActiveOrderBanner />
         {children}
       </main>

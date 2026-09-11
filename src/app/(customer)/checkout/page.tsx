@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { calculateCartPrice, createOrder, type CartRpcItem } from '@/lib/data-access/orders'
 import { saveLastOrderId } from '@/lib/active-order'
+import { useStoreStatus } from '@/hooks/useStoreStatus'
 import { fetchUserAddresses } from '@/lib/data-access/addresses'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -46,6 +47,7 @@ export default function CheckoutPage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
   const router = useRouter()
+  const { status: storeStatus } = useStoreStatus()
 
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery')
   const [customerName, setCustomerName] = useState('')
@@ -164,6 +166,11 @@ export default function CheckoutPage() {
         setFormError(t('checkout.errorItemUnavailable'))
       } else if (message.includes('carrito está vacío')) {
         setFormError(t('checkout.emptyCart'))
+      } else if (message.includes('tienda está cerrada')) {
+        // create_order() ya rechazó esto en el servidor — pasa si el
+        // horario cerró justo entre que se cargó la página y se envió el
+        // pedido. No confiamos solo en deshabilitar el botón en el cliente.
+        setFormError(t('checkout.errorStoreClosed'))
       } else {
         setFormError(t('checkout.errorConnection'))
       }
@@ -184,7 +191,8 @@ export default function CheckoutPage() {
     )
   }
 
-  const canSubmit = !submitting && !pricingLoading && !pricingError && !!pricing
+  const storeClosed = storeStatus != null && !storeStatus.is_open
+  const canSubmit = !submitting && !pricingLoading && !pricingError && !!pricing && !storeClosed
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.3fr,1fr]">
@@ -393,6 +401,11 @@ export default function CheckoutPage() {
             </div>
           ) : null}
 
+          {storeClosed && (
+            <p role="alert" className="text-center text-xs font-semibold text-white">
+              {t('storeStatus.cannotOrder')}
+            </p>
+          )}
           <Button
             fullWidth
             size="lg"
@@ -400,7 +413,7 @@ export default function CheckoutPage() {
             onClick={handleSubmit}
             disabled={!canSubmit}
           >
-            {submitting ? t('checkout.submitting') : t('checkout.confirmOrder')}
+            {submitting ? t('checkout.submitting') : storeClosed ? t('storeStatus.closedGeneric') : t('checkout.confirmOrder')}
           </Button>
         </Card>
       </div>

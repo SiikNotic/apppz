@@ -1651,6 +1651,62 @@ export type Database = {
           },
         ]
       }
+      store_closures: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_at: string
+          id: string
+          reason: string | null
+          start_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_at: string
+          id?: string
+          reason?: string | null
+          start_at: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_at?: string
+          id?: string
+          reason?: string | null
+          start_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_closures_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_hours: {
+        Row: {
+          close_time: string
+          day_of_week: number
+          is_closed: boolean
+          open_time: string
+        }
+        Insert: {
+          close_time?: string
+          day_of_week: number
+          is_closed?: boolean
+          open_time?: string
+        }
+        Update: {
+          close_time?: string
+          day_of_week?: number
+          is_closed?: boolean
+          open_time?: string
+        }
+        Relationships: []
+      }
       topping_ingredients: {
         Row: {
           id: string
@@ -1928,6 +1984,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_store_status: { Args: { check_time?: string }; Returns: Json }
       has_permission: { Args: { perm: string }; Returns: boolean }
       is_company_staff: { Args: never; Returns: boolean }
       is_driver_assigned_to_order: {
@@ -1935,6 +1992,7 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: never; Returns: boolean }
+      is_store_open: { Args: { check_time?: string }; Returns: boolean }
       redeem_catalog_reward: {
         Args: { p_reward_id: string }
         Returns: {

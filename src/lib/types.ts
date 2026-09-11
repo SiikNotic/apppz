@@ -30,6 +30,15 @@ export type DriverShift = Tables<'driver_shifts'>
 export type StaffShift = Tables<'staff_shifts'>
 export type VehicleMake = Tables<'vehicle_makes'>
 export type VehicleModel = Tables<'vehicle_models'>
+export type StoreHours = Tables<'store_hours'>
+export type StoreClosure = Tables<'store_closures'>
+
+export interface StoreStatus {
+  is_open: boolean
+  closed_reason: string | null
+  minutes_to_close: number | null
+  next_open_at: string | null
+}
 export type EmployeeDetails = Tables<'employee_details'>
 export type EmployeeSensitiveInfo = Tables<'employee_sensitive_info'>
 export type DeliveryAssignment = Tables<'delivery_assignments'>
