@@ -141,18 +141,21 @@ export type Database = {
         Row: {
           active: boolean
           id: string
+          image_url: string | null
           name: string
           sort_order: number
         }
         Insert: {
           active?: boolean
           id?: string
+          image_url?: string | null
           name: string
           sort_order?: number
         }
         Update: {
           active?: boolean
           id?: string
+          image_url?: string | null
           name?: string
           sort_order?: number
         }

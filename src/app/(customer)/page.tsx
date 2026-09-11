@@ -10,7 +10,7 @@ import { MenuSkeleton } from '@/components/customer/menu-skeleton'
 import { PromoBannerHero } from '@/components/customer/promo-banner-hero'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { categoryEmoji } from '@/lib/category-icon'
+import { CategoryPillIcon } from '@/components/customer/category-pill-icon'
 import { BRAND_TAGLINE } from '@/lib/config'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -146,7 +146,7 @@ export default function HomePage() {
                         : 'border-brand-200 bg-white text-ink-900 hover:border-brand-500'
                     )}
                   >
-                    <span aria-hidden="true">{categoryEmoji(cat.name)}</span> {cat.name}
+                    <CategoryPillIcon name={cat.name} imageUrl={cat.image_url} /> {cat.name}
                   </button>
                 )
               })}

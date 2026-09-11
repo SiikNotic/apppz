@@ -28,6 +28,8 @@ export const translations = {
       viewSite: 'Ver sitio del cliente',
       signOut: 'Cerrar sesión',
       companyDashboard: 'Panel de la compañía',
+      onDutyPill: 'En turno',
+      offDutyPill: 'Fuera de turno',
       language: 'Idioma',
     },
     common: {
@@ -493,6 +495,7 @@ export const translations = {
       inactiveM: 'Inactivo',
       editCategoryTitle: 'Editar categoría',
       newCategoryTitle: 'Nueva categoría',
+      categoryImage: 'Imagen (opcional)',
       name: 'Nombre',
       sortOrder: 'Orden',
       nameRequired: 'El nombre es obligatorio.',
@@ -1049,6 +1052,8 @@ export const translations = {
       viewSite: 'View customer site',
       signOut: 'Sign out',
       companyDashboard: 'Company dashboard',
+      onDutyPill: 'On duty',
+      offDutyPill: 'Off duty',
       language: 'Language',
     },
     common: {
@@ -1513,6 +1518,7 @@ export const translations = {
       inactiveM: 'Inactive',
       editCategoryTitle: 'Edit category',
       newCategoryTitle: 'New category',
+      categoryImage: 'Image (optional)',
       name: 'Name',
       sortOrder: 'Order',
       nameRequired: 'Name is required.',

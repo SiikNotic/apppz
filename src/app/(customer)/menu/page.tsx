@@ -8,7 +8,7 @@ import { MenuGrid } from '@/components/customer/menu-grid'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
 import { LanguageToggle } from '@/components/ui/language-toggle'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { categoryEmoji } from '@/lib/category-icon'
+import { CategoryPillIcon } from '@/components/customer/category-pill-icon'
 
 function MenuPageContent() {
   const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
@@ -59,7 +59,7 @@ function MenuPageContent() {
                 currentCategory === cat.id ? 'bg-brand-500 text-white shadow-card' : 'bg-white text-ink-600 hover:bg-brand-50'
               )}
             >
-              <span aria-hidden="true">{categoryEmoji(cat.name)}</span> {cat.name}
+              <CategoryPillIcon name={cat.name} imageUrl={cat.image_url} /> {cat.name}
             </button>
           ))}
         </div>

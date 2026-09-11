@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Plus, Pencil, Trash2, Upload, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,12 +9,13 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { ItemThumb } from '@/components/ui/item-thumb'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Category } from '@/lib/types'
 
-const EMPTY = { name: '', sort_order: '0' }
+const EMPTY = { name: '', sort_order: '0', image_url: '' }
 
 export function CategoriesTab() {
   const { t } = useLanguage()
@@ -25,6 +26,9 @@ export function CategoriesTab() {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     setLoading(true)
@@ -39,22 +43,52 @@ export function CategoriesTab() {
 
   function openCreate() {
     setEditingId(null)
-    setForm({ name: '', sort_order: String(categories.length) })
+    setForm({ name: '', sort_order: String(categories.length), image_url: '' })
     setError(null)
+    setUploadError(null)
     setFormOpen(true)
   }
 
   function openEdit(cat: Category) {
     setEditingId(cat.id)
-    setForm({ name: cat.name, sort_order: String(cat.sort_order) })
+    setForm({ name: cat.name, sort_order: String(cat.sort_order), image_url: cat.image_url ?? '' })
     setError(null)
+    setUploadError(null)
     setFormOpen(true)
+  }
+
+  // Mismo bucket que productos/toppings/cortezas (menu-images) — nunca
+  // finge una URL, solo la publica la sube al Storage real de Supabase.
+  async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setUploadError(null)
+    setUploading(true)
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `${crypto.randomUUID()}.${ext}`
+    const { error: uploadErr } = await supabase.storage.from('menu-images').upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    })
+    setUploading(false)
+    if (uploadErr) {
+      setUploadError(t('menuMgmt.uploadError'))
+      return
+    }
+    const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
+    setForm((prev) => ({ ...prev, image_url: data.publicUrl }))
   }
 
   async function handleSave() {
     if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     setSaving(true)
-    const payload = { name: form.name.trim(), sort_order: Number(form.sort_order) || 0 }
+    const payload = {
+      name: form.name.trim(),
+      sort_order: Number(form.sort_order) || 0,
+      image_url: form.image_url.trim() || null,
+    }
     const { error } = editingId
       ? await supabase.from('categories').update(payload).eq('id', editingId)
       : await supabase.from('categories').insert(payload)
@@ -94,11 +128,14 @@ export function CategoriesTab() {
             {categories.map((cat) => (
               <Card key={cat.id} className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-foreground">{cat.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t('menuMgmt.orderPrefix')} {cat.sort_order}
-                    </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <ItemThumb name={cat.name} imageUrl={cat.image_url} size="sm" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">{cat.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('menuMgmt.orderPrefix')} {cat.sort_order}
+                      </p>
+                    </div>
                   </div>
                   <button onClick={() => toggleActive(cat)}>
                     <Badge variant={cat.active ? 'success' : 'neutral'}>
@@ -135,7 +172,12 @@ export function CategoriesTab() {
               <TableBody>
                 {categories.map((cat) => (
                   <TableRow key={cat.id}>
-                    <TableCell className="font-semibold text-foreground">{cat.name}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      <div className="flex items-center gap-3">
+                        <ItemThumb name={cat.name} imageUrl={cat.image_url} size="sm" />
+                        {cat.name}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{cat.sort_order}</TableCell>
                     <TableCell>
                       <button onClick={() => toggleActive(cat)}>
@@ -186,6 +228,44 @@ export function CategoriesTab() {
                   value={form.sort_order}
                   onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
                 />
+              </div>
+              <div>
+                <Label>{t('menuMgmt.categoryImage')}</Label>
+                <div className="flex items-center gap-3">
+                  <ItemThumb name={form.name || t('menuMgmt.tabCategories')} imageUrl={form.image_url} size="md" />
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleImageSelected}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" /> {t('menuMgmt.uploading')}
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={14} /> {form.image_url ? t('menuMgmt.changePhoto') : t('menuMgmt.uploadPhoto')}
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-[11px] text-ink-400">{t('menuMgmt.fileHint')}</p>
+                    {uploadError && (
+                      <p role="alert" className="text-xs font-semibold text-danger-500">
+                        {uploadError}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
