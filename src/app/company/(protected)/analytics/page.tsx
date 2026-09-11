@@ -214,7 +214,7 @@ export default function ReportsPage() {
 
           <Card className="p-5">
             <h2 className="mb-4 text-base font-extrabold text-ink-900">{t('analyticsAdmin.salesByDay')}</h2>
-            <div className="h-72 w-full">
+            <div className="h-72 w-full overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailySeries}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1dcbe" />
