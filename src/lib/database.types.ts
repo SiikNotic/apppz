@@ -893,6 +893,7 @@ export type Database = {
           status: string
           subtotal: number
           tax: number
+          tip_amount: number
           total: number
           updated_at: string
         }
@@ -917,6 +918,7 @@ export type Database = {
           status?: string
           subtotal?: number
           tax?: number
+          tip_amount?: number
           total?: number
           updated_at?: string
         }
@@ -941,6 +943,7 @@ export type Database = {
           status?: string
           subtotal?: number
           tax?: number
+          tip_amount?: number
           total?: number
           updated_at?: string
         }
@@ -1880,19 +1883,100 @@ export type Database = {
         }
         Returns: Json
       }
-      create_order: {
-        Args: {
-          p_address_id: string
-          p_address_text: string
-          p_cart: Json
-          p_customer_name: string
-          p_idempotency_key: string
-          p_notes: string
-          p_order_type: string
-          p_payment_method: string
-          p_phone: string
-          p_promo_code?: string
-        }
+      create_order:
+        | {
+            Args: {
+              p_address_id: string
+              p_address_text: string
+              p_cart: Json
+              p_customer_name: string
+              p_idempotency_key: string
+              p_notes: string
+              p_order_type: string
+              p_payment_method: string
+              p_phone: string
+              p_promo_code?: string
+            }
+            Returns: {
+              address: string | null
+              address_id: string | null
+              created_at: string
+              customer_id: string | null
+              customer_name: string
+              delivery_fee: number
+              discount: number
+              id: string
+              idempotency_key: string | null
+              label_printed_at: string | null
+              notes: string | null
+              order_number: number
+              order_type: string
+              payment_method: string | null
+              payment_status: Database["public"]["Enums"]["payment_status"]
+              phone: string | null
+              promotion_id: string | null
+              status: string
+              subtotal: number
+              tax: number
+              tip_amount: number
+              total: number
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "orders"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_address_id: string
+              p_address_text: string
+              p_cart: Json
+              p_customer_name: string
+              p_idempotency_key: string
+              p_notes: string
+              p_order_type: string
+              p_payment_method: string
+              p_phone: string
+              p_promo_code?: string
+              p_tip_amount?: number
+            }
+            Returns: {
+              address: string | null
+              address_id: string | null
+              created_at: string
+              customer_id: string | null
+              customer_name: string
+              delivery_fee: number
+              discount: number
+              id: string
+              idempotency_key: string | null
+              label_printed_at: string | null
+              notes: string | null
+              order_number: number
+              order_type: string
+              payment_method: string | null
+              payment_status: Database["public"]["Enums"]["payment_status"]
+              phone: string | null
+              promotion_id: string | null
+              status: string
+              subtotal: number
+              tax: number
+              tip_amount: number
+              total: number
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "orders"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+      driver_confirm_cash_collected: {
+        Args: { p_order_id: string }
         Returns: {
           address: string | null
           address_id: string | null
@@ -1914,6 +1998,7 @@ export type Database = {
           status: string
           subtotal: number
           tax: number
+          tip_amount: number
           total: number
           updated_at: string
         }
@@ -1974,6 +2059,7 @@ export type Database = {
           status: string
           subtotal: number
           tax: number
+          tip_amount: number
           total: number
           updated_at: string
         }

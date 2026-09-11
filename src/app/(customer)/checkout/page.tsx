@@ -58,6 +58,12 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('Efectivo')
   const [notes, setNotes] = useState('')
   const [promoCode, setPromoCode] = useState('')
+  // Propina: 100% para el conductor, nunca se mezcla con el precio del
+  // pedido — se muestra y se envía por separado (ver orders.tip_amount).
+  // Solo aplica a domicilio: en pickup no hay conductor que la reciba.
+  const [tipOption, setTipOption] = useState<number | 'custom' | null>(null)
+  const [customTip, setCustomTip] = useState('')
+  const tipAmount = orderType !== 'delivery' ? 0 : tipOption === 'custom' ? Number(customTip) || 0 : (tipOption ?? 0)
 
   const [pricing, setPricing] = useState<{
     subtotal: number
@@ -154,6 +160,7 @@ export default function CheckoutPage() {
         notes: notes.trim() || null,
         idempotencyKey: idempotencyKeyRef.current,
         promoCode: promoCode || undefined,
+        tipAmount,
       })
 
       clear()
@@ -322,6 +329,50 @@ export default function CheckoutPage() {
             </Select>
           </div>
 
+          {orderType === 'delivery' && (
+            <div>
+              <Label>{t('checkout.tipLabel')}</Label>
+              <p className="mb-2 text-[11px] text-ink-400">{t('checkout.tipHint')}</p>
+              <div className="flex flex-wrap gap-2">
+                {[0, 2, 3, 5].map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setTipOption(amount)}
+                    aria-pressed={tipOption === amount}
+                    className={`rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold transition ${
+                      tipOption === amount ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
+                    }`}
+                  >
+                    {amount === 0 ? t('checkout.tipNone') : formatCurrency(amount)}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setTipOption('custom')}
+                  aria-pressed={tipOption === 'custom'}
+                  className={`rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold transition ${
+                    tipOption === 'custom' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
+                  }`}
+                >
+                  {t('checkout.tipCustom')}
+                </button>
+              </div>
+              {tipOption === 'custom' && (
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className="mt-2"
+                  value={customTip}
+                  onChange={(e) => setCustomTip(e.target.value)}
+                  placeholder={t('checkout.tipCustomPlaceholder')}
+                />
+              )}
+            </div>
+          )}
+
           <div>
             <Label htmlFor="checkout-promo">{t('checkout.promoCode')}</Label>
             <div className="relative">
@@ -394,9 +445,22 @@ export default function CheckoutPage() {
                   <span>{formatCurrency(pricing.tax)}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-white/20 pt-1.5 text-base font-extrabold text-white">
+              <div className="flex justify-between text-white">
                 <span>{t('checkout.total')}</span>
                 <span>{formatCurrency(pricing.total)}</span>
+              </div>
+              {/* La propina va aparte del precio del pedido — se muestra en
+                  su propia línea y se suma solo en el "Total a pagar" de
+                  abajo, nunca dentro de subtotal/total (ver tip_amount). */}
+              {tipAmount > 0 && (
+                <div className="flex justify-between text-white/80">
+                  <span>{t('checkout.tipLineLabel')}</span>
+                  <span>{formatCurrency(tipAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-white/20 pt-1.5 text-base font-extrabold text-white">
+                <span>{t('checkout.totalToPay')}</span>
+                <span>{formatCurrency(pricing.total + tipAmount)}</span>
               </div>
             </div>
           ) : null}

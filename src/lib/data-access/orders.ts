@@ -64,6 +64,10 @@ export interface CreateOrderInput {
   notes: string | null
   idempotencyKey: string
   promoCode?: string
+  /** 100% para el conductor — nunca se mezcla con subtotal/total (ver
+   *  columna orders.tip_amount). Solo aplica a domicilio; no se envía
+   *  (o se envía 0) en pickup, donde no hay conductor. */
+  tipAmount?: number
 }
 
 /**
@@ -82,6 +86,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     p_notes: input.notes as unknown as string,
     p_idempotency_key: input.idempotencyKey,
     p_promo_code: input.promoCode || undefined,
+    p_tip_amount: input.tipAmount ?? 0,
   })
   if (error) throw error
   return data as unknown as Order

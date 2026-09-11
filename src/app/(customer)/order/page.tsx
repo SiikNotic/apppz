@@ -282,10 +282,22 @@ function OrderStatusContent() {
             <span>Envío</span>
             <span>{formatCurrency(order.delivery_fee)}</span>
           </div>
-          <div className="flex justify-between text-base font-extrabold text-ink-900">
+          <div className={`flex justify-between text-ink-900 ${order.tip_amount > 0 ? '' : 'text-base font-extrabold'}`}>
             <span>Total</span>
             <span>{formatCurrency(order.total)}</span>
           </div>
+          {order.tip_amount > 0 && (
+            <>
+              <div className="flex justify-between text-ink-600">
+                <span>Propina</span>
+                <span>{formatCurrency(order.tip_amount)}</span>
+              </div>
+              <div className="flex justify-between text-base font-extrabold text-ink-900">
+                <span>Total pagado</span>
+                <span>{formatCurrency(order.total + order.tip_amount)}</span>
+              </div>
+            </>
+          )}
         </div>
       </Card>
 

@@ -41,8 +41,9 @@ interface OrderReceiptProps {
  *
  * Solo muestra datos que existen de verdad en el schema (orders/order_items/
  * order_item_toppings) — a diferencia de la referencia, aquí NO hay tarjeta
- * enmascarada, número de autorización ni propina porque esa información no
- * se captura en ningún lugar de este negocio.
+ * enmascarada ni número de autorización porque esa información no se
+ * captura en ningún lugar de este negocio. La propina (tip_amount) sí es
+ * un dato real y se muestra aparte del total del pedido, nunca sumada a él.
  */
 export function OrderReceipt({ order, items }: OrderReceiptProps) {
   const { t } = useLanguage()
@@ -120,6 +121,14 @@ export function OrderReceipt({ order, items }: OrderReceiptProps) {
       <Divider />
 
       <Row label={t('checkout.total').toUpperCase()} value={formatCurrency(order.total)} bold />
+
+      {order.tip_amount > 0 && (
+        <>
+          <Divider />
+          <Row label={t('checkout.tipLineLabel')} value={formatCurrency(order.tip_amount)} />
+          <Row label={t('checkout.totalToPay').toUpperCase()} value={formatCurrency(order.total + order.tip_amount)} bold />
+        </>
+      )}
 
       {(paymentMethodLabel || paymentStatusKey) && (
         <>

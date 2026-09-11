@@ -110,6 +110,10 @@ export default function DriverPage() {
   // conductor active a mano — por eso no tiene botón, solo una etiqueta.
   const [openShift, setOpenShift] = useState<DriverShift | null>(null)
   const [shiftBusy, setShiftBusy] = useState(false)
+  // Cobro de efectivo: driver_update_assignment ya rechaza "entregado" en
+  // el servidor si el pedido es en efectivo y no se confirmó el cobro —
+  // esto solo hace que la interfaz lo pida antes de intentarlo.
+  const [cashBusy, setCashBusy] = useState(false)
 
   // Comparte la ubicación GPS en drivers.current_lat/lng mientras haya
   // una entrega activa — es lo que alimenta el mapa en vivo del cliente
@@ -200,6 +204,18 @@ export default function DriverPage() {
     loadAll()
   }
 
+  async function confirmCashCollected(orderId: string) {
+    setCashBusy(true)
+    setError(null)
+    const { error: rpcError } = await supabase.rpc('driver_confirm_cash_collected', { p_order_id: orderId })
+    setCashBusy(false)
+    if (rpcError) {
+      setError(rpcError.message)
+      return
+    }
+    loadAll()
+  }
+
   async function markFailed(assignmentId: string) {
     if (!confirm(t('driverPage.confirmMarkFailed'))) return
     await updateAssignment(assignmentId, 'failed')
@@ -235,6 +251,7 @@ export default function DriverPage() {
   const [current, ...queue] = active
   const isOnDelivery = driver?.status === 'on_delivery'
   const isClockedIn = !!openShift
+  const needsCashConfirm = !!current && current.order.payment_method === 'Efectivo' && current.order.payment_status !== 'paid'
 
   return (
     <div className="space-y-5">
@@ -373,8 +390,46 @@ export default function DriverPage() {
                     {t('driverPage.orderNote')} {current.notes}
                   </p>
                 )}
-                <p className="text-lg font-extrabold text-ink-900">{formatCurrency(current.order.total)}</p>
+                <div className="flex items-baseline justify-between">
+                  <p className="text-lg font-extrabold text-ink-900">
+                    {formatCurrency(current.order.total + current.order.tip_amount)}
+                  </p>
+                  {current.order.tip_amount > 0 && (
+                    <p className="text-xs font-semibold text-success-500">
+                      {t('driverPage.tipIncluded', { amount: formatCurrency(current.order.tip_amount) })}
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {/* Efectivo: el conductor tiene que cobrar antes de poder
+                  marcar la entrega como completada — driver_update_assignment
+                  ya lo rechaza en el servidor si esto no se confirma primero. */}
+              {current.order.payment_method === 'Efectivo' && (
+                <div
+                  className={cn(
+                    'rounded-2xl border-2 p-3.5',
+                    needsCashConfirm ? 'border-warning-500 bg-amber-50' : 'border-success-500 bg-success-500/5'
+                  )}
+                >
+                  <p className={cn('text-sm font-bold', needsCashConfirm ? 'text-warning-500' : 'text-success-500')}>
+                    {needsCashConfirm
+                      ? t('driverPage.cashToCollect', { amount: formatCurrency(current.order.total + current.order.tip_amount) })
+                      : t('driverPage.cashConfirmed')}
+                  </p>
+                  {needsCashConfirm && (
+                    <Button
+                      fullWidth
+                      size="sm"
+                      className="mt-2"
+                      disabled={cashBusy}
+                      onClick={() => confirmCashCollected(current.order.id)}
+                    >
+                      {cashBusy ? t('menuMgmt.savingButton') : t('driverPage.confirmCashCollected')}
+                    </Button>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <Button asChild fullWidth>
@@ -413,7 +468,12 @@ export default function DriverPage() {
                 )}
                 {current.status === 'en_route' && (
                   <>
-                    <Button fullWidth disabled={busyId === current.id} onClick={() => updateAssignment(current.id, 'delivered')}>
+                    <Button
+                      fullWidth
+                      disabled={busyId === current.id || needsCashConfirm}
+                      title={needsCashConfirm ? t('driverPage.cashConfirmFirst') : undefined}
+                      onClick={() => updateAssignment(current.id, 'delivered')}
+                    >
                       <CheckCircle2 size={16} aria-hidden="true" /> {t('driverPage.delivered')}
                     </Button>
                     <Button
@@ -503,9 +563,16 @@ export default function DriverPage() {
                   <p className="text-sm font-semibold text-ink-900">#{a.order.order_number}</p>
                   <p className="text-xs text-ink-400">{formatDate(a.assigned_at)}</p>
                 </div>
-                <Badge variant={a.status === 'delivered' ? 'success' : 'danger'}>
-                  {a.status === 'delivered' ? t('driverPage.delivered') : t('driverPage.notDelivered')}
-                </Badge>
+                <div className="flex shrink-0 items-center gap-2">
+                  {a.status === 'delivered' && a.order.tip_amount > 0 && (
+                    <span className="text-xs font-bold text-success-500">
+                      +{formatCurrency(a.order.tip_amount)}
+                    </span>
+                  )}
+                  <Badge variant={a.status === 'delivered' ? 'success' : 'danger'}>
+                    {a.status === 'delivered' ? t('driverPage.delivered') : t('driverPage.notDelivered')}
+                  </Badge>
+                </div>
               </div>
             ))}
           </Card>

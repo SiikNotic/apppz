@@ -19,6 +19,7 @@ import {
 } from '@/components/company/team/employee-details-form'
 import { formatDate, formatCurrency } from '@/lib/format'
 import { fetchHoursByUser, type HoursPeriod } from '@/lib/hours'
+import { fetchTipsByDriver } from '@/lib/tips'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/company/page-header'
@@ -80,6 +81,7 @@ export default function TeamPage() {
   const [summaryByUser, setSummaryByUser] = useState<Map<string, EmployeeSummary>>(new Map())
   const [hoursPeriod, setHoursPeriod] = useState<HoursPeriod>('week')
   const [hoursByUser, setHoursByUser] = useState<Map<string, number>>(new Map())
+  const [tipsByUser, setTipsByUser] = useState<Map<string, number>>(new Map())
   const [formOpen, setFormOpen] = useState(false)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -150,6 +152,11 @@ export default function TeamPage() {
       return
     }
     fetchHoursByUser(driverIds, otherIds, hoursPeriod).then(setHoursByUser)
+    if (driverIds.length > 0) {
+      fetchTipsByDriver(driverIds, hoursPeriod).then(setTipsByUser)
+    } else {
+      setTipsByUser(new Map())
+    }
   }, [staff, hoursPeriod])
 
   function openCreate() {
@@ -440,6 +447,15 @@ export default function TeamPage() {
                       <span className="text-sm font-extrabold text-foreground">
                         {hours.toFixed(1)}
                         {t('teamAdmin.hoursShort')}
+                      </span>
+                    </div>
+                  )}
+
+                  {!isTerminated && member.company_role === 'driver' && (
+                    <div className="flex items-center justify-between rounded-2xl bg-success-500/10 px-3 py-2">
+                      <span className="text-[11px] font-semibold text-success-500">{t('teamAdmin.tipsLabel')}</span>
+                      <span className="text-sm font-extrabold text-success-500">
+                        {formatCurrency(tipsByUser.get(member.id) ?? 0)}
                       </span>
                     </div>
                   )}
