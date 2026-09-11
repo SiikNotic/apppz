@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import { UserPlus, Users, UserX, UserCheck, Repeat, IdCard } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
@@ -11,18 +12,23 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   EmployeeDetailsForm,
   EMPTY_EMPLOYEE_DETAILS,
   type EmployeeDetailsValues,
 } from '@/components/company/team/employee-details-form'
-import { formatDate } from '@/lib/format'
+import { formatDate, formatCurrency } from '@/lib/format'
+import { fetchHoursByUser, type HoursPeriod } from '@/lib/hours'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/company/page-header'
 import type { Profile } from '@/lib/types'
 import type { CompanyRole } from '@/lib/auth/permissions'
+
+interface EmployeeSummary {
+  employmentStatus: string
+  monthlySalary: number | null
+}
 
 function generateTempPassword(): string {
   // Contraseña temporal segura y fácil de dictar/copiar al nuevo empleado;
@@ -56,8 +62,24 @@ export default function TeamPage() {
     staff: t('teamAdmin.roleStaff'),
   }
 
+  const STATUS_LABELS: Record<string, string> = {
+    active: t('employeeForm.statusActive'),
+    on_leave: t('employeeForm.statusOnLeave'),
+    inactive: t('employeeForm.statusInactive'),
+  }
+
+  const PERIOD_OPTIONS: { value: HoursPeriod; label: string }[] = [
+    { value: 'day', label: t('teamAdmin.periodDay') },
+    { value: 'week', label: t('teamAdmin.periodWeek') },
+    { value: 'month', label: t('teamAdmin.periodMonth') },
+    { value: 'year', label: t('teamAdmin.periodYear') },
+  ]
+
   const [staff, setStaff] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
+  const [summaryByUser, setSummaryByUser] = useState<Map<string, EmployeeSummary>>(new Map())
+  const [hoursPeriod, setHoursPeriod] = useState<HoursPeriod>('week')
+  const [hoursByUser, setHoursByUser] = useState<Map<string, number>>(new Map())
   const [formOpen, setFormOpen] = useState(false)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -92,13 +114,43 @@ export default function TeamPage() {
       .select('*')
       .eq('is_company_staff', true)
       .order('created_at')
-    setStaff((data ?? []) as Profile[])
+    const staffList = (data ?? []) as Profile[]
+    setStaff(staffList)
+
+    if (staffList.length > 0) {
+      const { data: details } = await supabase
+        .from('employee_details')
+        .select('user_id, employment_status, monthly_salary')
+        .in(
+          'user_id',
+          staffList.map((s) => s.id)
+        )
+      const byUser = new Map<string, EmployeeSummary>()
+      for (const row of details ?? []) {
+        byUser.set(row.user_id, { employmentStatus: row.employment_status, monthlySalary: row.monthly_salary })
+      }
+      setSummaryByUser(byUser)
+    }
     setLoading(false)
   }
 
   useEffect(() => {
     load()
   }, [])
+
+  // Horas trabajadas del período elegido — un solo selector para todo el
+  // roster (día/semana/mes/año) en vez de uno por tarjeta, más rápido de
+  // usar para comparar a todo el equipo de un vistazo.
+  useEffect(() => {
+    const activeStaff = staff.filter((s) => !s.terminated_at)
+    const driverIds = activeStaff.filter((s) => s.company_role === 'driver').map((s) => s.id)
+    const otherIds = activeStaff.filter((s) => s.company_role !== 'driver').map((s) => s.id)
+    if (driverIds.length === 0 && otherIds.length === 0) {
+      setHoursByUser(new Map())
+      return
+    }
+    fetchHoursByUser(driverIds, otherIds, hoursPeriod).then(setHoursByUser)
+  }, [staff, hoursPeriod])
 
   function openCreate() {
     setFullName('')
@@ -117,10 +169,9 @@ export default function TeamPage() {
   async function saveExtras(userId: string, values: EmployeeDetailsValues) {
     await supabase.from('employee_details').upsert({
       user_id: userId,
-      employee_code: values.employeeCode.trim() || null,
-      position: values.position.trim() || null,
       date_hired: values.dateHired || null,
       employment_status: values.employmentStatus,
+      monthly_salary: values.monthlySalary.trim() ? Number(values.monthlySalary) : null,
       store_location: values.storeLocation.trim() || null,
       internal_notes: values.internalNotes.trim() || null,
     })
@@ -206,10 +257,9 @@ export default function TeamPage() {
       const s = sensitiveRes.data
       const drv = driverRes.data
       setDetailsValues({
-        employeeCode: d?.employee_code ?? '',
-        position: d?.position ?? '',
         dateHired: d?.date_hired ?? '',
         employmentStatus: d?.employment_status ?? 'active',
+        monthlySalary: d?.monthly_salary != null ? String(d.monthly_salary) : '',
         storeLocation: d?.store_location ?? '',
         internalNotes: d?.internal_notes ?? '',
         residentialStreet: s?.residential_street ?? '',
@@ -319,28 +369,78 @@ export default function TeamPage() {
 
       {!loading && staff.length > 0 && (
         <>
-          {/* Mobile (< md): tarjeta por empleado. */}
-          <div className="space-y-3 md:hidden">
+          {/* Un solo selector de período para todo el roster — más rápido
+              para comparar horas de todo el equipo que uno por tarjeta. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              {t('teamAdmin.hoursWorked')}:
+            </span>
+            {PERIOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setHoursPeriod(opt.value)}
+                className={cn(
+                  'rounded-full px-3 py-1.5 text-xs font-semibold transition',
+                  hoursPeriod === opt.value ? 'bg-brand-500 text-white shadow-card' : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {staff.map((member) => {
               const isTerminated = !!member.terminated_at
               const isOwner = member.company_role === 'owner'
+              const summary = summaryByUser.get(member.id)
+              const statusLabel = isTerminated
+                ? t('teamAdmin.terminatedBadge')
+                : STATUS_LABELS[summary?.employmentStatus ?? 'active']
+              const hours = hoursByUser.get(member.id) ?? 0
               return (
-                <Card key={member.id} className="space-y-3 p-4">
+                <Card key={member.id} className="flex flex-col gap-3 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">
                         {member.full_name || t('teamAdmin.noName')}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {isTerminated
-                          ? t('teamAdmin.terminatedOn', { date: formatDate(member.terminated_at!) })
-                          : t('teamAdmin.sinceDate', { date: formatDate(member.created_at) })}
+                      <p className="truncate text-xs text-muted-foreground">
+                        {member.email || t('teamAdmin.emailFallback')}
                       </p>
                     </div>
                     <Badge variant={isTerminated ? 'danger' : isOwner ? 'brand' : 'neutral'}>
                       {isTerminated ? t('teamAdmin.terminatedBadge') : member.company_role ? ROLE_LABELS[member.company_role] : t('teamAdmin.roleStaff')}
                     </Badge>
                   </div>
+
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                    <dt className="text-muted-foreground">{t('employeeForm.status')}</dt>
+                    <dd className="text-right font-semibold text-foreground">{statusLabel}</dd>
+                    <dt className="text-muted-foreground">{t('teamAdmin.salaryLabel')}</dt>
+                    <dd className="text-right font-semibold text-foreground">
+                      {summary?.monthlySalary != null ? formatCurrency(summary.monthlySalary) : t('teamAdmin.salaryNotSet')}
+                    </dd>
+                  </dl>
+
+                  {!isTerminated && (
+                    <div className="flex items-center justify-between rounded-2xl bg-muted/50 px-3 py-2">
+                      <span className="text-[11px] font-semibold text-muted-foreground">
+                        {t('teamAdmin.hoursWorked')} · {PERIOD_OPTIONS.find((o) => o.value === hoursPeriod)?.label}
+                      </span>
+                      <span className="text-sm font-extrabold text-foreground">
+                        {hours.toFixed(1)}
+                        {t('teamAdmin.hoursShort')}
+                      </span>
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-muted-foreground">
+                    {isTerminated
+                      ? t('teamAdmin.terminatedOn', { date: formatDate(member.terminated_at!) })
+                      : t('teamAdmin.sinceDate', { date: formatDate(member.created_at) })}
+                  </p>
+
                   {!isOwner && (
                     <div className="flex items-center gap-1.5 border-t border-border pt-3">
                       {isTerminated ? (
@@ -381,86 +481,6 @@ export default function TeamPage() {
               )
             })}
           </div>
-
-          {/* Tablet/Desktop (>= md): tabla real, más densa. */}
-          <Card className="hidden overflow-x-auto p-0 md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('auth.fullName')}</TableHead>
-                  <TableHead>{t('teamAdmin.roleLabel')}</TableHead>
-                  <TableHead>{t('customersAdmin.registered')}</TableHead>
-                  <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {staff.map((member) => {
-                  const isTerminated = !!member.terminated_at
-                  const isOwner = member.company_role === 'owner'
-                  return (
-                    <TableRow key={member.id}>
-                      <TableCell className="font-semibold text-foreground">
-                        {member.full_name || t('teamAdmin.noName')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={isTerminated ? 'danger' : isOwner ? 'brand' : 'neutral'}>
-                          {isTerminated ? t('teamAdmin.terminatedBadge') : member.company_role ? ROLE_LABELS[member.company_role] : t('teamAdmin.roleStaff')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {isTerminated
-                          ? t('teamAdmin.terminatedOn', { date: formatDate(member.terminated_at!) })
-                          : t('teamAdmin.sinceDate', { date: formatDate(member.created_at) })}
-                      </TableCell>
-                      <TableCell>
-                        {!isOwner && (
-                          <div className="flex items-center justify-end gap-1.5">
-                            {isTerminated ? (
-                              <button
-                                onClick={() => openReactivate(member)}
-                                aria-label={t('teamAdmin.reactivateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                                title={t('teamAdmin.reactivateTitle')}
-                                className="grid h-8 w-8 place-items-center rounded-full bg-success-500/10 text-success-500 hover:brightness-95"
-                              >
-                                <UserCheck size={14} aria-hidden="true" />
-                              </button>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => openDetails(member)}
-                                  aria-label={t('teamAdmin.viewDetailsAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                                  title={t('teamAdmin.detailsTitle')}
-                                  className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
-                                >
-                                  <IdCard size={14} aria-hidden="true" />
-                                </button>
-                                <button
-                                  onClick={() => openChangeRole(member)}
-                                  aria-label={t('teamAdmin.changeRoleAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                                  title={t('teamAdmin.changeRoleTitle')}
-                                  className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
-                                >
-                                  <Repeat size={14} aria-hidden="true" />
-                                </button>
-                                <button
-                                  onClick={() => openTerminate(member)}
-                                  aria-label={t('teamAdmin.terminateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
-                                  title={t('teamAdmin.terminateTitle')}
-                                  className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
-                                >
-                                  <UserX size={14} aria-hidden="true" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </Card>
         </>
       )}
 

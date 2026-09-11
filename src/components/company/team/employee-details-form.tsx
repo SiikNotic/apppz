@@ -21,10 +21,9 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import type { CompanyRole } from '@/lib/auth/permissions'
 
 export interface EmployeeDetailsValues {
-  employeeCode: string
-  position: string
   dateHired: string
   employmentStatus: string
+  monthlySalary: string
   storeLocation: string
   internalNotes: string
   residentialStreet: string
@@ -43,10 +42,9 @@ export interface EmployeeDetailsValues {
 }
 
 export const EMPTY_EMPLOYEE_DETAILS: EmployeeDetailsValues = {
-  employeeCode: '',
-  position: '',
   dateHired: '',
   employmentStatus: 'active',
+  monthlySalary: '',
   storeLocation: '',
   internalNotes: '',
   residentialStreet: '',
@@ -84,14 +82,6 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.employmentHeading')}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <Label htmlFor="emp-code">{t('employeeForm.employeeId')}</Label>
-            <Input id="emp-code" value={values.employeeCode} onChange={(e) => onChange({ employeeCode: e.target.value })} />
-          </div>
-          <div>
-            <Label htmlFor="emp-position">{t('employeeForm.position')}</Label>
-            <Input id="emp-position" value={values.position} onChange={(e) => onChange({ position: e.target.value })} />
-          </div>
-          <div>
             <Label htmlFor="emp-hired">{t('employeeForm.dateHired')}</Label>
             <Input
               id="emp-hired"
@@ -114,6 +104,18 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label htmlFor="emp-salary">{t('teamAdmin.salaryLabel')}</Label>
+            <Input
+              id="emp-salary"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={values.monthlySalary}
+              onChange={(e) => onChange({ monthlySalary: e.target.value })}
+            />
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="emp-store">{t('employeeForm.storeLocation')}</Label>

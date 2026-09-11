@@ -301,6 +301,7 @@ export type Database = {
           employee_code: string | null
           employment_status: string
           internal_notes: string | null
+          monthly_salary: number | null
           position: string | null
           store_location: string | null
           updated_at: string
@@ -312,6 +313,7 @@ export type Database = {
           employee_code?: string | null
           employment_status?: string
           internal_notes?: string | null
+          monthly_salary?: number | null
           position?: string | null
           store_location?: string | null
           updated_at?: string
@@ -323,6 +325,7 @@ export type Database = {
           employee_code?: string | null
           employment_status?: string
           internal_notes?: string | null
+          monthly_salary?: number | null
           position?: string | null
           store_location?: string | null
           updated_at?: string
@@ -512,6 +515,45 @@ export type Database = {
           },
         ]
       }
+      issue_report_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          report_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          report_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          report_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_report_messages_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "issue_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_report_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issue_reports: {
         Row: {
           assigned_to: string | null
@@ -580,45 +622,6 @@ export type Database = {
           {
             foreignKeyName: "issue_reports_resolved_by_fkey"
             columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      issue_report_messages: {
-        Row: {
-          body: string
-          created_at: string
-          id: string
-          report_id: string
-          sender_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          report_id: string
-          sender_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          report_id?: string
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "issue_report_messages_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "issue_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "issue_report_messages_sender_id_fkey"
-            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1081,6 +1084,7 @@ export type Database = {
           avatar_url: string | null
           company_role: Database["public"]["Enums"]["company_role"] | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
           is_company_staff: boolean
@@ -1094,6 +1098,7 @@ export type Database = {
           avatar_url?: string | null
           company_role?: Database["public"]["Enums"]["company_role"] | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id: string
           is_company_staff?: boolean
@@ -1107,6 +1112,7 @@ export type Database = {
           avatar_url?: string | null
           company_role?: Database["public"]["Enums"]["company_role"] | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
           is_company_staff?: boolean
@@ -1589,6 +1595,38 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_shifts: {
+        Row: {
+          clock_in_at: string
+          clock_out_at: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          clock_in_at?: string
+          clock_out_at?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          clock_in_at?: string
+          clock_out_at?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_shifts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       topping_ingredients: {
         Row: {
           id: string
@@ -1735,6 +1773,7 @@ export type Database = {
           discount: number
           id: string
           idempotency_key: string | null
+          label_printed_at: string | null
           notes: string | null
           order_number: number
           order_type: string
@@ -1816,8 +1855,11 @@ export type Database = {
         }
       }
       has_permission: { Args: { perm: string }; Returns: boolean }
-      is_driver_assigned_to_order: { Args: { p_order_id: string }; Returns: boolean }
       is_company_staff: { Args: never; Returns: boolean }
+      is_driver_assigned_to_order: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
       is_staff: { Args: never; Returns: boolean }
       redeem_catalog_reward: {
         Args: { p_reward_id: string }

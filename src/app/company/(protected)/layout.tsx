@@ -24,6 +24,8 @@ import {
   Home,
   BellRing,
   Volume2,
+  LogIn,
+  Clock,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -32,6 +34,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageToggle } from '@/components/ui/language-toggle'
 import { supabase } from '@/lib/supabase'
 import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
+import { useStaffClock } from '@/hooks/useStaffClock'
 import { BRAND_NAME } from '@/lib/config'
 import { NAV_ITEMS_BY_PERMISSION } from '@/lib/auth/permissions'
 
@@ -112,6 +115,12 @@ function CompanyChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const { isDriver: isClockDriver, openShift, loading: clockLoading, busy: clockBusy, toggle: toggleClock } = useStaffClock()
+
+  async function handleClockToggle() {
+    const { error } = await toggleClock()
+    if (error) alert(t('teamAdmin.clockActionFailed'))
+  }
 
   // Reportes de soporte abiertos: visible en TODO el dashboard (no solo en
   // /company/support) mediante un badge en el nav + la misma alerta
@@ -225,6 +234,30 @@ function CompanyChrome({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
+          {/* Fichaje de horas — conductores ya lo hacen desde /company/driver,
+              este control es para el resto del personal (ver useStaffClock). */}
+          {!isClockDriver && !clockLoading && (
+            <button
+              onClick={handleClockToggle}
+              disabled={clockBusy}
+              className={cn(
+                'flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition disabled:opacity-60',
+                openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/60 hover:bg-white/10 hover:text-white'
+              )}
+            >
+              {openShift ? <Clock size={18} aria-hidden="true" /> : <LogIn size={18} aria-hidden="true" />}
+              <span className="min-w-0 flex-1 text-left">
+                {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
+                {openShift && (
+                  <span className="block truncate text-[10px] font-normal normal-case opacity-80">
+                    {t('teamAdmin.clockedInSince', {
+                      time: new Date(openShift.clock_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    })}
+                  </span>
+                )}
+              </span>
+            </button>
+          )}
           <Link
             href="/"
             className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10 hover:text-white"
@@ -239,7 +272,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
             <LogOut size={18} aria-hidden="true" />
             {t('nav.signOut')}
           </button>
-          <LanguageToggle className="mx-1" />
+          <LanguageToggle className="mx-1" variant="dark" />
         </div>
       </aside>
 
@@ -331,6 +364,28 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                 </p>
               </div>
             </div>
+            {!isClockDriver && !clockLoading && (
+              <button
+                onClick={handleClockToggle}
+                disabled={clockBusy}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition disabled:opacity-60',
+                  openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                )}
+              >
+                {openShift ? <Clock size={20} aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
+                <span className="min-w-0 flex-1 text-left">
+                  {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
+                  {openShift && (
+                    <span className="block truncate text-[11px] font-normal normal-case opacity-80">
+                      {t('teamAdmin.clockedInSince', {
+                        time: new Date(openShift.clock_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      })}
+                    </span>
+                  )}
+                </span>
+              </button>
+            )}
             <Link
               href="/"
               onClick={() => setMobileNavOpen(false)}
@@ -346,7 +401,7 @@ function CompanyChrome({ children }: { children: ReactNode }) {
               <LogOut size={20} aria-hidden="true" />
               {t('nav.signOut')}
             </button>
-            <LanguageToggle className="mx-1" />
+            <LanguageToggle className="mx-1" variant="dark" />
           </div>
         </div>
       )}
