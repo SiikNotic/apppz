@@ -61,7 +61,9 @@ Deno.serve(async (req: Request) => {
     password?: string
     full_name?: string
     role?: string
-    vehicle_type?: string
+    vehicle_make_id?: string
+    vehicle_model_id?: string
+    vehicle_year?: number
     license_plate?: string
   }
   try {
@@ -114,7 +116,9 @@ Deno.serve(async (req: Request) => {
   if (role === 'driver') {
     await adminClient.from('drivers').upsert({
       user_id: newUserId,
-      vehicle_type: body.vehicle_type ?? null,
+      vehicle_make_id: body.vehicle_make_id ?? null,
+      vehicle_model_id: body.vehicle_model_id ?? null,
+      vehicle_year: body.vehicle_year ?? null,
       license_plate: body.license_plate ?? null,
       status: 'offline',
     })

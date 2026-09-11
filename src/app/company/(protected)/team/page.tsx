@@ -189,10 +189,15 @@ export default function TeamPage() {
       emergency_contact_secondary_phone: values.emergencyContactSecondaryPhone.trim() || null,
       drivers_license_number: values.driversLicenseNumber.trim() || null,
     })
-    if (values.vehicleType.trim() || values.licensePlate.trim()) {
+    if (values.vehicleMakeId || values.vehicleModelId || values.vehicleYear || values.licensePlate.trim()) {
       await supabase
         .from('drivers')
-        .update({ vehicle_type: values.vehicleType.trim() || null, license_plate: values.licensePlate.trim() || null })
+        .update({
+          vehicle_make_id: values.vehicleMakeId || null,
+          vehicle_model_id: values.vehicleModelId || null,
+          vehicle_year: values.vehicleYear ? Number(values.vehicleYear) : null,
+          license_plate: values.licensePlate.trim() || null,
+        })
         .eq('user_id', userId)
     }
   }
@@ -208,7 +213,9 @@ export default function TeamPage() {
         password,
         full_name: fullName.trim(),
         role,
-        vehicle_type: extras.vehicleType.trim() || undefined,
+        vehicle_make_id: extras.vehicleMakeId || undefined,
+        vehicle_model_id: extras.vehicleModelId || undefined,
+        vehicle_year: extras.vehicleYear ? Number(extras.vehicleYear) : undefined,
         license_plate: extras.licensePlate.trim() || undefined,
       },
     })
@@ -272,7 +279,9 @@ export default function TeamPage() {
         emergencyContactPhone: s?.emergency_contact_phone ?? '',
         emergencyContactSecondaryName: s?.emergency_contact_secondary_name ?? '',
         emergencyContactSecondaryPhone: s?.emergency_contact_secondary_phone ?? '',
-        vehicleType: drv?.vehicle_type ?? '',
+        vehicleMakeId: drv?.vehicle_make_id ?? '',
+        vehicleModelId: drv?.vehicle_model_id ?? '',
+        vehicleYear: drv?.vehicle_year != null ? String(drv.vehicle_year) : '',
         licensePlate: drv?.license_plate ?? '',
         driversLicenseNumber: s?.drivers_license_number ?? '',
       })

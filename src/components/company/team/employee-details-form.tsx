@@ -13,12 +13,15 @@
 // (RLS) para leer/escribir employee_sensitive_info. No hay una capa de
 // UI adicional que ocultar: quien no tiene el permiso ni siquiera entra
 // a esta pantalla.
+import { useEffect, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { supabase } from '@/lib/supabase'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { CompanyRole } from '@/lib/auth/permissions'
+import type { VehicleMake, VehicleModel } from '@/lib/types'
 
 export interface EmployeeDetailsValues {
   dateHired: string
@@ -36,7 +39,9 @@ export interface EmployeeDetailsValues {
   emergencyContactPhone: string
   emergencyContactSecondaryName: string
   emergencyContactSecondaryPhone: string
-  vehicleType: string
+  vehicleMakeId: string
+  vehicleModelId: string
+  vehicleYear: string
   licensePlate: string
   driversLicenseNumber: string
 }
@@ -57,7 +62,9 @@ export const EMPTY_EMPLOYEE_DETAILS: EmployeeDetailsValues = {
   emergencyContactPhone: '',
   emergencyContactSecondaryName: '',
   emergencyContactSecondaryPhone: '',
-  vehicleType: '',
+  vehicleMakeId: '',
+  vehicleModelId: '',
+  vehicleYear: '',
   licensePlate: '',
   driversLicenseNumber: '',
 }
@@ -68,6 +75,11 @@ interface EmployeeDetailsFormProps {
   onChange: (patch: Partial<EmployeeDetailsValues>) => void
 }
 
+const CURRENT_YEAR = new Date().getFullYear()
+// Rango razonable para vehículos de reparto en uso — se calcula a partir
+// del año real, nunca queda "viejo" con el paso del tiempo.
+const VEHICLE_YEARS = Array.from({ length: CURRENT_YEAR - 1990 + 2 }, (_, i) => CURRENT_YEAR + 1 - i)
+
 export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsFormProps) {
   const { t } = useLanguage()
   const EMPLOYMENT_STATUS_OPTIONS = [
@@ -75,6 +87,26 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
     { value: 'on_leave', label: t('employeeForm.statusOnLeave') },
     { value: 'inactive', label: t('employeeForm.statusInactive') },
   ]
+
+  // Catálogo real de marca/modelo — vive en la base de datos (ver
+  // vehicle_makes/vehicle_models) para poder ampliarse con un insert, sin
+  // tocar este componente. Se carga una sola vez; es chico (~100 filas).
+  const [makes, setMakes] = useState<VehicleMake[]>([])
+  const [models, setModels] = useState<VehicleModel[]>([])
+  useEffect(() => {
+    if (role !== 'driver') return
+    supabase
+      .from('vehicle_makes')
+      .select('*')
+      .order('sort_order')
+      .then(({ data }) => setMakes(data ?? []))
+    supabase
+      .from('vehicle_models')
+      .select('*')
+      .order('sort_order')
+      .then(({ data }) => setModels(data ?? []))
+  }, [role])
+  const modelsForMake = models.filter((m) => m.make_id === values.vehicleMakeId)
 
   return (
     <div className="space-y-4">
@@ -138,8 +170,56 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.driverDataHeading')}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="emp-vehicle">{t('employeeForm.vehicleType')}</Label>
-              <Input id="emp-vehicle" value={values.vehicleType} onChange={(e) => onChange({ vehicleType: e.target.value })} />
+              <Label>{t('employeeForm.vehicleMake')}</Label>
+              <Select
+                value={values.vehicleMakeId}
+                onValueChange={(v) => onChange({ vehicleMakeId: v, vehicleModelId: '' })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('employeeForm.vehicleMakePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {makes.map((make) => (
+                    <SelectItem key={make.id} value={make.id}>
+                      {make.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t('employeeForm.vehicleModel')}</Label>
+              <Select
+                value={values.vehicleModelId}
+                onValueChange={(v) => onChange({ vehicleModelId: v })}
+                disabled={!values.vehicleMakeId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('employeeForm.vehicleModelPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelsForMake.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{t('employeeForm.vehicleYear')}</Label>
+              <Select value={values.vehicleYear} onValueChange={(v) => onChange({ vehicleYear: v })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('employeeForm.vehicleYearPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {VEHICLE_YEARS.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="emp-plate">{t('employeeForm.licensePlate')}</Label>

@@ -272,7 +272,10 @@ export type Database = {
           status: Database["public"]["Enums"]["driver_status"]
           updated_at: string
           user_id: string
+          vehicle_make_id: string | null
+          vehicle_model_id: string | null
           vehicle_type: string | null
+          vehicle_year: number | null
         }
         Insert: {
           current_lat?: number | null
@@ -281,7 +284,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["driver_status"]
           updated_at?: string
           user_id: string
+          vehicle_make_id?: string | null
+          vehicle_model_id?: string | null
           vehicle_type?: string | null
+          vehicle_year?: number | null
         }
         Update: {
           current_lat?: number | null
@@ -290,9 +296,27 @@ export type Database = {
           status?: Database["public"]["Enums"]["driver_status"]
           updated_at?: string
           user_id?: string
+          vehicle_make_id?: string | null
+          vehicle_model_id?: string | null
           vehicle_type?: string | null
+          vehicle_year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "drivers_vehicle_make_id_fkey"
+            columns: ["vehicle_make_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_makes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_vehicle_model_id_fkey"
+            columns: ["vehicle_model_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_models"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_details: {
         Row: {
@@ -1694,6 +1718,56 @@ export type Database = {
             columns: ["ingredient_id"]
             isOneToOne: false
             referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_makes: {
+        Row: {
+          id: string
+          name: string
+          sort_order: number
+          vehicle_type: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          sort_order?: number
+          vehicle_type?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          sort_order?: number
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
+      vehicle_models: {
+        Row: {
+          id: string
+          make_id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          make_id: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          make_id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_models_make_id_fkey"
+            columns: ["make_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_makes"
             referencedColumns: ["id"]
           },
         ]
