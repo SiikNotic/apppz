@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/company/page-header'
 import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@/lib/types'
 
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
-type AvailableDriver = { user_id: string; full_name: string }
+type AvailableDriver = { user_id: string; full_name: string; active_count: number }
 
 const STATUS_VARIANT: Record<string, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   pending: 'warning',
@@ -98,18 +98,32 @@ export default function KitchenViewPage() {
   const newOrderIds = orders.filter((o) => o.status === 'pending').map((o) => o.id)
   const { alertActive, needsUnlock, unlock, dismiss } = useNewOrderAlert(newOrderIds)
 
+  // Ahora se puede mandar un pedido más a un conductor que ya trae otro en
+  // curso (assign_driver_to_order en el servidor solo rechaza a los que
+  // están offline) — por eso ya no se filtra por status='available', solo
+  // se excluye a quien no ha iniciado turno. El conteo de entregas activas
+  // se muestra junto al nombre para que cocina elija con esa información.
   async function loadAvailableDrivers() {
-    const { data: driverRows } = await supabase.from('drivers').select('user_id').eq('status', 'available')
+    const { data: driverRows } = await supabase.from('drivers').select('user_id').neq('status', 'offline')
     const ids = (driverRows ?? []).map((d) => d.user_id)
     if (ids.length === 0) {
       setDrivers([])
       return
     }
-    const { data: profiles } = await supabase.from('profiles').select('*').in('id', ids)
+    const [{ data: profiles }, { data: activeAssignments }] = await Promise.all([
+      supabase.from('profiles').select('*').in('id', ids),
+      supabase.from('delivery_assignments').select('driver_id').in('driver_id', ids).in('status', ['assigned', 'en_route']),
+    ])
+    const activeCounts = new Map<string, number>()
+    for (const row of activeAssignments ?? []) {
+      if (!row.driver_id) continue
+      activeCounts.set(row.driver_id, (activeCounts.get(row.driver_id) ?? 0) + 1)
+    }
     setDrivers(
       ids.map((id) => ({
         user_id: id,
         full_name: (profiles ?? []).find((p: Profile) => p.id === id)?.full_name || 'Sin nombre',
+        active_count: activeCounts.get(id) ?? 0,
       }))
     )
   }
@@ -486,6 +500,7 @@ export default function KitchenViewPage() {
                     {drivers.map((d) => (
                       <SelectItem key={d.user_id} value={d.user_id}>
                         {d.full_name}
+                        {d.active_count > 0 ? ` — ${t('kitchen.driverActiveCount', { count: d.active_count })}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

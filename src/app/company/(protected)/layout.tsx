@@ -26,6 +26,7 @@ import {
   Volume2,
   LogIn,
   Clock,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -56,6 +57,7 @@ const NAV_LABEL_KEYS: Record<string, string> = {
   '/company/settings': 'settings',
   '/company/inventory': 'inventory',
   '/company/driver': 'myDeliveries',
+  '/company/driver/earnings': 'driverEarnings',
 }
 
 // Rutas que ya tienen página implementada — controla qué aparece en el nav.
@@ -69,6 +71,7 @@ const IMPLEMENTED_ROUTES = new Set([
   '/company/rewards',
   '/company/drivers',
   '/company/driver',
+  '/company/driver/earnings',
   '/company/analytics',
   '/company/settings',
   '/company/support',
@@ -84,6 +87,7 @@ const ICONS: Record<string, LucideIcon> = {
   '/company/rewards': Gift,
   '/company/drivers': Bike,
   '/company/driver': Truck,
+  '/company/driver/earnings': Wallet,
   '/company/analytics': BarChart3,
   '/company/settings': Settings,
   '/company/support': MessageCircleWarning,
@@ -160,7 +164,10 @@ function CompanyChrome({ children }: { children: ReactNode }) {
     // compartido con otros roles — no tendría sentido que lo vea cocina o
     // administración, así que se filtra por company_role directamente.
     ...(profile?.company_role === 'driver'
-      ? [{ href: '/company/driver', label: 'Mis entregas', permission: 'orders.view' as const }]
+      ? [
+          { href: '/company/driver', label: 'Mis entregas', permission: 'orders.view' as const },
+          { href: '/company/driver/earnings', label: 'Horas y pagos', permission: 'orders.view' as const },
+        ]
       : []),
   ]
 

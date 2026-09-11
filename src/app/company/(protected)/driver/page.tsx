@@ -28,60 +28,11 @@ import { ReportProblemDialog } from '@/components/customer/report-problem-dialog
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/company/page-header'
 import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing'
+import { fetchAssignmentsWithOrders, ACTIVE_STATUSES, type AssignmentWithOrder } from '@/lib/driverAssignments'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
-import type { Address, DeliveryAssignment, Driver, DriverShift, Order } from '@/lib/types'
-
-type AssignmentWithOrder = DeliveryAssignment & { order: Order; address: Address | null }
-
-const ACTIVE_STATUSES = ['assigned', 'en_route'] as const
-const CLOSED_STATUSES = ['delivered', 'failed'] as const
-
-async function fetchAssignmentsWithOrders(
-  statuses: readonly DeliveryAssignment['status'][],
-  driverId: string
-): Promise<AssignmentWithOrder[]> {
-  const { data: assignments } = await supabase
-    .from('delivery_assignments')
-    .select('*')
-    .eq('driver_id', driverId)
-    .in('status', statuses)
-    .order('assigned_at', { ascending: false })
-
-  const rows = assignments ?? []
-  if (rows.length === 0) return []
-
-  const orderIds = rows.map((a) => a.order_id)
-  const { data: orders } = await supabase.from('orders').select('*').in('id', orderIds)
-  const ordersById = new Map((orders ?? []).map((o) => [o.id, o]))
-
-  const addressIds = (orders ?? []).map((o) => o.address_id).filter((id): id is string => !!id)
-  const { data: addresses } =
-    addressIds.length > 0
-      ? await supabase.from('addresses').select('*').in('id', addressIds)
-      : { data: [] }
-  const addressesById = new Map((addresses ?? []).map((a) => [a.id, a]))
-
-  return rows
-    .map((a) => {
-      const order = ordersById.get(a.order_id) as Order
-      return { ...a, order, address: order?.address_id ? (addressesById.get(order.address_id) ?? null) : null }
-    })
-    .filter((a) => !!a.order)
-    // Orden de la cola: preferencia manual del conductor (route_order) si
-    // la hay, si no por cuándo se le asignó. No es una optimización de
-    // ruta por distancia real — este proyecto no guarda coordenadas de
-    // las direcciones todavía (el campo lat/lng de `addresses` existe
-    // pero nada lo llena hoy), así que "más cercano" no se puede calcular
-    // de verdad sin antes agregar geocoding. Ver nota en el chat.
-    .sort((a, b) => {
-      if (a.route_order != null && b.route_order != null) return a.route_order - b.route_order
-      if (a.route_order != null) return -1
-      if (b.route_order != null) return 1
-      return new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime()
-    })
-}
+import type { Driver, DriverShift } from '@/lib/types'
 
 function navigateUrl(address: string) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
@@ -94,7 +45,6 @@ export default function DriverPage() {
 
   const [driver, setDriver] = useState<Driver | null>(null)
   const [active, setActive] = useState<AssignmentWithOrder[]>([])
-  const [history, setHistory] = useState<AssignmentWithOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -125,15 +75,13 @@ export default function DriverPage() {
   async function loadAll() {
     if (!user) return
     const wasWorkingOnSomething = active.length > 0
-    const [{ data: driverRow }, activeRows, historyRows, { data: shiftRow }] = await Promise.all([
+    const [{ data: driverRow }, activeRows, { data: shiftRow }] = await Promise.all([
       supabase.from('drivers').select('*').eq('user_id', user.id).maybeSingle(),
       fetchAssignmentsWithOrders(ACTIVE_STATUSES, user.id),
-      fetchAssignmentsWithOrders(CLOSED_STATUSES, user.id),
       supabase.from('driver_shifts').select('*').eq('driver_id', user.id).is('clock_out_at', null).maybeSingle(),
     ])
     setDriver(driverRow)
     setActive(activeRows)
-    setHistory(historyRows.slice(0, 10))
     setOpenShift(shiftRow)
     setLoading(false)
     // Si tenía entregas activas y ahora ya no, la ruta se acaba de
@@ -544,38 +492,6 @@ export default function DriverPage() {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {history.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-600">{t('driverPage.recentHeading')}</h2>
-          <Card className="divide-y divide-ink-100 p-0">
-            {history.map((a) => (
-              <div
-                key={a.id}
-                className={cn(
-                  'flex items-center justify-between gap-3 border-l-4 px-4 py-3',
-                  a.status === 'delivered' ? 'border-l-success-500' : 'border-l-danger-500'
-                )}
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-900">#{a.order.order_number}</p>
-                  <p className="text-xs text-ink-400">{formatDate(a.assigned_at)}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {a.status === 'delivered' && a.order.tip_amount > 0 && (
-                    <span className="text-xs font-bold text-success-500">
-                      +{formatCurrency(a.order.tip_amount)}
-                    </span>
-                  )}
-                  <Badge variant={a.status === 'delivered' ? 'success' : 'danger'}>
-                    {a.status === 'delivered' ? t('driverPage.delivered') : t('driverPage.notDelivered')}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </Card>
         </div>
       )}
     </div>
