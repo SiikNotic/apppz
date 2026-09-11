@@ -148,7 +148,18 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
 
   async function handleDelete(item: RewardCatalogItem) {
     if (!confirm(t('rewardsAdmin.confirmDeleteReward', { name: item.name }))) return
-    await supabase.from('reward_catalog').delete().eq('id', item.id)
+    const { error: deleteError } = await supabase.from('reward_catalog').delete().eq('id', item.id)
+    if (deleteError) {
+      // 23503 = violación de llave foránea — reward_redemptions.reward_id
+      // apunta a esta fila con ON DELETE RESTRICT a propósito (no se puede
+      // borrar el historial de canjes ya hechos). Antes esto fallaba en
+      // silencio: el delete rebotaba pero la lista se recargaba igual,
+      // como si nada hubiera pasado — sin decir por qué.
+      alert(
+        deleteError.code === '23503' ? t('rewardsAdmin.cannotDeleteHasRedemptions') : deleteError.message
+      )
+      return
+    }
     load()
   }
 
