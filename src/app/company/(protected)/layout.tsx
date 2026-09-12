@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageToggle } from '@/components/ui/language-toggle'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase'
 import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { useStaffClock } from '@/hooks/useStaffClock'
@@ -370,30 +371,27 @@ function CompanyChrome({ children }: { children: ReactNode }) {
         </button>
       </header>
 
-      {mobileNavOpen && isDriverRole && (
-        // Menú del conductor: mismo overlay, pero con la cabecera tipo app
-        // de reparto que pidió el usuario — nombre, entregas completadas
-        // (dato real) y puesto/estado real en vez de niveles inventados.
-        // Solo se ve para company_role='driver'; cocina/admin/etc. siguen
-        // con el menú de abajo, sin tocar.
-        // Panel lateral, no pantalla completa: deja ver detrás (el mapa,
-        // el contenido de la página) igual que la referencia que mandó el
-        // usuario, en vez de tapar todo.
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            onClick={() => setMobileNavOpen(false)}
-            aria-label={t('common.closeMenu')}
-            className="absolute inset-0 animate-in fade-in bg-black/50 duration-200"
-          />
-          <div className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs animate-in slide-in-from-left flex-col bg-ink-900 text-white shadow-2xl duration-200">
+      {/* Menú móvil: un Sheet real (Radix Dialog + tw-animate-css) en vez
+          de un div fixed con useState — la diferencia es la animación de
+          SALIDA. Antes el panel se deslizaba al abrir pero desaparecía de
+          un tirón al cerrar (el div se desmontaba de inmediato); Radix
+          mantiene el nodo montado durante data-[state=closed] para que el
+          slide-out y el fade-out del fondo terminen de correr antes de
+          desmontar. También da gratis: cerrar con Escape, foco atrapado
+          dentro del panel, y bloqueo de scroll del fondo mientras está
+          abierto. Solo cambia la cabecera según el rol (conductor vs
+          resto del personal); la lista de nav y el pie son iguales para
+          ambos — ya comparten el mismo estilo de resalte. */}
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <SheetContent
+          side="left"
+          overlayClassName="lg:hidden"
+          className="w-[82%] max-w-xs gap-0 border-none bg-ink-900 p-0 text-white lg:hidden"
+        >
+          <SheetTitle className="sr-only">{t('common.mainNav')}</SheetTitle>
+
+          {isDriverRole ? (
             <div className="relative bg-gradient-to-b from-[#12503f] to-ink-900 px-5 pb-6 pt-5">
-              <button
-                onClick={() => setMobileNavOpen(false)}
-                aria-label={t('common.closeMenu')}
-                className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20"
-              >
-                <X size={18} aria-hidden="true" />
-              </button>
               <p className="pr-12 text-2xl font-black leading-tight">{profile?.full_name || user?.email}</p>
               <p className="mt-1 text-sm text-white/70">
                 {t('driverPage.deliveriesCompletedStat', { count: driverHero.deliveredCount })}
@@ -410,74 +408,8 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                 )}
               </div>
             </div>
-
-            <nav aria-label={t('common.mainNav')} className="flex-1 space-y-1 overflow-y-auto px-4 py-3">
-              {items.map(({ href, label }) => {
-                const isActive = pathname === href
-                const Icon = ICONS[href] ?? Package
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={isActive ? 'page' : undefined}
-                    onClick={() => setMobileNavOpen(false)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition',
-                      isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-                    )}
-                  >
-                    <Icon size={20} aria-hidden="true" />
-                    <span className="flex-1">{NAV_LABEL_KEYS[href] ? t(`dashboardNav.${NAV_LABEL_KEYS[href]}`) : label}</span>
-                  </Link>
-                )
-              })}
-            </nav>
-
-            <div className="space-y-1 border-t border-white/10 px-4 py-4">
-              <Link
-                href="/"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
-              >
-                <Home size={20} aria-hidden="true" />
-                {t('nav.viewSite')}
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
-              >
-                <LogOut size={20} aria-hidden="true" />
-                {t('nav.signOut')}
-              </button>
-              <LanguageToggle className="mx-1 mt-2" variant="dark" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {mobileNavOpen && !isDriverRole && (
-        // Panel lateral, no pantalla completa — deja ver el resto de la
-        // página detrás, se cierra tocando fuera igual que cualquier menú
-        // de app real.
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            onClick={() => setMobileNavOpen(false)}
-            aria-label={t('common.closeMenu')}
-            className="absolute inset-0 animate-in fade-in bg-black/50 duration-200"
-          />
-          <div className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs animate-in slide-in-from-left flex-col bg-ink-900 text-white shadow-2xl duration-200">
-            {/* Mismo diseño que el menú del conductor (hero con gradiente +
-                píldoras de puesto/estado real + nav con resalte suave) —
-                aquí el estado es el turno de fichaje (useStaffClock), no el
-                de una entrega, pero es el mismo patrón visual. */}
+          ) : (
             <div className="relative bg-gradient-to-b from-brand-900 to-ink-900 px-5 pb-6 pt-5">
-              <button
-                onClick={() => setMobileNavOpen(false)}
-                aria-label={t('common.closeMenu')}
-                className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20"
-              >
-                <X size={18} aria-hidden="true" />
-              </button>
               <p className="pr-12 text-2xl font-black leading-tight">{profile?.full_name || user?.email}</p>
               <p className="mt-1 text-sm text-white/70">
                 {openShift
@@ -498,69 +430,69 @@ function CompanyChrome({ children }: { children: ReactNode }) {
                 )}
               </div>
             </div>
+          )}
 
-            <nav aria-label={t('common.mainNav')} className="flex-1 space-y-1 overflow-y-auto px-4 py-3">
-              {items.map(({ href, label }) => {
-                const isActive = pathname === href
-                const Icon = ICONS[href] ?? Package
-                const unreadCount = href === '/company/support' ? openReportIds.length : 0
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={isActive ? 'page' : undefined}
-                    onClick={() => setMobileNavOpen(false)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition',
-                      isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-                    )}
-                  >
-                    <Icon size={20} aria-hidden="true" />
-                    <span className="flex-1">{NAV_LABEL_KEYS[href] ? t(`dashboardNav.${NAV_LABEL_KEYS[href]}`) : label}</span>
-                    {unreadCount > 0 && (
-                      <span className="grid h-5 min-w-5 place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </Link>
-                )
-              })}
-            </nav>
-
-            <div className="space-y-1 border-t border-white/10 px-4 py-4">
-              {!isClockDriver && !clockLoading && (
-                <button
-                  onClick={handleClockToggle}
-                  disabled={clockBusy}
+          <nav aria-label={t('common.mainNav')} className="flex-1 space-y-1 overflow-y-auto px-4 py-3">
+            {items.map(({ href, label }) => {
+              const isActive = pathname === href
+              const Icon = ICONS[href] ?? Package
+              const unreadCount = href === '/company/support' ? openReportIds.length : 0
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setMobileNavOpen(false)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition disabled:opacity-60',
-                    openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    'flex items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition',
+                    isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
                   )}
                 >
-                  {openShift ? <Clock size={20} aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
-                  {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
-                </button>
-              )}
-              <Link
-                href="/"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
-              >
-                <Home size={20} aria-hidden="true" />
-                {t('nav.viewSite')}
-              </Link>
+                  <Icon size={20} aria-hidden="true" />
+                  <span className="flex-1">{NAV_LABEL_KEYS[href] ? t(`dashboardNav.${NAV_LABEL_KEYS[href]}`) : label}</span>
+                  {unreadCount > 0 && (
+                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="space-y-1 border-t border-white/10 px-4 py-4">
+            {!isClockDriver && !clockLoading && (
               <button
-                onClick={handleSignOut}
-                className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+                onClick={handleClockToggle}
+                disabled={clockBusy}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition disabled:opacity-60',
+                  openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                )}
               >
-                <LogOut size={20} aria-hidden="true" />
-                {t('nav.signOut')}
+                {openShift ? <Clock size={20} aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
+                {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
               </button>
-              <LanguageToggle className="mx-1 mt-2" variant="dark" />
-            </div>
+            )}
+            <Link
+              href="/"
+              onClick={() => setMobileNavOpen(false)}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+            >
+              <Home size={20} aria-hidden="true" />
+              {t('nav.viewSite')}
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+            >
+              <LogOut size={20} aria-hidden="true" />
+              {t('nav.signOut')}
+            </button>
+            <LanguageToggle className="mx-1 mt-2" variant="dark" />
           </div>
-        </div>
-      )}
+        </SheetContent>
+      </Sheet>
 
       <main id="company-main" className="min-w-0 flex-1 space-y-4 p-4 pb-6 sm:p-6">
         {/* Visible en cualquier página del dashboard, no solo en Soporte —
