@@ -9,7 +9,7 @@ import { useCart } from '@/contexts/CartContext'
 import { fetchOrderById } from '@/lib/data-access/orders'
 import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-order'
-import { geocodeAddress } from '@/lib/geo'
+import { resolveDeliveryLocation } from '@/lib/geo'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DriverCard } from '@/components/customer/driver-card'
@@ -148,36 +148,15 @@ function OrderStatusContent() {
       })
   }, [])
 
-  // Coordenadas del punto de entrega. addresses.lat/lng casi siempre está
-  // vacío hoy (nunca se geocodificó nada antes de esta función), así que
-  // si falta lo calculamos a partir del texto ya guardado en el pedido y
-  // lo persistimos en la dirección del cliente para no repetir la
-  // geocodificación en su próximo pedido a la misma dirección.
+  // Coordenadas del punto de entrega — resolveDeliveryLocation (lib/geo)
+  // usa addresses.lat/lng si ya se calcularon antes, si no geocodifica y
+  // persiste (compartido con el mapa de ruta del conductor).
   useEffect(() => {
     if (!order || order.order_type !== 'delivery') return
     let active = true
-
-    async function resolveDestination(current: Order) {
-      if (current.address_id) {
-        const { data: addr } = await supabase.from('addresses').select('*').eq('id', current.address_id).maybeSingle()
-        if (!active) return
-        if (addr?.lat != null && addr?.lng != null) {
-          setDestinationLocation({ lat: addr.lat, lng: addr.lng })
-          return
-        }
-        const geocoded = await geocodeAddress(current.address || '')
-        if (!active || !geocoded) return
-        setDestinationLocation(geocoded)
-        if (addr) {
-          await supabase.from('addresses').update({ lat: geocoded.lat, lng: geocoded.lng }).eq('id', addr.id)
-        }
-      } else if (current.address) {
-        const geocoded = await geocodeAddress(current.address)
-        if (active && geocoded) setDestinationLocation(geocoded)
-      }
-    }
-
-    resolveDestination(order)
+    resolveDeliveryLocation(order).then((loc) => {
+      if (active && loc) setDestinationLocation(loc)
+    })
     return () => {
       active = false
     }

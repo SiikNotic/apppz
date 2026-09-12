@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import {
   Bike,
   MapPin,
@@ -29,10 +30,26 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/company/page-header'
 import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing'
 import { fetchAssignmentsWithOrders, ACTIVE_STATUSES, type AssignmentWithOrder } from '@/lib/driverAssignments'
+import { resolveDeliveryLocation } from '@/lib/geo'
+import type { RouteStop } from '@/components/company/driver/driver-route-map'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { BRAND_NAME } from '@/lib/config'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
 import type { Driver, DriverShift } from '@/lib/types'
+
+// mapbox-gl necesita `window` — con export estático, evaluarlo durante el
+// build de prerenderizado rompería el build (mismo patrón que
+// (customer)/order/page.tsx con LiveDeliveryMap).
+const DriverRouteMap = dynamic(
+  () => import('@/components/company/driver/driver-route-map').then((m) => m.DriverRouteMap),
+  { ssr: false, loading: () => <div className="h-64 w-full animate-pulse bg-ink-100" /> }
+)
+
+interface LatLng {
+  lat: number
+  lng: number
+}
 
 function navigateUrl(address: string) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
@@ -66,11 +83,46 @@ export default function DriverPage() {
   const [cashBusy, setCashBusy] = useState(false)
 
   // Comparte la ubicación GPS en drivers.current_lat/lng mientras haya
-  // una entrega activa — es lo que alimenta el mapa en vivo del cliente
-  // (LiveDeliveryMap). Debe llamarse antes de cualquier return temprano
-  // (reglas de hooks), por eso vive aquí y no más abajo junto al resto
-  // del JSX que sí depende de `active`.
-  const locationSharing = useDriverLocationSharing(user?.id, active.length > 0)
+  // una entrega activa (para el mapa en vivo del cliente, LiveDeliveryMap)
+  // y siempre expone `position` para que el conductor se vea a sí mismo en
+  // su propio mapa de ruta (DriverRouteMap), haya o no entrega activa.
+  // Debe llamarse antes de cualquier return temprano (reglas de hooks).
+  const { status: locationSharing, position: driverPos } = useDriverLocationSharing(user?.id, active.length > 0)
+
+  // Punto de recogida fijo (Configuración → Ubicación del restaurante) —
+  // lectura pública, no depende de que haya una entrega.
+  const [pickupLocation, setPickupLocation] = useState<LatLng | null>(null)
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', ['restaurant.lat', 'restaurant.lng'])
+      .then(({ data }) => {
+        const byKey: Record<string, unknown> = {}
+        for (const row of data ?? []) byKey[row.key] = row.value
+        const lat = byKey['restaurant.lat']
+        const lng = byKey['restaurant.lng']
+        if (typeof lat === 'number' && typeof lng === 'number') setPickupLocation({ lat, lng })
+      })
+  }, [])
+
+  // Coordenadas de cada parada de la cola (misma resolución que usa el
+  // cliente para rastrear su pedido — ver resolveDeliveryLocation).
+  // Cacheado por assignment.id para no re-geocodificar en cada refresh de
+  // loadAll() una dirección que ya se resolvió.
+  const [stopLocations, setStopLocations] = useState<Record<string, LatLng>>({})
+  const resolvingRef = useRef(new Set<string>())
+  useEffect(() => {
+    for (const a of active) {
+      if (stopLocations[a.id] || resolvingRef.current.has(a.id)) continue
+      resolvingRef.current.add(a.id)
+      resolveDeliveryLocation(a.order).then((loc) => {
+        resolvingRef.current.delete(a.id)
+        if (loc) setStopLocations((prev) => ({ ...prev, [a.id]: loc }))
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo dispara con cambios reales de `active`
+  }, [active])
 
   async function loadAll() {
     if (!user) return
@@ -201,6 +253,15 @@ export default function DriverPage() {
   const isClockedIn = !!openShift
   const needsCashConfirm = !!current && current.order.payment_method === 'Efectivo' && current.order.payment_status !== 'paid'
 
+  // Paradas para el mapa de ruta, en el mismo orden que la cola visible
+  // (1 = entrega actual) — solo las que ya se lograron geocodificar.
+  const routeStops: RouteStop[] = active
+    .map((a, i) => {
+      const loc = stopLocations[a.id]
+      return loc ? { id: a.id, lat: loc.lat, lng: loc.lng, sequence: i + 1 } : null
+    })
+    .filter((s): s is RouteStop => s !== null)
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -256,7 +317,7 @@ export default function DriverPage() {
         )}
       </Card>
 
-      {current && (locationSharing === 'denied' || locationSharing === 'unsupported') && (
+      {(locationSharing === 'denied' || locationSharing === 'unsupported') && (
         <p className="flex items-center gap-2 rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-warning-500">
           <LocateFixed size={16} className="shrink-0" aria-hidden="true" />
           {locationSharing === 'denied' ? t('driverPage.locationSharingDenied') : t('driverPage.locationSharingUnsupported')}
@@ -270,21 +331,29 @@ export default function DriverPage() {
       )}
 
       {!current ? (
-        <Card className="flex flex-col items-center gap-2 p-10 text-center">
-          {routeCompletedFlash ? (
-            <>
-              <PartyPopper size={28} className="text-brand-900" aria-hidden="true" />
-              <p className="text-base font-extrabold text-ink-900">{t('driverPage.routeCompletedTitle')}</p>
-              <p className="text-sm text-ink-400">{t('driverPage.routeCompletedBody')}</p>
-            </>
-          ) : (
-            <>
-              <Package size={24} className="text-ink-200" aria-hidden="true" />
-              <p className="text-sm text-ink-400">
-                {isClockedIn ? t('driverPage.noAssignmentsAvailable') : t('driverPage.goAvailablePrompt')}
-              </p>
-            </>
-          )}
+        // Sin entregas: mapa centrado en el propio conductor (si compartió
+        // ubicación) con el punto de recogida como referencia — mismo
+        // vistazo "esperando" de cualquier app de reparto, pero sin
+        // fabricar un estimado de espera ni una zona de cobertura que este
+        // proyecto no tiene definida en ningún lado.
+        <Card className="overflow-hidden p-0">
+          <DriverRouteMap driverPos={driverPos} pickup={pickupLocation} pickupLabel={BRAND_NAME} stops={[]} heightClassName="h-56" />
+          <div className="flex flex-col items-center gap-2 p-8 text-center">
+            {routeCompletedFlash ? (
+              <>
+                <PartyPopper size={28} className="text-brand-900" aria-hidden="true" />
+                <p className="text-base font-extrabold text-ink-900">{t('driverPage.routeCompletedTitle')}</p>
+                <p className="text-sm text-ink-400">{t('driverPage.routeCompletedBody')}</p>
+              </>
+            ) : (
+              <>
+                <Package size={24} className="text-ink-200" aria-hidden="true" />
+                <p className="text-sm text-ink-400">
+                  {isClockedIn ? t('driverPage.noAssignmentsAvailable') : t('driverPage.goAvailablePrompt')}
+                </p>
+              </>
+            )}
+          </div>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -305,6 +374,17 @@ export default function DriverPage() {
                 {current.status === 'en_route' ? t('driverPage.enRoute') : t('driverPage.toPickup')}
               </span>
             </div>
+
+            {/* Ruta: recogida + cada parada de la cola numerada en el
+                mismo orden que la lista de abajo — si cocina te manda más
+                pedidos, aparecen aquí como los siguientes puntos. */}
+            <DriverRouteMap
+              driverPos={driverPos}
+              pickup={pickupLocation}
+              pickupLabel={BRAND_NAME}
+              stops={routeStops}
+              heightClassName="h-52"
+            />
 
             <div className="space-y-4 p-4">
               <div className="space-y-2 text-sm text-ink-600">
