@@ -191,18 +191,35 @@ html {
 }
 
 /* Etiqueta de pedido (cocina): al imprimir, solo el ticket — nada de
-   overlay, sidebar ni el resto del dashboard. */
+   overlay, sidebar ni el resto del dashboard.
+   Dos problemas aparte de "qué se ve" que dejaban el PDF con una página
+   extra en blanco y el ticket flotando a la mitad de la hoja en vez de
+   arriba:
+   1. `visibility: hidden` no saca el elemento del flujo — sigue ocupando
+      su alto real aunque no se pinte. El contenedor raíz del dashboard
+      (CompanyChrome) usa `min-h-screen`, así que ese alto invisible
+      seguía forzando al menos una pantalla completa de espacio en el
+      documento a imprimir. `min-height: 0` en TODO lo oculto anula
+      cualquier `min-h-*` de Tailwind que se cruce, venga de donde venga.
+   2. `position: fixed` es poco confiable en el motor de "Guardar como
+      PDF" de Chrome/Android en documentos paginados — el elemento no
+      queda anclado de forma consistente a la primera página. `position:
+      absolute` respecto al documento sí se ancla arriba de la página 1
+      en la práctica. */
 @media print {
   body * {
     visibility: hidden;
+    min-height: 0 !important;
   }
   #order-label-print,
   #order-label-print * {
     visibility: visible;
   }
   #order-label-print {
-    position: fixed;
-    inset: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     padding: 1rem;
   }
 }
