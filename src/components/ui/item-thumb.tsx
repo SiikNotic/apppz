@@ -57,7 +57,7 @@ export function ItemThumb({ name, imageUrl, size = 'md', className }: ItemThumbP
   return (
     <div
       className={cn(
-        'grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-100 to-brand-200 text-brand-700',
+        'grid shrink-0 place-items-center rounded-full bg-surface-2 text-brand-400',
         sizeClasses[size],
         className
       )}
