@@ -64,6 +64,7 @@ export const translations = {
       track: 'Ver seguimiento',
     },
     home: {
+      deliverTo: 'Entregar en',
       deliveringArea: 'Entregando en tu zona',
       heroTitle: 'Pizza recién horneada, directo a tu puerta',
       orderNow: 'Ordenar ahora',
@@ -72,8 +73,12 @@ export const translations = {
       searchPlaceholder: 'Buscar pizzas, bebidas, postres…',
       categories: 'Categorías',
       popular: 'Populares',
+      recommended: 'Recomendados para ti',
+      fullMenu: 'Todo el menú',
       searchResultsFor: 'Resultados para',
       noResults: 'No encontramos productos con ese nombre.',
+      ordersQuickAccess: 'Mis pedidos',
+      addedToCart: '{name} se agregó al carrito',
     },
     orderStatus: {
       pending: 'Pendiente',
@@ -1089,6 +1094,7 @@ export const translations = {
       track: 'Track order',
     },
     home: {
+      deliverTo: 'Deliver to',
       deliveringArea: 'Delivering to your area',
       heroTitle: 'Fresh-baked pizza, straight to your door',
       orderNow: 'Order Now',
@@ -1097,8 +1103,12 @@ export const translations = {
       searchPlaceholder: 'Search pizzas, drinks, desserts…',
       categories: 'Categories',
       popular: 'Popular',
+      recommended: 'Recommended for you',
+      fullMenu: 'Full menu',
       searchResultsFor: 'Results for',
       noResults: "We couldn't find any products with that name.",
+      ordersQuickAccess: 'My orders',
+      addedToCart: '{name} was added to your cart',
     },
     orderStatus: {
       pending: 'Pending',

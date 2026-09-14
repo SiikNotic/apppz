@@ -20,7 +20,7 @@ export function PromoBannerHero({ banner }: { banner: BannerWithPromotion }) {
   return (
     <Link
       href={href}
-      className="block overflow-hidden rounded-3xl bg-gradient-to-br from-ink-900 to-ink-800 shadow-pop transition hover:shadow-card"
+      className="block overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-ink-900 to-ink-800 shadow-pop transition hover:shadow-card"
     >
       <div className="flex flex-col sm:flex-row">
         {banner.image_url && (
@@ -28,7 +28,7 @@ export function PromoBannerHero({ banner }: { banner: BannerWithPromotion }) {
           <img
             src={banner.image_url}
             alt=""
-            className="h-40 w-full object-cover sm:h-auto sm:w-48 sm:shrink-0"
+            className="h-48 w-full object-cover sm:h-auto sm:w-56 sm:shrink-0"
           />
         )}
         <div className="flex-1 p-5 sm:p-6">
