@@ -1,34 +1,24 @@
 'use client'
 
-// Configuración de cuenta — antes estas piezas (idioma, compartir,
-// eliminar cuenta, cerrar sesión) vivían apretadas al fondo de /profile;
-// ahora tienen su propia pantalla, dejando /profile como identidad +
-// navegación pura. Ninguna lógica nueva: mismas queries/RPCs que ya
-// existían (account_deletion_requests, signOut de AuthContext).
+// Configuración de cuenta — preferencias puras (idioma, compartir la
+// app). Cerrar sesión y Eliminar cuenta se movieron a /account/profile
+// (sección "Cuenta", cerca del final): pedir que alguien entre acá para
+// encontrarlas las dejaba un paso más adentro de lo que deberían estar
+// para dos acciones que se buscan bajo presión. Ninguna lógica nueva acá
+// tampoco: esta pantalla nunca tuvo una fuente de verdad propia para eso,
+// solo montaba los mismos botones/diálogo que ahora vive en Profile.
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Globe, Share2, LogOut, Trash2 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase'
+import { Globe, Share2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import { LanguageToggle } from '@/components/ui/language-toggle'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { BASE_PATH } from '@/lib/base-path'
 import { BRAND_NAME } from '@/lib/config'
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth()
   const { t } = useLanguage()
-  const router = useRouter()
 
   const [shareNotice, setShareNotice] = useState(false)
-
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleteReason, setDeleteReason] = useState('')
-  const [deleteRequested, setDeleteRequested] = useState(false)
 
   async function handleShare() {
     const url = `${window.location.origin}${BASE_PATH}/`
@@ -48,16 +38,6 @@ export default function SettingsPage() {
     } catch {
       // Clipboard no disponible — no hay más respaldo razonable.
     }
-  }
-
-  async function handleRequestDeletion() {
-    if (!user) return
-    await supabase.from('account_deletion_requests').insert({
-      user_id: user.id,
-      reason: deleteReason.trim() || null,
-    })
-    setDeleteOpen(false)
-    setDeleteRequested(true)
   }
 
   return (
@@ -88,56 +68,6 @@ export default function SettingsPage() {
         </Card>
         {shareNotice && <p className="mt-2 px-1 text-xs font-semibold text-success-500">{t('account.shareCopied')}</p>}
       </div>
-
-      <button
-        type="button"
-        onClick={async () => {
-          await signOut()
-          router.push('/')
-        }}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-danger-500/10 px-4 py-3.5 text-sm font-bold text-danger-500 hover:bg-danger-500/15"
-      >
-        <LogOut size={16} aria-hidden="true" /> {t('nav.signOut')}
-      </button>
-
-      <Card className="space-y-3 p-6">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
-          <Trash2 size={14} className="text-danger-500" aria-hidden="true" /> {t('account.deleteAccountTitle')}
-        </h2>
-        <p className="text-xs text-muted-foreground">{t('account.deleteAccountDesc')}</p>
-        {deleteRequested ? (
-          <p role="status" className="text-xs font-semibold text-success-500">
-            {t('account.deleteRequested')}
-          </p>
-        ) : (
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-            {t('account.requestDeletion')}
-          </Button>
-        )}
-      </Card>
-
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="max-w-sm">
-          <div className="p-6">
-            <DialogTitle className="mb-2 text-lg font-extrabold text-foreground">{t('account.deleteConfirmTitle')}</DialogTitle>
-            <p className="mb-4 text-sm text-muted-foreground">{t('account.deleteConfirmDesc')}</p>
-            <Textarea
-              rows={3}
-              value={deleteReason}
-              onChange={(e) => setDeleteReason(e.target.value)}
-              placeholder={t('account.deleteReasonPlaceholder')}
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button variant="destructive" onClick={handleRequestDeletion}>
-                {t('account.confirmRequest')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

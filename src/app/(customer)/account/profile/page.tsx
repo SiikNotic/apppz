@@ -1,14 +1,20 @@
 'use client'
 
-// Perfil premium: arriba solo identidad (avatar/nombre/correo) + una
-// tarjeta de membresía real (nivel + puntos, de rewards_accounts /
-// reward_tiers — mismas fuentes que /account/rewards, nunca inventadas
-// acá). Abajo, un solo listado plano de navegación con ícono+chevron
-// (Pedidos, Rewards, Pago, Direcciones, Favoritos, Configuración,
-// Ayuda) — sin convertir cada fila en su propia tarjeta grande. Cerrar
-// sesión y eliminar cuenta ahora viven en /account/settings.
+// Perfil premium: arriba identidad (avatar/nombre/correo) + tarjeta de
+// membresía real (nivel + puntos, de rewards_accounts / reward_tiers —
+// mismas fuentes que /account/rewards, nunca inventadas acá) + listado
+// plano de navegación (Pedidos, Rewards, Pago, Direcciones, Favoritos,
+// Configuración, Ayuda). Cerrar sesión y Eliminar cuenta viven acá
+// mismo, cerca del final — antes solo existían un paso más adentro, en
+// /account/settings, lo que las hacía fáciles de no encontrar. La lógica
+// es exactamente la misma que ya existía (signOut() de AuthContext,
+// insert en account_deletion_requests: una SOLICITUD que el equipo
+// procesa a mano siguiendo sus propias reglas de retención — esta app
+// nunca borra pedidos, registros de pago ni la cuenta en sí misma sola);
+// solo se movió/restyleó la UI que la dispara.
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Pencil,
   MapPin,
@@ -19,6 +25,8 @@ import {
   Settings as SettingsIcon,
   HelpCircle,
   ChevronRight,
+  LogOut,
+  Trash2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -29,6 +37,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { AvatarUpload } from '@/components/ui/avatar-upload'
 import { formatMonthYear } from '@/lib/format'
@@ -69,8 +78,9 @@ function NavRow({ icon: Icon, tone, label, subtitle, href }: RowProps) {
 }
 
 export default function ProfilePage() {
-  const { user, profile, refreshProfile, setAvatarUrl } = useAuth()
+  const { user, profile, refreshProfile, setAvatarUrl, signOut } = useAuth()
   const { t } = useLanguage()
+  const router = useRouter()
 
   const [ordersCount, setOrdersCount] = useState<number | null>(null)
   const [favoritesCount, setFavoritesCount] = useState<number | null>(null)
@@ -82,6 +92,11 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [signingOut, setSigningOut] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteReason, setDeleteReason] = useState('')
+  const [deleteRequested, setDeleteRequested] = useState(false)
 
   useEffect(() => {
     setFullName(profile?.full_name ?? '')
@@ -123,6 +138,27 @@ export default function ProfilePage() {
     if (error) return setError(error.message)
     await refreshProfile()
     setEditOpen(false)
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    await signOut()
+    router.push('/')
+  }
+
+  // Nunca borra nada acá mismo — solo dispara la MISMA solicitud de
+  // siempre (account_deletion_requests) para que el equipo la revise y
+  // la procese a mano según sus propias reglas de retención (pedidos,
+  // pagos, etc. nunca se eliminan solo porque alguien pidió borrar su
+  // cuenta). No hay ninguna otra ruta de borrado en la app.
+  async function handleRequestDeletion() {
+    if (!user) return
+    await supabase.from('account_deletion_requests').insert({
+      user_id: user.id,
+      reason: deleteReason.trim() || null,
+    })
+    setDeleteOpen(false)
+    setDeleteRequested(true)
   }
 
   const progress = calculateTierProgress(rewardsAccount?.lifetime_points ?? 0, tiers)
@@ -241,6 +277,67 @@ export default function ProfilePage() {
         />
         <NavRow icon={HelpCircle} tone="neutral" label={t('account.navHelp')} subtitle={t('account.rowHelpSubtitle')} href="/help" />
       </Card>
+
+      {/* Cuenta/Sesión — a propósito visible acá mismo, cerca del final
+          del perfil, no un paso más adentro en Configuración: cerrar
+          sesión y eliminar cuenta son las dos acciones que alguien busca
+          bajo presión (perdió el celular, ya no quiere usar la app) y no
+          debería tener que encontrar entre preferencias. Cerrar sesión
+          va como botón secundario (ni rojo ni el CTA de marca — no es
+          destructivo) y Eliminar cuenta queda claramente aparte, en su
+          propia tarjeta con borde tenue en rojo y botón destructivo, para
+          que las dos nunca compitan por la misma jerarquía visual. */}
+      <div className="space-y-3 pt-1">
+        <p className="px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('account.sectionAccount')}</p>
+
+        <Button
+          fullWidth
+          variant="secondary"
+          onClick={handleSignOut}
+          disabled={signingOut}
+        >
+          <LogOut size={16} aria-hidden="true" /> {signingOut ? t('account.signingOut') : t('nav.signOut')}
+        </Button>
+
+        <Card className="space-y-3 border-danger-500/20 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
+            <Trash2 size={14} className="text-danger-500" aria-hidden="true" /> {t('account.deleteAccountTitle')}
+          </h2>
+          <p className="text-xs text-muted-foreground">{t('account.deleteAccountDesc')}</p>
+          {deleteRequested ? (
+            <p role="status" className="text-xs font-semibold text-success-500">
+              {t('account.deleteRequested')}
+            </p>
+          ) : (
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+              {t('account.requestDeletion')}
+            </Button>
+          )}
+        </Card>
+      </div>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="max-w-sm">
+          <div className="p-6">
+            <DialogTitle className="mb-2 text-lg font-extrabold text-foreground">{t('account.deleteConfirmTitle')}</DialogTitle>
+            <p className="mb-4 text-sm text-muted-foreground">{t('account.deleteConfirmDesc')}</p>
+            <Textarea
+              rows={3}
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              placeholder={t('account.deleteReasonPlaceholder')}
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={handleRequestDeletion}>
+                {t('account.confirmRequest')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-sm">

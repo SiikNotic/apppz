@@ -247,7 +247,7 @@ export const translations = {
       rowFavoritesCount: '{count} guardados',
       navSettings: 'Configuración',
       navHelp: 'Ayuda y soporte',
-      rowSettingsSubtitle: 'Idioma, privacidad y cuenta',
+      rowSettingsSubtitle: 'Idioma y preferencias',
       rowHelpSubtitle: 'Preguntas frecuentes y contacto',
       memberSince: 'Miembro desde {date}',
       viewRewardsDetails: 'Ver rewards',
@@ -259,6 +259,7 @@ export const translations = {
       savedChanges: 'Cambios guardados.',
       saving: 'Guardando…',
       saveChanges: 'Guardar cambios',
+      signingOut: 'Cerrando sesión…',
       deleteAccountTitle: 'Eliminar cuenta',
       deleteAccountDesc:
         'Esto elimina tu perfil, direcciones y datos personales. Tus pedidos pasados se conservan de forma anónima para efectos de contabilidad. No podrás deshacer esta acción.',
@@ -1342,7 +1343,7 @@ export const translations = {
       rowFavoritesCount: '{count} saved',
       navSettings: 'Settings',
       navHelp: 'Help & Support',
-      rowSettingsSubtitle: 'Language, privacy & account',
+      rowSettingsSubtitle: 'Language and preferences',
       rowHelpSubtitle: 'FAQs and contact',
       memberSince: 'Member since {date}',
       viewRewardsDetails: 'View rewards',
@@ -1354,6 +1355,7 @@ export const translations = {
       savedChanges: 'Changes saved.',
       saving: 'Saving…',
       saveChanges: 'Save changes',
+      signingOut: 'Signing out…',
       deleteAccountTitle: 'Delete account',
       deleteAccountDesc:
         "This deletes your profile, addresses, and personal data. Your past orders are kept anonymized for accounting purposes. This action can't be undone.",
