@@ -7,7 +7,7 @@ interface StatCardProps {
   label: string
   value: string
   icon: ReactNode
-  tone?: 'brand' | 'success' | 'warning' | 'danger' | 'highlight'
+  tone?: 'brand' | 'success' | 'warning' | 'danger' | 'rating' | 'highlight'
   hint?: string
   /** Variación porcentual vs. un período anterior (ej. semana pasada).
    *  Positivo se pinta en verde con flecha arriba, negativo en rojo con
@@ -16,10 +16,11 @@ interface StatCardProps {
 }
 
 const toneClasses = {
-  brand: 'bg-brand-50 text-brand-900 dark:bg-brand-500/20 dark:text-brand-300',
-  success: 'bg-green-50 text-success-500 dark:bg-success-500/15',
-  warning: 'bg-amber-50 text-warning-500 dark:bg-warning-500/15',
-  danger: 'bg-red-50 text-danger-500 dark:bg-danger-500/15',
+  brand: 'bg-brand-500/15 text-brand-300 dark:bg-brand-500/20 dark:text-brand-300',
+  success: 'bg-success-500/15 text-success-300 dark:bg-success-500/15',
+  warning: 'bg-warning-500/15 text-warning-300 dark:bg-warning-500/15',
+  danger: 'bg-danger-500/15 text-danger-300 dark:bg-danger-500/15',
+  rating: 'bg-gold-500/15 text-gold-300 dark:bg-gold-500/20',
   highlight: 'bg-white/20 text-white',
 }
 

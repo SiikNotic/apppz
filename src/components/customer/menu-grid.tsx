@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Plus, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCart } from '@/contexts/CartContext'
 import { ItemThumb } from '@/components/ui/item-thumb'
-import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/lib/format'
+import { PriceDisplay } from '@/components/ui/price'
 import { PizzaBuilderModal } from './pizza-builder-modal'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { MenuItem, ItemSize, Crust, Sauce, Topping } from '@/lib/types'
@@ -27,7 +27,7 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
   const [builderItem, setBuilderItem] = useState<MenuItem | null>(null)
 
   if (items.length === 0) {
-    return <p className="py-10 text-center text-sm text-ink-400">{emptyMessage ?? t('product.noProductsInCategory')}</p>
+    return <p className="py-10 text-center text-sm text-muted-foreground">{emptyMessage ?? t('product.noProductsInCategory')}</p>
   }
 
   return (
@@ -41,45 +41,58 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
           <div
             key={item.id}
             className={cn(
-              'group flex flex-col overflow-hidden rounded-3xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-pop active:scale-[0.98]',
-              isBuilder ? 'border-brand-300 bg-brand-50/60' : 'border-ink-100/60 bg-white shadow-card'
+              // rounded-2xl (no 3xl) + borde sutil: mismo lenguaje que
+              // Card (ui/card.tsx), pero definido acá en vez de reusar el
+              // componente porque esta tarjeta necesita que la imagen
+              // llegue hasta el borde (Card siempre trae padding interno).
+              'group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:-translate-y-1 hover:shadow-pop active:scale-[0.98]',
+              isBuilder && 'ring-1 ring-brand-500/30'
             )}
           >
+            {/* Foto a toda la celda, proporción fija (aspect-square) para
+                que la grilla nunca desalinee entre productos con y sin
+                foto real — el ícono de respaldo (sin foto) usa el mismo
+                contenedor en vez de un tamaño distinto. */}
             <Link
               href={`/product/${item.id}`}
-              className={cn(
-                'relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-cream-100 to-brand-50 p-4 pb-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500',
-                isBuilder && 'from-brand-100 to-brand-200'
-              )}
+              className="group/img relative block aspect-square w-full overflow-hidden bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
             >
+              {item.image_url ? (
+                <Image
+                  src={item.image_url}
+                  alt={item.name}
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 45vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center">
+                  <ItemThumb name={item.name} imageUrl={null} size="lg" />
+                </div>
+              )}
               {isBuilder && (
-                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-brand-900 shadow-sm">
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
                   <Sparkles size={11} aria-hidden="true" /> {t('menuMgmt.customizableBadge')}
                 </span>
               )}
-              <ItemThumb
-                name={item.name}
-                imageUrl={item.image_url}
-                size="lg"
-                className="transition-transform duration-200 group-hover:scale-105"
-              />
             </Link>
             <div className="flex flex-1 flex-col p-3">
               <Link href={`/product/${item.id}`} className="block">
-                <h3 className="truncate text-sm font-bold text-ink-900 hover:underline">{item.name}</h3>
+                <h3 className="truncate text-sm font-bold text-foreground hover:underline">{item.name}</h3>
                 {item.description && (
-                  <p className="mt-0.5 line-clamp-1 text-xs text-ink-400">{item.description}</p>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{item.description}</p>
                 )}
               </Link>
               <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-                <span className="truncate text-sm font-extrabold text-brand-900">
-                  {isBuilder ? t('product.from') : ''}
-                  {formatCurrency(displayPrice)}
-                </span>
+                <PriceDisplay value={displayPrice} prefix={isBuilder ? t('product.from') : undefined} size="sm" />
                 {isBuilder ? (
-                  <Button size="sm" onClick={() => setBuilderItem(item)} className="shrink-0">
+                  <button
+                    onClick={() => setBuilderItem(item)}
+                    className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition active:scale-90 hover:bg-brand-600"
+                  >
                     {t('product.createNow')}
-                  </Button>
+                  </button>
                 ) : (
                   <button
                     onClick={() =>

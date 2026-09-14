@@ -23,7 +23,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   if (!mounted) return <div className={cn('h-9 w-[108px]', className)} aria-hidden="true" />
 
   return (
-    <div role="radiogroup" aria-label={t('common.theme')} className={cn('inline-flex rounded-full bg-ink-50 p-1', className)}>
+    <div role="radiogroup" aria-label={t('common.theme')} className={cn('inline-flex rounded-full bg-muted p-1', className)}>
       {OPTIONS.map(({ value, label, icon: Icon }) => (
         <button
           key={value}
@@ -34,7 +34,9 @@ export function ThemeToggle({ className }: { className?: string }) {
           onClick={() => setTheme(value)}
           className={cn(
             'grid h-7 w-7 place-items-center rounded-full transition',
-            theme === value ? 'bg-white text-brand-900 shadow-sm' : 'text-ink-400 hover:text-ink-600'
+            theme === value
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
           <Icon size={14} aria-hidden="true" />

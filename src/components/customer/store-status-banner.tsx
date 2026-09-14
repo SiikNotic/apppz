@@ -36,7 +36,10 @@ export function StoreStatusBanner() {
 
   if (status.minutes_to_close != null && status.minutes_to_close <= CLOSING_SOON_THRESHOLD_MIN) {
     return (
-      <div role="status" className="flex items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-warning-500 shadow-card">
+      <div
+        role="status"
+        className="flex items-center gap-3 rounded-2xl border border-warning-500/30 bg-warning-500/10 px-4 py-3 text-warning-300 shadow-card"
+      >
         <Clock size={18} className="shrink-0" aria-hidden="true" />
         <p className="text-sm font-bold">{t('storeStatus.closingSoon', { minutes: status.minutes_to_close })}</p>
       </div>

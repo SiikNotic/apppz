@@ -26,7 +26,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
   const isAuthPage = AUTH_PATHS.includes(pathname)
 
   return (
-    <div className="min-h-screen bg-cream-100">
+    <div className="min-h-screen bg-background">
       {/* La barra roja de "sitio web" que había acá no aparece en ninguna
           de las 12 capturas de referencia — cada pantalla ahí es una app:
           Home lleva hamburguesa+ubicación+avatar, el resto lleva solo un
@@ -40,7 +40,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
         <div className="px-4 pt-5 sm:px-6">
           <Link
             href="/"
-            className="inline-grid h-10 w-10 place-items-center rounded-2xl bg-brand-50 text-brand-500 transition hover:bg-brand-100"
+            className="inline-grid h-10 w-10 place-items-center rounded-2xl bg-brand-500/15 text-brand-400 transition hover:bg-brand-500/25"
             aria-label={t('common.backToHome')}
             title={t('common.backToHome')}
           >
@@ -49,7 +49,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
         </div>
       )}
       {!isHome && !isAuthPage && (
-        <div className="relative overflow-hidden bg-cream-100 px-4 pb-1 pt-5 sm:px-6">
+        <div className="relative overflow-hidden bg-background px-4 pb-1 pt-5 sm:px-6">
           <DecorativeFoodPattern />
           <div className="relative">
             <ScreenBackButton />
@@ -65,27 +65,27 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
 
       {!isAuthPage && (
         <footer className="mx-auto max-w-5xl px-4 pb-28 sm:px-6">
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-ink-100 pt-5 text-xs text-ink-400">
-            <Link href="/help" className="hover:text-ink-600 hover:underline">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border pt-5 text-xs text-muted-foreground">
+            <Link href="/help" className="hover:text-foreground hover:underline">
               {t('nav.help')}
             </Link>
-            <Link href="/terms" className="hover:text-ink-600 hover:underline">
+            <Link href="/terms" className="hover:text-foreground hover:underline">
               {t('nav.terms')}
             </Link>
-            <Link href="/privacy" className="hover:text-ink-600 hover:underline">
+            <Link href="/privacy" className="hover:text-foreground hover:underline">
               {t('nav.privacy')}
             </Link>
-            <Link href="/accessibility" className="hover:text-ink-600 hover:underline">
+            <Link href="/accessibility" className="hover:text-foreground hover:underline">
               {t('nav.accessibility')}
             </Link>
-            <span aria-hidden="true" className="text-ink-100">
+            <span aria-hidden="true" className="text-border">
               ·
             </span>
             {/* Acceso del equipo: flujo separado del login de clientes, ver /company/login */}
-            <Link href="/company/login" className="hover:text-ink-600 hover:underline">
+            <Link href="/company/login" className="hover:text-foreground hover:underline">
               {t('nav.companyLogin')}
             </Link>
-            <LanguageToggle className="ml-1" />
+            <LanguageToggle className="ml-1" variant="dark" />
           </div>
         </footer>
       )}

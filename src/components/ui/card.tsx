@@ -7,7 +7,10 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="card"
       className={cn(
-        'bg-card text-card-foreground rounded-3xl border border-border shadow-card flex flex-col gap-6',
+        // rounded-2xl (no 3xl): "redondeado pero no excesivo" — el radio
+        // grande se reserva para elementos hero explícitos, no la tarjeta
+        // por defecto que se repite decenas de veces por pantalla.
+        'bg-card text-card-foreground rounded-2xl border border-border shadow-card flex flex-col gap-6',
         className
       )}
       {...props}

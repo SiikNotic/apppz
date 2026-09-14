@@ -105,23 +105,23 @@ export function ActiveOrderBanner() {
     // <a> es HTML inválido y algunos navegadores lo "escapan" fuera del
     // link, rompiendo el layout — el link cubre solo la parte navegable,
     // el botón de cerrar vive afuera como hermano.
-    <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-card transition hover:border-brand-300">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-500/40">
       <div className="flex items-center gap-2 px-4 py-3">
         <Link href={`/order?id=${order.id}`} className="flex min-w-0 flex-1 items-center gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-500 text-white">
             <StatusIcon size={20} aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 text-sm font-extrabold text-ink-900">
+            <div className="flex items-center gap-1.5 text-sm font-extrabold text-foreground">
               <span className="truncate">
                 {t('activeOrder.orderNumber', { number: String(order.order_number) })}
               </span>
-              <span className="text-ink-300" aria-hidden="true">
+              <span className="text-muted-foreground" aria-hidden="true">
                 ·
               </span>
-              <span className="truncate text-brand-600">{t(`orderStatus.${status}`)}</span>
+              <span className="truncate text-brand-400">{t(`orderStatus.${status}`)}</span>
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-ink-400">
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
               {order.order_type === 'pickup' ? (
                 <Store size={12} className="shrink-0" aria-hidden="true" />
               ) : (
@@ -130,14 +130,14 @@ export function ActiveOrderBanner() {
               <span>{formatCurrency(order.total)}</span>
             </div>
           </div>
-          <span className="hidden shrink-0 items-center gap-0.5 text-xs font-bold text-brand-500 sm:flex">
+          <span className="hidden shrink-0 items-center gap-0.5 text-xs font-bold text-brand-400 sm:flex">
             {t('activeOrder.track')} <ChevronRight size={14} aria-hidden="true" />
           </span>
         </Link>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-ink-300 hover:bg-ink-50 hover:text-ink-600"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
           aria-label={t('common.close')}
         >
           <X size={14} aria-hidden="true" />
@@ -156,7 +156,7 @@ export function ActiveOrderBanner() {
             <span
               key={i}
               aria-hidden="true"
-              className={cn('h-1 flex-1 rounded-full', i <= stepIndex ? 'bg-brand-500' : 'bg-ink-100')}
+              className={cn('h-1 flex-1 rounded-full', i <= stepIndex ? 'bg-brand-500' : 'bg-muted')}
             />
           ))}
         </Link>

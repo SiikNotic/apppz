@@ -10,26 +10,82 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ============================================================
+   SISTEMA DE DISEÑO — v3 "dark-first premium food delivery"
+   ============================================================
+   Reemplaza la paleta clara roja/crema anterior por un sistema
+   inspirado en la calidad de producto de Uber Eats/DoorDash (sin
+   clonar a ninguna): fondo casi negro por defecto, superficies en
+   capas, un solo rojo-coral fuerte para CTAs, verde solo para
+   éxito/disponible/en camino, dorado solo para rating/rewards.
+
+   Los nombres de variable viejos (--brand-*, --ink-*, --cream-*,
+   --success-500, etc.) se CONSERVAN a propósito — decenas de
+   pantallas todavía los referencian directo como clases de Tailwind
+   (bg-ink-900, text-brand-500...) y no se tocan en esta sesión. Lo
+   que cambia acá es:
+   1. Los valores hex de las escalas brand, success, warning y danger
+      (mismo nombre, look nuevo — se propaga solo con esto a TODA la
+      app sin tocar un className).
+   2. --background/--card/--foreground/etc. (los tokens semánticos
+      que ya usan los componentes de shadcn/ui) pasan a ser oscuros
+      por defecto en :root, no solo en .dark — ver nota junto a
+      providers.tsx sobre por qué así en vez de togglear el tema.
+   3. Se agregan tokens NUEVOS (superficies en capas, texto
+      secundario/terciario, dorado de rating, escala tipográfica,
+      alturas de control, sombras más sutiles) para que el resto de
+      componentes que se vayan migrando tengan de dónde tomar valores
+      consistentes en vez de inventar uno nuevo cada vez.
+   ============================================================ */
+
 :root {
-  --radius: 1rem;
+  --radius: 0.875rem;
 
-  /* Paleta calcada del segundo Design Style Guide de referencia
-     ("Typography & Colors": rojo FF0000 + gris 3B3B3B + negro + rosa
-     FFF0F0 de fondo) — reemplaza la paleta amarilla anterior. Los
-     nombres de variable (brand-*, cream-*, ink-*) se conservan tal cual
-     para no tener que tocar cada className del proyecto — solo cambian
-     los valores hex, igual que la vez pasada. */
-  --brand-50: #fff0f0;
-  --brand-100: #ffd6d6;
-  --brand-200: #ffadad;
-  --brand-300: #ff7a7a;
-  --brand-400: #ff4747;
-  --brand-500: #ff0000;
-  --brand-600: #e60000;
-  --brand-700: #c00000;
-  --brand-800: #990000;
-  --brand-900: #730000;
+  /* --- Marca: rojo-coral cálido (CTA principal) ---------------- */
+  --brand-50: #fff1ee;
+  --brand-100: #ffe0d8;
+  --brand-200: #ffbfae;
+  --brand-300: #ff9478;
+  --brand-400: #ff6e4d;
+  --brand-500: #ff4433;
+  --brand-600: #e8341f;
+  --brand-700: #c22715;
+  --brand-800: #9c2012;
+  --brand-900: #7a1a10;
 
+  /* --- Éxito / disponible / en camino: SOLO verde --------------- */
+  --success-50: #e9fbf1;
+  --success-100: #cff5de;
+  --success-300: #6ee7a8;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+
+  /* --- Advertencia (distinta del dorado de rating) -------------- */
+  --warning-50: #fff7e6;
+  --warning-100: #ffe9bd;
+  --warning-300: #ffce73;
+  --warning-500: #f0a81e;
+  --warning-600: #d9860f;
+
+  /* --- Error / destructivo --------------------------------------- */
+  --danger-50: #fdecec;
+  --danger-100: #fad2d0;
+  --danger-300: #f5938c;
+  --danger-500: #ef4444;
+  --danger-600: #dc2626;
+
+  /* --- Dorado: SOLO rating, rewards y highlights especiales ------ */
+  --gold-50: #fff8e1;
+  --gold-100: #ffecb3;
+  --gold-300: #ffd873;
+  --gold-500: #f5b400;
+  --gold-600: #c68f00;
+
+  /* --- Neutros "cream/ink" heredados (paleta clara clásica) ------
+     Se mantienen para lo que todavía no migró a los tokens
+     semánticos de abajo — no se tocan sus valores para no
+     desplazar el look de esas pantallas. */
   --cream-50: #fffafa;
   --cream-100: #fff0f0;
   --cream-200: #ffdbdb;
@@ -42,11 +98,74 @@ html {
   --ink-800: #403f3c;
   --ink-900: #353532;
 
-  --success-500: #16c79a;
-  --warning-500: #e0a800;
-  --danger-500: #e0402e;
+  /* --- Superficies dark-first (nuevas) ---------------------------
+     Tres capas de profundidad SIN glow ni glassmorphism: cada nivel
+     sube apenas de luminosidad para leerse "encima" del anterior. */
+  --surface-bg: #121214;
+  --surface-1: #1b1b1f;
+  --surface-2: #232328;
+  --surface-3: #2b2b31;
+  --border-subtle: rgb(255 255 255 / 8%);
+  --border-strong: rgb(255 255 255 / 16%);
+  --text-strong: #f5f5f4;
+  --text-secondary: rgb(245 245 244 / 64%);
+  --text-tertiary: rgb(245 245 244 / 40%);
 
-  /* Tokens semánticos que usan los componentes de shadcn/ui */
+  /* --- Tokens semánticos que usan los componentes de shadcn/ui ---
+     Dark-first: estos son los valores por defecto de :root, no solo
+     de .dark (ver nota grande arriba del archivo). */
+  --background: var(--surface-bg);
+  --foreground: var(--text-strong);
+  --card: var(--surface-1);
+  --card-foreground: var(--text-strong);
+  --popover: var(--surface-3);
+  --popover-foreground: var(--text-strong);
+  --primary: var(--brand-500);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-strong);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-secondary);
+  --accent: rgb(255 255 255 / 10%);
+  --accent-foreground: var(--text-strong);
+  --destructive: var(--danger-500);
+  --destructive-foreground: #ffffff;
+  --border: var(--border-subtle);
+  --input: var(--border-strong);
+  --ring: var(--brand-500);
+}
+
+/* .dark queda igual a :root — mismo dark-first, para cuando algún
+   flujo futuro vuelva a togglear el tema (hoy Providers no aplica
+   nunca la clase .dark, ver nota en providers.tsx). */
+.dark {
+  --background: var(--surface-bg);
+  --foreground: var(--text-strong);
+  --card: var(--surface-1);
+  --card-foreground: var(--text-strong);
+  --popover: var(--surface-3);
+  --popover-foreground: var(--text-strong);
+  --primary: var(--brand-500);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-strong);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-secondary);
+  --accent: rgb(255 255 255 / 10%);
+  --accent-foreground: var(--text-strong);
+  --destructive: var(--danger-500);
+  --destructive-foreground: #ffffff;
+  --border: var(--border-subtle);
+  --input: var(--border-strong);
+  --ring: var(--brand-500);
+}
+
+/* Tema claro explícito — no se aplica hoy (Providers no expone un
+   selector para elegirlo), pero se deja listo con la paleta clara
+   que tenía la app antes de este lote, por si una sesión futura
+   reactiva el selector de tema una vez el resto de pantallas tenga
+   sus variantes dark: al día. */
+.light {
   --background: #ffffff;
   --foreground: var(--ink-900);
   --card: #ffffff;
@@ -54,10 +173,6 @@ html {
   --popover: #ffffff;
   --popover-foreground: var(--ink-900);
   --primary: var(--brand-500);
-  /* Al revés que con la paleta amarilla anterior: el rojo FF0000 es
-     suficientemente saturado/oscuro para texto blanco (la referencia usa
-     texto blanco en todos sus botones rojos) — texto oscuro sobre este
-     rojo fallaría contraste por el lado opuesto. */
   --primary-foreground: #ffffff;
   --secondary: var(--ink-50);
   --secondary-foreground: var(--ink-900);
@@ -69,28 +184,6 @@ html {
   --destructive-foreground: #ffffff;
   --border: var(--ink-100);
   --input: var(--ink-100);
-  --ring: var(--brand-600);
-}
-
-.dark {
-  --background: var(--ink-900);
-  --foreground: var(--cream-50);
-  --card: var(--ink-800);
-  --card-foreground: var(--cream-50);
-  --popover: var(--ink-800);
-  --popover-foreground: var(--cream-50);
-  --primary: var(--brand-500);
-  --primary-foreground: #ffffff;
-  --secondary: rgb(255 255 255 / 10%);
-  --secondary-foreground: var(--cream-50);
-  --muted: rgb(255 255 255 / 8%);
-  --muted-foreground: rgb(255 255 255 / 55%);
-  --accent: rgb(255 255 255 / 10%);
-  --accent-foreground: var(--cream-50);
-  --destructive: var(--danger-500);
-  --destructive-foreground: #ffffff;
-  --border: rgb(255 255 255 / 12%);
-  --input: rgb(255 255 255 / 12%);
   --ring: var(--brand-600);
 }
 
@@ -120,9 +213,38 @@ html {
   --color-ink-800: var(--ink-800);
   --color-ink-900: var(--ink-900);
 
+  --color-success-50: var(--success-50);
+  --color-success-100: var(--success-100);
+  --color-success-300: var(--success-300);
   --color-success-500: var(--success-500);
+  --color-success-600: var(--success-600);
+  --color-success-700: var(--success-700);
+
+  --color-warning-50: var(--warning-50);
+  --color-warning-100: var(--warning-100);
+  --color-warning-300: var(--warning-300);
   --color-warning-500: var(--warning-500);
+  --color-warning-600: var(--warning-600);
+
+  --color-danger-50: var(--danger-50);
+  --color-danger-100: var(--danger-100);
+  --color-danger-300: var(--danger-300);
   --color-danger-500: var(--danger-500);
+  --color-danger-600: var(--danger-600);
+
+  --color-gold-50: var(--gold-50);
+  --color-gold-100: var(--gold-100);
+  --color-gold-300: var(--gold-300);
+  --color-gold-500: var(--gold-500);
+  --color-gold-600: var(--gold-600);
+
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -144,13 +266,44 @@ html {
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --shadow-card: 0 8px 24px -12px rgb(53 53 50 / 0.18);
-  --shadow-pop: 0 16px 40px -16px rgb(53 53 50 / 0.28);
+  /* Sombras sutiles a propósito — nada de glow grande ni difuso:
+     una tarjeta oscura ya se distingue del fondo por el salto de
+     superficie (--surface-1 sobre --surface-bg) + un borde de 1px,
+     la sombra es solo el remate para separarla del contenido detrás. */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 30%), 0 0 0 1px rgb(255 255 255 / 4%);
+  --shadow-pop: 0 16px 32px -12px rgb(0 0 0 / 45%);
+  --shadow-elevated: 0 24px 48px -16px rgb(0 0 0 / 55%);
 
-  --radius-sm: calc(var(--radius) - 8px);
-  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 6px);
+
+  /* --- Escala tipográfica semántica -------------------------------
+     Además de la escala xs..9xl de Tailwind (que se sigue pudiendo
+     usar libremente), estos nombres cubren los roles que pide el
+     sistema de diseño: números de precio y encabezados fuertes pero
+     no gigantes, descripciones siempre secundarias. */
+  --text-display: 2rem;
+  --text-display--line-height: 2.375rem;
+  --text-h1: 1.5rem;
+  --text-h1--line-height: 2rem;
+  --text-h2: 1.25rem;
+  --text-h2--line-height: 1.75rem;
+  --text-h3: 1.0625rem;
+  --text-h3--line-height: 1.5rem;
+  --text-price: 1.125rem;
+  --text-price--line-height: 1.5rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.375rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.125rem;
+
+  /* --- Alturas de control: mismo alto para botón/input/select por
+     tamaño, para que nunca desalineen al ponerse en la misma fila. */
+  --control-h-sm: 2.25rem;
+  --control-h-md: 2.75rem;
+  --control-h-lg: 3.25rem;
 }
 
 @layer base {

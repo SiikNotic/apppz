@@ -27,7 +27,9 @@ export const viewport: Viewport = {
   // (~980px) y la app se ve "encogida" y hay que hacer zoom para leerla.
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#ff0000',
+  // Charcoal de --surface-bg (globals.css) — la app es dark-first, el
+  // color de la barra del navegador debe leer igual, no el rojo de marca.
+  themeColor: '#121214',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

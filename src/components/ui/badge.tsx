@@ -9,11 +9,13 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        brand: 'bg-brand-50 text-ink-900 dark:bg-brand-500/20 dark:text-brand-300',
-        success: 'bg-green-50 text-success-500 dark:bg-success-500/15',
-        warning: 'bg-amber-50 text-warning-500 dark:bg-warning-500/15',
-        danger: 'bg-red-50 text-danger-500 dark:bg-danger-500/15',
-        neutral: 'bg-ink-50 text-ink-600 dark:bg-white/10 dark:text-white/70',
+        brand: 'bg-brand-500/15 text-brand-300 dark:bg-brand-500/20 dark:text-brand-300',
+        success: 'bg-success-500/15 text-success-300 dark:bg-success-500/15',
+        warning: 'bg-warning-500/15 text-warning-300 dark:bg-warning-500/15',
+        danger: 'bg-danger-500/15 text-danger-300 dark:bg-danger-500/15',
+        // Rating/rewards/highlights — dorado, nunca para "éxito".
+        rating: 'bg-gold-500/15 text-gold-300 dark:bg-gold-500/20',
+        neutral: 'bg-white/10 text-muted-foreground dark:bg-white/10 dark:text-white/70',
         outline: 'border border-border text-foreground',
       },
     },

@@ -9,19 +9,22 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-card hover:bg-brand-600',
-        secondary: 'bg-card text-foreground border border-border hover:border-brand-300',
-        ghost: 'bg-transparent text-ink-600 hover:bg-ink-50',
+        // CTA principal — el rojo-coral de marca lleva la carga visual de
+        // "acción principal" en toda la app; hover/active un tono más
+        // oscuro de la misma escala, sin brillos ni degradados.
+        default: 'bg-primary text-primary-foreground shadow-card hover:bg-brand-600 active:bg-brand-700',
+        secondary: 'bg-secondary text-secondary-foreground border border-border hover:border-border-strong',
+        ghost: 'bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground',
         dark: 'bg-ink-900 text-white hover:bg-ink-800',
         destructive: 'bg-destructive text-white hover:brightness-95',
         outline: 'border border-border bg-transparent hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        sm: 'h-8 px-3.5 text-xs gap-1.5',
-        default: 'h-10 px-5',
-        lg: 'h-12 px-6 text-base',
-        icon: 'size-9 rounded-full',
+        sm: 'h-(--control-h-sm) px-3.5 text-xs gap-1.5',
+        default: 'h-(--control-h-md) px-5',
+        lg: 'h-(--control-h-lg) px-6 text-base',
+        icon: 'size-(--control-h-md) rounded-full',
       },
     },
     defaultVariants: {

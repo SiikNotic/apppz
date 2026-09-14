@@ -15,7 +15,7 @@ export function ScreenBackButton() {
     <button
       type="button"
       onClick={() => router.back()}
-      className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-50 text-brand-500 transition hover:bg-brand-100"
+      className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-500/15 text-brand-400 transition hover:bg-brand-500/25"
       aria-label={t('common.back')}
     >
       <ChevronLeft size={20} aria-hidden="true" />

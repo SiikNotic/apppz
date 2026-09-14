@@ -44,7 +44,7 @@ export function HomeTopBar() {
 
   return (
     <div className="flex items-center justify-between px-4 pt-5 sm:px-6">
-      <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-ink-600">
+      <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
         <MapPin size={14} className="shrink-0 text-brand-500" aria-hidden="true" />
         <span className="truncate">{locationLabel ?? BRAND_TAGLINE}</span>
       </div>

@@ -8,22 +8,23 @@ export function MenuSkeleton({ withHero = false }: { withHero?: boolean }) {
   return (
     <div className="space-y-8" aria-busy="true" aria-live="polite">
       <span className="sr-only">Cargando el menú…</span>
-      {withHero && <div className="h-40 animate-pulse rounded-3xl bg-ink-100/60 sm:h-48" />}
+      {withHero && <div className="h-40 animate-pulse rounded-2xl bg-muted sm:h-48" />}
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-14 w-28 shrink-0 animate-pulse rounded-2xl bg-ink-100" />
+          <div key={i} className="h-14 w-28 shrink-0 animate-pulse rounded-2xl bg-muted" />
         ))}
       </div>
+      {/* Mismo aspect-square + rounded-2xl que la tarjeta real
+          (menu-grid.tsx) para que la foto no "salte" de tamaño al
+          terminar de cargar. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="overflow-hidden rounded-3xl bg-white shadow-card">
-            <div className="flex items-center justify-center bg-ink-50 p-4 pb-3">
-              <div className="h-28 w-28 shrink-0 animate-pulse rounded-full bg-ink-100" />
-            </div>
+          <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+            <div className="aspect-square w-full animate-pulse bg-muted" />
             <div className="space-y-2 p-3">
-              <div className="h-3.5 w-2/3 animate-pulse rounded bg-ink-100" />
-              <div className="h-3 w-full animate-pulse rounded bg-ink-100" />
-              <div className="h-6 w-full animate-pulse rounded-full bg-ink-100" />
+              <div className="h-3.5 w-2/3 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-full animate-pulse rounded bg-muted" />
+              <div className="h-6 w-full animate-pulse rounded-full bg-muted" />
             </div>
           </div>
         ))}

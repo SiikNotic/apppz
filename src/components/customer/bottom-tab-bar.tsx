@@ -39,7 +39,7 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-ink-100 bg-white px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-2px_16px_rgba(0,0,0,0.06)]"
+      className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-border bg-background/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md"
       aria-label={t('nav.home')}
     >
       {items.map(({ href, label, Icon, active, badge }) => (
@@ -48,7 +48,7 @@ export function BottomTabBar() {
           href={href}
           className={cn(
             'relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition',
-            active ? 'bg-brand-50 text-brand-500' : 'text-ink-300 hover:text-ink-400'
+            active ? 'bg-brand-500/15 text-brand-400' : 'text-muted-foreground hover:text-foreground'
           )}
           aria-current={active ? 'page' : undefined}
         >

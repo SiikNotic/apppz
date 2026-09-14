@@ -1,8 +1,10 @@
 // Textura de marca: el mismo "papel tapiz" de íconos de comida en línea
-// (rosa clarito) que aparece detrás de casi cada pantalla interior en la
-// referencia (Perfil, Menú, Login/Registro, Chat, Order details). Es
-// puramente decorativo — nunca contenido real — por eso va aria-hidden y
-// sin interacción. El padre debe ser `relative overflow-hidden`.
+// que aparece detrás de casi cada pantalla interior (Perfil, Menú,
+// Login/Registro, Chat, Order details). Blanco muy transparente (5%)
+// para leerse como un relieve sutil sobre el fondo oscuro, no un
+// elemento con color propio. Es puramente decorativo — nunca contenido
+// real — por eso va aria-hidden y sin interacción. El padre debe ser
+// `relative overflow-hidden`.
 import { Pizza, Donut, Croissant, IceCreamCone, Popsicle, Cookie, Carrot, Sandwich, CakeSlice } from 'lucide-react'
 
 const ICONS: Array<{
@@ -31,7 +33,7 @@ export function DecorativeFoodPattern() {
           key={i}
           size={size}
           strokeWidth={1.5}
-          className="absolute text-brand-100"
+          className="absolute text-white/5"
           style={{ top, left, transform: `rotate(${rotate}deg)` }}
         />
       ))}
