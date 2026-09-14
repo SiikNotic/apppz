@@ -13,6 +13,27 @@ export interface GeocodeResult {
   lng: number
 }
 
+/**
+ * Distancia en línea recta (fórmula de Haversine) entre dos coordenadas
+ * reales — usada en la tarjeta de entrega del conductor para mostrar qué
+ * tan lejos está de su próxima parada. Es una distancia real calculada a
+ * partir de puntos reales (su GPS y la dirección geocodificada), no un
+ * dato inventado; pero sigue siendo en línea recta, no por calles (mismo
+ * alcance que la línea de ruta de DriverRouteMap) — por eso este proyecto
+ * deliberadamente NO deriva de ella un tiempo estimado: convertir
+ * distancia a minutos requeriría asumir una velocidad promedio que nadie
+ * mide de verdad, y eso sí sería fabricar un dato.
+ */
+export function distanceKm(a: GeocodeResult, b: GeocodeResult): number {
+  const R = 6371
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180
+  const lat1 = (a.lat * Math.PI) / 180
+  const lat2 = (b.lat * Math.PI) / 180
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
 export interface ReverseGeocodeResult {
   street: string
   city: string
