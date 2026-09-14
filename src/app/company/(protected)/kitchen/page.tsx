@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Flame, Clock, Printer, Send, BellRing, Volume2, X, Ban } from 'lucide-react'
+import { Flame, Clock, Printer, Send, Volume2, Ban } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { deductInventoryForOrder } from '@/lib/inventoryDeduction'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,7 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { toast, dismissToast } from '@/components/ui/toast'
+import { formatCurrency } from '@/lib/format'
+import { OrderReceipt } from '@/components/customer/order-receipt'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { PageHeader } from '@/components/company/page-header'
 import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@/lib/types'
@@ -51,6 +53,15 @@ export default function KitchenViewPage() {
   const [, forceTick] = useState(0)
 
   const [labelOrder, setLabelOrder] = useState<KitchenOrder | null>(null)
+  // Resalta brevemente la tarjeta a la que "Ver pedido" (del toast de
+  // pedido nuevo) hizo scroll, para que quede claro cuál es sin tener que
+  // adivinar entre varias tarjetas nuevas a la vez.
+  const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null)
+  // Un toast por pedido nuevo (no un solo banner genérico) para que, con
+  // varios pedidos llegando seguidos, cada uno se pueda ver/despachar por
+  // separado en vez de apilar modales de pantalla completa — ver
+  // useNewOrderAlert más abajo para el sonido (sin cambios ahí).
+  const orderToastIdsRef = useRef<Map<string, string>>(new Map())
 
   const [drivers, setDrivers] = useState<AvailableDriver[]>([])
   const [assignOrder, setAssignOrder] = useState<KitchenOrder | null>(null)
@@ -95,10 +106,53 @@ export default function KitchenViewPage() {
       })
   }, [])
 
-  // Suena y avisa en cuanto un pedido entra a "Nuevos" (pending) — es
-  // justo cuando Cocina tiene que enterarse de que hay algo que aceptar.
+  // Suena en cuanto un pedido entra a "Nuevos" (pending) — es justo cuando
+  // Cocina tiene que enterarse de que hay algo que aceptar. El aviso
+  // visual (antes un banner de ancho completo que había que cerrar a
+  // mano) ahora es un toast compacto por pedido, ver el efecto de abajo —
+  // por eso acá solo se usan needsUnlock/unlock de este hook genérico
+  // (compartido con el aviso de soporte en layout.tsx) y no su
+  // alertActive/dismiss.
   const newOrderIds = orders.filter((o) => o.status === 'pending').map((o) => o.id)
-  const { alertActive, needsUnlock, unlock, dismiss } = useNewOrderAlert(newOrderIds)
+  const { needsUnlock, unlock } = useNewOrderAlert(newOrderIds)
+
+  // Un toast compacto por pedido nuevo, no un modal de pantalla completa:
+  // se autodescarta solo a los ~10s (durationMs) y, si la persona toca
+  // "Ver pedido", se cierra al toque y hace scroll con un resalte breve a
+  // la tarjeta real — así nunca hay que cerrarlo a mano ni tapa el resto
+  // del tablero mientras tanto. seenOrderIdsRef vive fuera de
+  // useNewOrderAlert (que ya lleva el suyo para el sonido) porque acá se
+  // necesita el pedido completo (número, total), no solo su id.
+  const seenOrderIdsRef = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    const pending = orders.filter((o) => o.status === 'pending')
+    if (seenOrderIdsRef.current === null) {
+      // Primera carga: lo que ya está ahí es historial, no "nuevo".
+      seenOrderIdsRef.current = new Set(pending.map((o) => o.id))
+      return
+    }
+    const seen = seenOrderIdsRef.current
+    const fresh = pending.filter((o) => !seen.has(o.id))
+    pending.forEach((o) => seen.add(o.id))
+    for (const order of fresh) {
+      const toastId = toast({
+        title: t('kitchen.newOrderAlert'),
+        description: `${t('ordersAdmin.orderLabel')} #${order.order_number} · ${formatCurrency(order.total)}`,
+        durationMs: 10000,
+        action: {
+          label: t('kitchen.viewOrderAction'),
+          onClick: () => {
+            orderToastIdsRef.current.delete(order.id)
+            const el = document.getElementById(`kitchen-order-${order.id}`)
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            setHighlightedOrderId(order.id)
+            window.setTimeout(() => setHighlightedOrderId((current) => (current === order.id ? null : current)), 2000)
+          },
+        },
+      })
+      orderToastIdsRef.current.set(order.id, toastId)
+    }
+  }, [orders, t])
 
   // Ahora se puede mandar un pedido más a un conductor que ya trae otro en
   // curso (assign_driver_to_order en el servidor solo rechaza a los que
@@ -154,7 +208,19 @@ export default function KitchenViewPage() {
     }
   }, [])
 
+  // El pedido ya se está "viendo/atendiendo" en cuanto se toca Aceptar,
+  // Listo o Cancelar — si su toast de "pedido nuevo" seguía en pantalla,
+  // ya no tiene sentido esperar a que se autodescarte solo.
+  function dismissOrderToast(orderId: string) {
+    const toastId = orderToastIdsRef.current.get(orderId)
+    if (toastId) {
+      dismissToast(toastId)
+      orderToastIdsRef.current.delete(orderId)
+    }
+  }
+
   async function advance(order: KitchenOrder, next: OrderStatus) {
+    dismissOrderToast(order.id)
     setBusyId(order.id)
     // El inventario se descuenta al aceptar (pending -> preparing, la
     // primera vez que el pedido se compromete a hacerse) y de nuevo al
@@ -184,6 +250,7 @@ export default function KitchenViewPage() {
   // acá — antes vivía en esa pantalla aparte.
   async function cancelOrder(order: KitchenOrder) {
     if (!confirm(t('ordersAdmin.confirmCancel', { number: order.order_number }))) return
+    dismissOrderToast(order.id)
     setBusyId(order.id)
     const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
     setBusyId(null)
@@ -253,25 +320,19 @@ export default function KitchenViewPage() {
         </button>
       )}
 
-      {alertActive && (
-        <div
-          role="status"
-          className="flex items-center justify-between gap-3 rounded-2xl bg-brand-500 px-4 py-3 font-bold text-white shadow-pop"
-        >
-          <span className="flex items-center gap-2">
-            <BellRing size={18} aria-hidden="true" /> {t('kitchen.newOrderAlert')}
-          </span>
-          <button onClick={dismiss} aria-label={t('kitchen.closeAlert')} className="shrink-0 rounded-full p-1 hover:bg-ink-900/10">
-            <X size={16} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-4">
+      {/* grid-cols-1 explícito (no solo "grid"): Tailwind arma sus
+          grid-cols-* con minmax(0, 1fr), que es lo que deja que una
+          columna se achique por debajo del ancho de su contenido. Sin
+          columnas explícitas en mobile/tablet, grid-template-columns
+          queda en "none" y cada columna usa min-width:auto — un pedido
+          con nombre de cliente largo o muchos toppings bastaba para
+          forzar todo el tablero (y la página) a desbordar
+          horizontalmente por debajo de lg. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {COLUMNS.map((col) => {
           const columnOrders = orders.filter((o) => o.status === col.status)
           return (
-            <div key={col.status}>
+            <div key={col.status} className="min-w-0">
               <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
                 <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${COLUMN_ACCENT[col.status]}`} aria-hidden="true" />
                 {col.label} <Badge variant="neutral">{columnOrders.length}</Badge>
@@ -286,7 +347,8 @@ export default function KitchenViewPage() {
                   return (
                     <Card
                       key={order.id}
-                      className={`animate-in fade-in slide-in-from-top-2 duration-300 p-4 ${priority ? 'border-2 border-danger-500' : ''}`}
+                      id={`kitchen-order-${order.id}`}
+                      className={`animate-in fade-in slide-in-from-top-2 duration-300 p-4 transition-shadow ${priority ? 'border-2 border-danger-500' : ''} ${highlightedOrderId === order.id ? 'ring-2 ring-brand-500' : ''}`}
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
                         {/* Sin badge de estado por tarjeta a propósito: la
@@ -310,7 +372,10 @@ export default function KitchenViewPage() {
                             {elapsed} min
                           </span>
                           <button
-                            onClick={() => setLabelOrder(order)}
+                            onClick={() => {
+                              dismissOrderToast(order.id)
+                              setLabelOrder(order)
+                            }}
                             aria-label={t('kitchen.viewLabel', { number: order.order_number })}
                             className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-muted-foreground hover:bg-white/15 hover:text-foreground"
                           >
@@ -397,7 +462,7 @@ export default function KitchenViewPage() {
             mover acá) pero necesita verse igual de reconocible que las
             otras tres columnas — mismo tratamiento visual, solo con un
             conteo en vez de una lista. */}
-        <div>
+        <div className="min-w-0">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-white/40" aria-hidden="true" />
             {t('kitchen.colCompleted')}
@@ -409,83 +474,24 @@ export default function KitchenViewPage() {
         </div>
       </div>
 
-      {/* Etiqueta del pedido: pensada para imprimirse y pegarse en la caja. */}
+      {/* Recibo del pedido: para imprimir (o guardar como PDF) y pegarlo
+          en la caja / archivarlo. Reusa OrderReceipt (variant="sheet")
+          en vez de mantener acá una copia propia del ticket — antes esta
+          copia local no traía teléfono ni estado del pedido y se iba
+          desalineando de a poco de la del cliente. Ver la nota grande
+          sobre impresión en globals.css (@media print) para el porqué de
+          #order-label-print y por qué el Dialog que lo envuelve necesita
+          neutralizarse ahí también. */}
       <Dialog open={!!labelOrder} onOpenChange={(open) => !open && setLabelOrder(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-2xl">
+          <DialogTitle className="sr-only">{t('receipt.title')}</DialogTitle>
           {labelOrder && (
-            <div className="p-6">
-              {/* Etiqueta térmica de verdad: papel blanco con texto negro
-                  siempre, sin importar el tema — igual que OrderReceipt del
-                  lado del cliente (ver su nota), porque esto imprime en
-                  papel real, no se ve en pantalla oscura. */}
-              <div id="order-label-print" className="space-y-3 rounded-2xl bg-white p-4 font-mono text-sm text-black">
-                <div className="text-center">
-                  <p className="text-lg font-extrabold">
-                    {t('kitchen.orderWord')} #{labelOrder.order_number}
-                  </p>
-                  <p className="text-xs">{formatDate(labelOrder.created_at)}</p>
-                </div>
-                <div className="border-t border-dashed border-neutral-400 pt-2">
-                  <p className="font-bold uppercase">
-                    {labelOrder.order_type === 'delivery' ? t('kitchen.deliveryLabel') : t('home.pickup')}
-                  </p>
-                  <p>{labelOrder.customer_name}</p>
-                  {labelOrder.phone && (
-                    <p>
-                      {t('kitchen.phonePrefix')} {labelOrder.phone}
-                    </p>
-                  )}
-                  {labelOrder.address && <p>{labelOrder.address}</p>}
-                </div>
-                <div className="border-t border-dashed border-neutral-400 pt-2">
-                  {labelOrder.order_items.map((item) => (
-                    <div key={item.id} className="mb-1.5">
-                      <p className="font-bold">
-                        {item.quantity}× {item.item_name}
-                        {item.size_name ? ` (${item.size_name})` : ''}
-                      </p>
-                      {(item.crust_name || item.sauce_name) && (
-                        <p className="pl-3 text-xs">{[item.crust_name, item.sauce_name].filter(Boolean).join(' · ')}</p>
-                      )}
-                      {item.order_item_toppings.length > 0 && (
-                        <p className="pl-3 text-xs">+ {item.order_item_toppings.map((t) => t.topping_name).join(', ')}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {labelOrder.notes && (
-                  <div className="border-t border-dashed border-neutral-400 pt-2">
-                    <p className="font-bold">
-                      {t('kitchen.noteLabel')} {labelOrder.notes}
-                    </p>
-                  </div>
-                )}
-                <div className="border-t border-dashed border-neutral-400 pt-2">
-                  <div className="flex justify-between">
-                    <span>{t('checkout.subtotal')}</span>
-                    <span>{formatCurrency(labelOrder.subtotal)}</span>
-                  </div>
-                  {labelOrder.discount > 0 && (
-                    <div className="flex justify-between">
-                      <span>{t('checkout.discount')}</span>
-                      <span>-{formatCurrency(labelOrder.discount)}</span>
-                    </div>
-                  )}
-                  {labelOrder.order_type === 'delivery' && labelOrder.delivery_fee > 0 && (
-                    <div className="flex justify-between">
-                      <span>{t('checkout.shipping')}</span>
-                      <span>{formatCurrency(labelOrder.delivery_fee)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>{t('checkout.tax')}</span>
-                    <span>{formatCurrency(labelOrder.tax)}</span>
-                  </div>
-                  <div className="flex justify-between text-base font-extrabold">
-                    <span>{t('kitchen.totalUpper')}</span>
-                    <span>{formatCurrency(labelOrder.total)}</span>
-                  </div>
-                </div>
+            // print:p-0: el margen de la página impresa ya lo pone la regla
+            // @page (globals.css) — sumar este padding encima solo dejaría
+            // un doble margen innecesario en el PDF.
+            <div className="p-6 print:p-0">
+              <div id="order-label-print">
+                <OrderReceipt order={labelOrder} items={labelOrder.order_items} variant="sheet" />
               </div>
               <Button fullWidth className="mt-4 print:hidden" onClick={() => window.print()}>
                 <Printer size={16} aria-hidden="true" /> {t('kitchen.printLabelButton')}

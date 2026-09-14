@@ -21,6 +21,10 @@ interface ToastItem {
   title: string
   description?: string
   variant: ToastVariant
+  /** Botón de acción opcional (p. ej. "Ver pedido") — al tocarlo se
+   *  ejecuta la acción Y se cierra el toast de una, así el llamador no
+   *  tiene que acordarse de cerrarlo él mismo. */
+  action?: { label: string; onClick: () => void }
 }
 
 type Listener = (items: ToastItem[]) => void
@@ -43,6 +47,7 @@ export function toast(input: {
   description?: string
   variant?: ToastVariant
   durationMs?: number
+  action?: { label: string; onClick: () => void }
 }): string {
   const id = nextId()
   items = [...items, { id, variant: 'default', ...input }]
@@ -106,6 +111,20 @@ export function Toaster() {
               <p className="text-sm font-semibold text-foreground">{item.title}</p>
               {item.description && (
                 <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>
+              )}
+              {item.action && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Cerrar primero: si onClick navega/desmonta algo, el
+                    // toast no debe quedar huérfano en pantalla.
+                    dismissToast(item.id)
+                    item.action!.onClick()
+                  }}
+                  className="mt-1.5 text-xs font-bold text-brand-400 hover:underline"
+                >
+                  {item.action.label}
+                </button>
               )}
             </div>
             <button

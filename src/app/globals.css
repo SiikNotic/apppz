@@ -343,23 +343,60 @@ html {
   }
 }
 
-/* Etiqueta de pedido (cocina): al imprimir, solo el ticket — nada de
-   overlay, sidebar ni el resto del dashboard.
-   Dos problemas aparte de "qué se ve" que dejaban el PDF con una página
-   extra en blanco y el ticket flotando a la mitad de la hoja en vez de
-   arriba:
+/* Recibo de pedido (cocina, OrderReceipt variant="sheet"): al imprimir,
+   solo el recibo — nada de overlay, sidebar ni el resto del dashboard.
+   Tres problemas dejaban el PDF prácticamente en blanco, con solo el
+   título ("PEDIDO #28") flotando a la mitad de una hoja Letter vacía:
    1. `visibility: hidden` no saca el elemento del flujo — sigue ocupando
       su alto real aunque no se pinte. El contenedor raíz del dashboard
       (CompanyChrome) usa `min-h-screen`, así que ese alto invisible
       seguía forzando al menos una pantalla completa de espacio en el
       documento a imprimir. `min-height: 0` en TODO lo oculto anula
       cualquier `min-h-*` de Tailwind que se cruce, venga de donde venga.
-   2. `position: fixed` es poco confiable en el motor de "Guardar como
-      PDF" de Chrome/Android en documentos paginados — el elemento no
-      queda anclado de forma consistente a la primera página. `position:
-      absolute` respecto al documento sí se ancla arriba de la página 1
-      en la práctica. */
+   2. El recibo vive dentro de un <Dialog> (Radix): DialogContent es
+      `position: fixed`, centrado con `top:50%/left:50%` + `translate`,
+      y trae `max-height: 92vh; overflow-y: auto`. Eso es exactamente lo
+      que producía el síntoma — el recibo quedaba encerrado en una caja
+      fija y recortada, centrada en la pantalla; imprimir no "desenrolla"
+      un `overflow-y: auto`, así que solo se veía (y solo pintaba) el
+      pedacito que ya estaba visible dentro de esa caja al momento de
+      imprimir — normalmente nada más que el título centrado. Cambiar
+      SOLO la visibilidad de #order-label-print (como se hacía antes)
+      nunca iba a arreglar esto: su elemento padre seguía fijo, recortado
+      y centrado en medio de la hoja. Por eso `[data-slot="dialog-*"]`
+      se neutraliza acá también — no alcanza con ocultar el resto de la
+      página, hay que además devolver este contenedor a flujo normal.
+   3. `position: fixed` (el que tenía antes #order-label-print) es poco
+      confiable en el motor de "Guardar como PDF" de Chrome/Android en
+      documentos paginados. Con el Dialog ya en flujo normal (position:
+      static), #order-label-print también puede quedar en flujo normal
+      — así el navegador lo pagina de forma nativa si el pedido es largo,
+      en vez de intentar anclarlo a mano con position:absolute.
+   4. `visibility: hidden` tampoco reduce el alto real de un elemento
+      cuyo alto lo da su CONTENIDO (no un min-height) — el div raíz del
+      dashboard (CompanyChrome) mide lo que miden sus hijos de verdad
+      (header, sidebar, las tarjetas de pedidos de Cocina...), oculto o
+      no. Sin esto, ese alto invisible seguía empujando el recibo hacia
+      abajo en el documento a imprimir, dejando la primera página (o más)
+      casi en blanco antes de llegar al contenido real. `body > div` que
+      NO contenga a #order-label-print (es decir, todo lo que no sea el
+      overlay/contenido del propio Dialog) se saca del todo del flujo con
+      display:none — a diferencia de `visibility:hidden`, esto sí libera
+      el espacio que ocupaba. */
+/* Tamaño de papel + márgenes del motor de impresión/PDF — sin esto,
+   Chrome usa su propio margen por defecto (variable según el sistema) y
+   el recibo termina apretado contra el borde de la hoja o con un margen
+   inconsistente entre navegadores. */
+@page {
+  size: letter;
+  margin: 0.5in;
+}
+
 @media print {
+  html,
+  body {
+    overflow: visible !important;
+  }
   body * {
     visibility: hidden;
     min-height: 0 !important;
@@ -368,11 +405,33 @@ html {
   #order-label-print * {
     visibility: visible;
   }
+  /* Saca del flujo (no solo oculta) cualquier hijo directo de <body> que
+     no contenga al recibo — el árbol de la app (CompanyChrome) y el
+     overlay del Dialog caen aquí; el propio DialogContent (que sí lo
+     contiene) queda afuera de este selector y sigue en flujo normal. */
+  body > div:not(:has(#order-label-print)) {
+    display: none !important;
+  }
+  [data-slot='dialog-overlay'] {
+    display: none !important;
+  }
+  [data-slot='dialog-content'] {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
   #order-label-print {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 1rem;
+    position: static;
+    width: 100%;
   }
 }
