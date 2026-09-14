@@ -26,6 +26,14 @@ export function formatDate(value: string | Date): string {
   }).format(date)
 }
 
+/** "septiembre 2026" — para "Miembro desde…" en el perfil. Mismo locale
+ *  fijo 'es-MX' que el resto de este archivo (independiente del selector
+ *  de idioma ES/EN de la UI, ver nota de formatDate). */
+export function formatMonthYear(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(value) : value
+  return new Intl.DateTimeFormat('es-MX', { month: 'long', year: 'numeric' }).format(date)
+}
+
 export function formatNumber(value: number, decimals = 2): string {
   return new Intl.NumberFormat('es-MX', {
     minimumFractionDigits: 0,
