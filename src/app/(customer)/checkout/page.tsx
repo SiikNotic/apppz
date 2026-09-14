@@ -214,10 +214,14 @@ export default function CheckoutPage() {
         : t('checkout.confirmOrder')
 
   return (
-    // pb-28 en mobile: espacio para que el CTA fijo de abajo nunca tape el
-    // último campo o el mensaje de error. lg: sin espacio extra — ahí el
-    // botón vive dentro de la columna de resumen, no fijo.
-    <div className="pb-28 lg:pb-0">
+    // pb en mobile: espacio para DOS barras fijas apiladas abajo — el CTA
+    // de Checkout (~7rem con su propio padding) y, debajo de esa,
+    // BottomTabBar (--bottom-nav-h) — para que ninguna tape el último
+    // campo, el mensaje de error o cualquier fila del resumen. lg: sin
+    // espacio extra — ahí el botón vive dentro de la columna de resumen
+    // (no fijo) y BottomTabBar es la única barra fija, ya contemplada por
+    // el layout compartido.
+    <div className="pb-[calc(7rem+var(--bottom-nav-h))] lg:pb-0">
       <h1 className="mb-4 text-xl font-extrabold text-foreground">{t('checkout.pageTitle')}</h1>
 
       {/* grid-cols-1 explícito: sin esto, un grid sin columnas declaradas
@@ -520,10 +524,13 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* CTA fijo de mobile — nunca compite con la tab bar genérica
-          (customer layout la oculta en /checkout) ni tapa contenido
-          gracias al pb-28 del contenedor raíz de arriba. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-elevated lg:hidden">
+      {/* CTA fijo de mobile — se apila JUSTO ARRIBA de BottomTabBar
+          (bottom: --bottom-nav-h, en vez de bottom-0) para que el cliente
+          nunca pierda la navegación general al revisar/editar su carrito
+          acá; el safe-area inferior ya lo reserva esa barra de abajo, así
+          que este CTA no necesita el suyo propio. Content no tapado
+          gracias al pb del contenedor raíz de arriba. */}
+      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-h)] z-20 border-t border-border bg-card p-4 shadow-elevated lg:hidden">
         <Button fullWidth size="lg" onClick={handleSubmit} disabled={!canSubmit}>
           {ctaLabel}
         </Button>

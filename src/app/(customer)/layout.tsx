@@ -24,11 +24,6 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const isHome = pathname === '/'
   const isAuthPage = AUTH_PATHS.includes(pathname)
-  // Checkout trae su propio CTA fijo abajo ("Confirmar pedido · $XX.XX")
-  // — la tab bar genérica (Inicio/Carrito/Cuenta) competiría por el mismo
-  // espacio y ya no aporta nada útil una vez que el cliente está armando
-  // el pedido, así que se oculta acá igual que en las rutas de auth.
-  const isCheckoutPage = pathname === '/checkout'
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,7 +90,15 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
         </footer>
       )}
 
-      {!isAuthPage && !isCheckoutPage && <BottomTabBar />}
+      {/* Antes se ocultaba también en /checkout — esa pantalla es a la vez
+          el carrito (revisar ítems, cambiar cantidades, quitar productos)
+          y el formulario de checkout, y perder la navegación apenas se
+          "entraba al carrito" rompía la consistencia que se espera del
+          resto de la app. El CTA fijo de Checkout ("Confirmar pedido ·
+          $XX.XX") ahora se apila arriba de esta barra (ver
+          --bottom-nav-h) en vez de competir por el mismo espacio, así
+          que ambos conviven sin taparse. */}
+      {!isAuthPage && <BottomTabBar />}
     </div>
   )
 }

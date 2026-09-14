@@ -304,6 +304,16 @@ html {
   --control-h-sm: 2.25rem;
   --control-h-md: 2.75rem;
   --control-h-lg: 3.25rem;
+
+  /* Alto real de BottomTabBar (customer) SIN el safe-area inferior, que se
+     suma aparte con env() porque varía por dispositivo (0 en desktop/
+     Android típico, ~34px en iPhones con notch/home indicator) — medido
+     con Playwright: 53px totales con safe-area=0, de los cuales 8px son
+     el propio padding-bottom con safe-area (pb-[max(0.5rem,env(...))]).
+     Cualquier otro elemento fijo que deba convivir apilado arriba de la
+     tab bar (el CTA fijo de Checkout, por ahora el único caso) usa esta
+     misma variable en vez de reinventar el cálculo a mano en cada lugar. */
+  --bottom-nav-h: calc(45px + max(0.5rem, env(safe-area-inset-bottom)));
 }
 
 @layer base {
