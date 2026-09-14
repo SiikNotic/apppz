@@ -4,8 +4,7 @@ import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card } from '@/components/ui/card'
-import { AuthHero } from '@/components/customer/auth-hero'
+import { AuthShell } from '@/components/customer/auth-shell'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -65,26 +64,50 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="grid min-h-[70vh] place-items-center px-4 py-10">
-      <Card className="w-full max-w-sm p-7">
-        <AuthHero />
-        <div className="mb-6 flex flex-col items-center text-center">
-          <h1 className="text-lg font-extrabold text-ink-900">{t('auth.registerTitle')}</h1>
-          <p className="text-sm text-ink-400">{t('auth.registerSubtitle')}</p>
+    <AuthShell tagline={t('home.heroTitle')}>
+      <div className="mx-auto w-full max-w-sm">
+        <div className="mb-5">
+          <h1 className="text-h1 font-extrabold text-foreground">{t('auth.registerTitle')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('auth.registerSubtitle')}</p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-          <div>
-            <Label htmlFor="fullName">{t('auth.fullName')}</Label>
-            <Input
-              id="fullName"
-              autoComplete="name"
-              value={form.fullName}
-              onChange={(e) => update('fullName', e.target.value)}
-              aria-invalid={!!fieldErrors.fullName}
-            />
-            {fieldErrors.fullName && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.fullName}</p>}
+        <form className="space-y-3.5" onSubmit={handleSubmit} noValidate>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="fullName">{t('auth.fullName')}</Label>
+              <Input
+                id="fullName"
+                autoComplete="name"
+                value={form.fullName}
+                onChange={(e) => update('fullName', e.target.value)}
+                aria-invalid={!!fieldErrors.fullName}
+                aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
+              />
+              {fieldErrors.fullName && (
+                <p id="fullName-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                  {fieldErrors.fullName}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="phone">{t('auth.phone')}</Label>
+              <Input
+                id="phone"
+                type="tel"
+                autoComplete="tel"
+                value={form.phone}
+                onChange={(e) => update('phone', e.target.value)}
+                aria-invalid={!!fieldErrors.phone}
+                aria-describedby={fieldErrors.phone ? 'phone-error' : undefined}
+              />
+              {fieldErrors.phone && (
+                <p id="phone-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                  {fieldErrors.phone}
+                </p>
+              )}
+            </div>
           </div>
+
           <div>
             <Label htmlFor="email">{t('auth.email')}</Label>
             <Input
@@ -94,47 +117,43 @@ export default function RegisterPage() {
               value={form.email}
               onChange={(e) => update('email', e.target.value)}
               aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
             />
-            {fieldErrors.email && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.email}</p>}
-          </div>
-          <div>
-            <Label htmlFor="phone">{t('auth.phone')}</Label>
-            <Input
-              id="phone"
-              type="tel"
-              autoComplete="tel"
-              value={form.phone}
-              onChange={(e) => update('phone', e.target.value)}
-              aria-invalid={!!fieldErrors.phone}
-            />
-            {fieldErrors.phone && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.phone}</p>}
+            {fieldErrors.email && (
+              <p id="email-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
 
-          <div className="border-t border-ink-100 pt-4">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-400">
+          <div className="border-t border-border pt-3.5">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {t('account.deliveryAddressHeading')}
             </p>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="street">{t('account.street')}</Label>
-                <Input
-                  id="street"
-                  autoComplete="street-address"
-                  value={form.street}
-                  onChange={(e) => update('street', e.target.value)}
-                  aria-invalid={!!fieldErrors.street}
-                />
-                {fieldErrors.street && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.street}</p>}
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-[2fr_1fr]">
+                <div>
+                  <Label htmlFor="street">{t('account.street')}</Label>
+                  <Input
+                    id="street"
+                    autoComplete="street-address"
+                    value={form.street}
+                    onChange={(e) => update('street', e.target.value)}
+                    aria-invalid={!!fieldErrors.street}
+                    aria-describedby={fieldErrors.street ? 'street-error' : undefined}
+                  />
+                  {fieldErrors.street && (
+                    <p id="street-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                      {fieldErrors.street}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="apartment">{t('account.apartment')}</Label>
+                  <Input id="apartment" value={form.apartment} onChange={(e) => update('apartment', e.target.value)} />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="apartment">{t('account.apartment')}</Label>
-                <Input
-                  id="apartment"
-                  value={form.apartment}
-                  onChange={(e) => update('apartment', e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-3.5">
                 <div className="col-span-2">
                   <Label htmlFor="city">{t('account.city')}</Label>
                   <Input
@@ -143,8 +162,13 @@ export default function RegisterPage() {
                     value={form.city}
                     onChange={(e) => update('city', e.target.value)}
                     aria-invalid={!!fieldErrors.city}
+                    aria-describedby={fieldErrors.city ? 'city-error' : undefined}
                   />
-                  {fieldErrors.city && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.city}</p>}
+                  {fieldErrors.city && (
+                    <p id="city-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                      {fieldErrors.city}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="state">{t('account.state')}</Label>
@@ -154,8 +178,13 @@ export default function RegisterPage() {
                     value={form.state}
                     onChange={(e) => update('state', e.target.value)}
                     aria-invalid={!!fieldErrors.state}
+                    aria-describedby={fieldErrors.state ? 'state-error' : undefined}
                   />
-                  {fieldErrors.state && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.state}</p>}
+                  {fieldErrors.state && (
+                    <p id="state-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                      {fieldErrors.state}
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
@@ -166,45 +195,59 @@ export default function RegisterPage() {
                   value={form.zip}
                   onChange={(e) => update('zip', e.target.value)}
                   aria-invalid={!!fieldErrors.zip}
+                  aria-describedby={fieldErrors.zip ? 'zip-error' : undefined}
                 />
-                {fieldErrors.zip && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.zip}</p>}
+                {fieldErrors.zip && (
+                  <p id="zip-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                    {fieldErrors.zip}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="password">{t('auth.password')}</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              value={form.password}
-              onChange={(e) => update('password', e.target.value)}
-              aria-invalid={!!fieldErrors.password}
-              aria-describedby="password-hint"
-            />
-            <p id="password-hint" className="mt-1 text-[11px] text-ink-400">
-              {t('auth.passwordHint')}
-            </p>
-            {fieldErrors.password && <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.password}</p>}
-          </div>
-          <div>
-            <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              value={form.confirmPassword}
-              onChange={(e) => update('confirmPassword', e.target.value)}
-              aria-invalid={!!fieldErrors.confirmPassword}
-            />
-            {fieldErrors.confirmPassword && (
-              <p role="alert" className="mt-1 text-xs text-danger-500">{fieldErrors.confirmPassword}</p>
-            )}
+          <div className="grid grid-cols-1 gap-3.5 border-t border-border pt-3.5 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="password">{t('auth.password')}</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                value={form.password}
+                onChange={(e) => update('password', e.target.value)}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby="password-hint"
+              />
+              <p id="password-hint" className="mt-1 text-[11px] text-muted-foreground">
+                {t('auth.passwordHint')}
+              </p>
+              {fieldErrors.password && (
+                <p role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                  {fieldErrors.password}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                value={form.confirmPassword}
+                onChange={(e) => update('confirmPassword', e.target.value)}
+                aria-invalid={!!fieldErrors.confirmPassword}
+                aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
+              />
+              {fieldErrors.confirmPassword && (
+                <p id="confirmPassword-error" role="alert" className="mt-1 text-xs font-semibold text-danger-500">
+                  {fieldErrors.confirmPassword}
+                </p>
+              )}
+            </div>
           </div>
 
           {formError && (
-            <p role="alert" className="text-xs font-semibold text-danger-500">
+            <p role="alert" className="rounded-2xl bg-danger-500/10 px-3 py-2 text-xs font-semibold text-danger-500">
               {formError}
             </p>
           )}
@@ -214,19 +257,25 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-ink-600">
+        <p className="mt-5 text-center text-sm text-muted-foreground">
           {t('auth.haveAccount')}{' '}
-          <Link href="/login" className="font-semibold text-brand-900 hover:underline">
+          <Link href="/login" className="font-semibold text-brand-400 hover:underline">
             {t('auth.signInLink')}
           </Link>
         </p>
 
-        <p className="mt-4 text-center text-[11px] text-ink-400">
+        <p className="mt-4 text-center text-[11px] text-muted-foreground">
           {t('auth.agreeToTerms')}{' '}
-          <Link href="/terms" className="underline">{t('nav.terms')}</Link> {t('auth.and')}{' '}
-          <Link href="/privacy" className="underline">{t('auth.privacyPolicy')}</Link>.
+          <Link href="/terms" className="underline">
+            {t('nav.terms')}
+          </Link>{' '}
+          {t('auth.and')}{' '}
+          <Link href="/privacy" className="underline">
+            {t('auth.privacyPolicy')}
+          </Link>
+          .
         </p>
-      </Card>
-    </div>
+      </div>
+    </AuthShell>
   )
 }
