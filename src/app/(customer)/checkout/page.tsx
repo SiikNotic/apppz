@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Minus, Plus, Trash2, ShoppingBag, Tag, Check } from 'lucide-react'
+import { Trash2, ShoppingBag, Tag, Check, Truck, Store } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { calculateCartPrice, createOrder, type CartRpcItem } from '@/lib/data-access/orders'
@@ -16,7 +16,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ItemThumb } from '@/components/ui/item-thumb'
+import { QuantityStepper } from '@/components/ui/quantity-stepper'
 import { formatCurrency } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { CartLine, Address } from '@/lib/types'
 
@@ -189,10 +191,10 @@ export default function CheckoutPage() {
   if (lines.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-900">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-500/15 text-brand-400">
           <ShoppingBag size={28} aria-hidden="true" />
         </div>
-        <p className="text-sm font-semibold text-ink-600">{t('checkout.emptyCart')}</p>
+        <p className="text-sm font-semibold text-muted-foreground">{t('checkout.emptyCart')}</p>
         <Button onClick={() => router.push('/menu')}>{t('checkout.seeMenu')}</Button>
       </div>
     )
@@ -200,123 +202,112 @@ export default function CheckoutPage() {
 
   const storeClosed = storeStatus != null && !storeStatus.is_open
   const canSubmit = !submitting && !pricingLoading && !pricingError && !!pricing && !storeClosed
+  const finalTotal = pricing ? pricing.total + tipAmount : null
+  // Mismo texto/monto en el CTA fijo de mobile y en el de escritorio —
+  // una sola fuente de verdad para que nunca queden desincronizados.
+  const ctaLabel = submitting
+    ? t('checkout.submitting')
+    : storeClosed
+      ? t('storeStatus.closedGeneric')
+      : finalTotal != null
+        ? `${t('checkout.confirmOrder')} · ${formatCurrency(finalTotal)}`
+        : t('checkout.confirmOrder')
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.3fr,1fr]">
-      <div className="space-y-3">
-        <h1 className="text-xl font-extrabold text-ink-900">{t('checkout.yourOrder')}</h1>
-        {lines.map((line) => (
-          <Card key={line.lineId} className="flex items-center gap-3 p-3.5">
-            <ItemThumb name={line.name} imageUrl={line.imageUrl} size="sm" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-ink-900">{line.name}</p>
-              {lineDescription(line) && (
-                <p className="truncate text-xs text-ink-400">{lineDescription(line)}</p>
-              )}
-              <div className="mt-1.5 flex items-center justify-between">
-                <div className="flex items-center gap-1 rounded-full bg-ink-50 px-1.5 py-1">
-                  <button
-                    onClick={() => updateQuantity(line.lineId, line.quantity - 1)}
-                    aria-label={`${t('checkout.decreaseQty')} ${line.name}`}
-                    className="grid h-6 w-6 place-items-center rounded-full bg-white text-ink-600 shadow-sm"
-                  >
-                    <Minus size={12} aria-hidden="true" />
-                  </button>
-                  <span className="w-5 text-center text-xs font-bold" aria-live="polite">
-                    {line.quantity}
-                  </span>
-                  <button
-                    onClick={() => updateQuantity(line.lineId, line.quantity + 1)}
-                    aria-label={`${t('checkout.increaseQty')} ${line.name}`}
-                    className="grid h-6 w-6 place-items-center rounded-full bg-white text-ink-600 shadow-sm"
-                  >
-                    <Plus size={12} aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold text-brand-900">
-                    {formatCurrency(line.unitPrice * line.quantity)}
-                  </span>
-                  <button
-                    onClick={() => removeLine(line.lineId)}
-                    className="text-ink-400 hover:text-danger-500"
-                    aria-label={`${t('checkout.removeItem')} ${line.name} ${t('checkout.removeItemSuffix')}`}
-                  >
-                    <Trash2 size={16} aria-hidden="true" />
-                  </button>
-                </div>
+    // pb-28 en mobile: espacio para que el CTA fijo de abajo nunca tape el
+    // último campo o el mensaje de error. lg: sin espacio extra — ahí el
+    // botón vive dentro de la columna de resumen, no fijo.
+    <div className="pb-28 lg:pb-0">
+      <h1 className="mb-4 text-xl font-extrabold text-foreground">{t('checkout.pageTitle')}</h1>
+
+      {/* grid-cols-1 explícito: sin esto, un grid sin columnas declaradas
+          para el breakpoint base puede crecer más allá del contenedor si
+          algún hijo (una fila flex con varios elementos de ancho fijo,
+          p.ej.) tiene un min-content ancho — "grid blowout" clásico, la
+          causa real del overflow horizontal que apareció en mobile. */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.05fr] lg:items-start">
+        {/* ------- Columna izquierda: información del checkout, en
+            secciones separadas con su propio encabezado — antes todo esto
+            vivía apilado sin separación dentro de una sola tarjeta. ------- */}
+        <div className="space-y-4">
+          <Card className="space-y-3 p-5">
+            <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
+              {t('checkout.sectionAddressTitle')}
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setOrderType('delivery')}
+                aria-pressed={orderType === 'delivery'}
+                className={cn(
+                  'flex items-center justify-center gap-1.5 rounded-2xl border-2 px-3 py-2.5 text-sm font-semibold transition active:scale-[0.98]',
+                  orderType === 'delivery' ? 'border-brand-500 bg-brand-500/10 text-foreground' : 'border-border text-muted-foreground hover:border-border-strong'
+                )}
+              >
+                <Truck size={15} aria-hidden="true" /> {t('home.delivery')}
+              </button>
+              <button
+                onClick={() => setOrderType('pickup')}
+                aria-pressed={orderType === 'pickup'}
+                className={cn(
+                  'flex items-center justify-center gap-1.5 rounded-2xl border-2 px-3 py-2.5 text-sm font-semibold transition active:scale-[0.98]',
+                  orderType === 'pickup' ? 'border-brand-500 bg-brand-500/10 text-foreground' : 'border-border text-muted-foreground hover:border-border-strong'
+                )}
+              >
+                <Store size={15} aria-hidden="true" /> {t('home.pickup')}
+              </button>
+            </div>
+
+            {orderType === 'delivery' && (
+              <div>
+                <Label>{t('checkout.address')}</Label>
+                {addresses.length > 0 && (
+                  <Select value={selectedAddressId} onValueChange={setSelectedAddressId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {addresses.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.label} · {a.street}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={NEW_ADDRESS}>{t('checkout.otherAddress')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {selectedAddressId === NEW_ADDRESS && (
+                  <Textarea
+                    className="mt-2"
+                    rows={2}
+                    value={manualAddress}
+                    onChange={(e) => setManualAddress(e.target.value)}
+                    placeholder={t('checkout.addressPlaceholder')}
+                  />
+                )}
+              </div>
+            )}
+          </Card>
+
+          <Card className="space-y-3 p-5">
+            <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
+              {t('checkout.sectionContactTitle')}
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="checkout-name">{t('checkout.name')}</Label>
+                <Input id="checkout-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={t('checkout.namePlaceholder')} />
+              </div>
+              <div>
+                <Label htmlFor="checkout-phone">{t('auth.phone')}</Label>
+                <Input id="checkout-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('checkout.phonePlaceholder')} />
               </div>
             </div>
           </Card>
-        ))}
-      </div>
 
-      <div className="sticky top-24 space-y-4">
-        <Card className="space-y-4 p-5">
-          <h2 className="text-base font-extrabold text-ink-900">{t('checkout.deliveryDetails')}</h2>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setOrderType('delivery')}
-              aria-pressed={orderType === 'delivery'}
-              className={`rounded-2xl border-2 px-3 py-2 text-sm font-semibold transition ${
-                orderType === 'delivery' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
-              }`}
-            >
-              {t('home.delivery')}
-            </button>
-            <button
-              onClick={() => setOrderType('pickup')}
-              aria-pressed={orderType === 'pickup'}
-              className={`rounded-2xl border-2 px-3 py-2 text-sm font-semibold transition ${
-                orderType === 'pickup' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
-              }`}
-            >
-              {t('home.pickup')}
-            </button>
-          </div>
-
-          <div>
-            <Label htmlFor="checkout-name">{t('checkout.name')}</Label>
-            <Input id="checkout-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={t('checkout.namePlaceholder')} />
-          </div>
-          <div>
-            <Label htmlFor="checkout-phone">{t('auth.phone')}</Label>
-            <Input id="checkout-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('checkout.phonePlaceholder')} />
-          </div>
-
-          {orderType === 'delivery' && (
-            <div>
-              <Label>{t('checkout.address')}</Label>
-              {addresses.length > 0 && (
-                <Select value={selectedAddressId} onValueChange={setSelectedAddressId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {addresses.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.label} · {a.street}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value={NEW_ADDRESS}>{t('checkout.otherAddress')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-              {selectedAddressId === NEW_ADDRESS && (
-                <Textarea
-                  className="mt-2"
-                  rows={2}
-                  value={manualAddress}
-                  onChange={(e) => setManualAddress(e.target.value)}
-                  placeholder={t('checkout.addressPlaceholder')}
-                />
-              )}
-            </div>
-          )}
-
-          <div>
-            <Label htmlFor="checkout-payment">{t('checkout.paymentMethod')}</Label>
+          <Card className="space-y-3 p-5">
+            <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
+              {t('checkout.paymentMethod')}
+            </h2>
             <Select value={paymentMethod} onValueChange={setPaymentMethod}>
               <SelectTrigger className="w-full" id="checkout-payment">
                 <SelectValue />
@@ -327,12 +318,98 @@ export default function CheckoutPage() {
                 <SelectItem value="Transferencia">{t('checkout.transfer')}</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+            <div>
+              <Label htmlFor="checkout-notes">{t('checkout.notes')}</Label>
+              <Textarea
+                id="checkout-notes"
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t('checkout.notesPlaceholder')}
+              />
+            </div>
+          </Card>
+
+          {formError && (
+            <p role="alert" className="rounded-2xl border border-danger-500/30 bg-danger-500/10 px-4 py-3 text-sm font-semibold text-danger-300">
+              {formError}
+            </p>
+          )}
+        </div>
+
+        {/* ------- Columna derecha: resumen del pedido — sticky en
+            escritorio, en flujo normal en mobile (el CTA de acá se oculta
+            en mobile, donde manda el fijo de abajo). ------- */}
+        <div className="space-y-4 lg:sticky lg:top-24">
+          <Card className="space-y-3 p-5">
+            <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
+              {t('checkout.orderSummaryTitle')}
+            </h2>
+            <div className="space-y-3">
+              {lines.map((line) => (
+                <div key={line.lineId} className="flex items-center gap-3">
+                  <ItemThumb name={line.name} imageUrl={line.imageUrl} size="sm" className="shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-foreground">{line.name}</p>
+                    {lineDescription(line) && (
+                      <p className="truncate text-xs text-muted-foreground">{lineDescription(line)}</p>
+                    )}
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                      <QuantityStepper
+                        size="sm"
+                        value={line.quantity}
+                        onDecrease={() => updateQuantity(line.lineId, line.quantity - 1)}
+                        onIncrease={() => updateQuantity(line.lineId, line.quantity + 1)}
+                        decreaseLabel={`${t('checkout.decreaseQty')} ${line.name}`}
+                        increaseLabel={`${t('checkout.increaseQty')} ${line.name}`}
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-extrabold text-foreground">
+                          {formatCurrency(line.unitPrice * line.quantity)}
+                        </span>
+                        <button
+                          onClick={() => removeLine(line.lineId)}
+                          className="text-muted-foreground transition hover:text-danger-500"
+                          aria-label={`${t('checkout.removeItem')} ${line.name} ${t('checkout.removeItemSuffix')}`}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Código de promoción: inline, dentro del mismo resumen que
+                termina afectando — no una sección aparte. */}
+            <div className="border-t border-border pt-3">
+              <Label htmlFor="checkout-promo">{t('checkout.promoCode')}</Label>
+              <div className="relative">
+                <Tag size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  id="checkout-promo"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder={t('checkout.promoPlaceholder')}
+                  className="pl-9"
+                />
+              </div>
+              {pricing?.promotion_code && (
+                <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-success-500">
+                  <Check size={12} aria-hidden="true" /> {t('checkout.promoApplied', { code: pricing.promotion_code })}
+                </p>
+              )}
+              {!pricing?.promotion_code && promoCode && !pricingLoading && (
+                <p className="mt-1 text-xs text-muted-foreground">{t('checkout.promoNotApplicable')}</p>
+              )}
+            </div>
+          </Card>
 
           {orderType === 'delivery' && (
-            <div>
-              <Label>{t('checkout.tipLabel')}</Label>
-              <p className="mb-2 text-[11px] text-ink-400">{t('checkout.tipHint')}</p>
+            <Card className="space-y-2 p-5">
+              <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">{t('checkout.tipLabel')}</h2>
+              <p className="text-[11px] text-muted-foreground">{t('checkout.tipHint')}</p>
               <div className="flex flex-wrap gap-2">
                 {[0, 2, 3, 5].map((amount) => (
                   <button
@@ -340,9 +417,10 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => setTipOption(amount)}
                     aria-pressed={tipOption === amount}
-                    className={`rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold transition ${
-                      tipOption === amount ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
-                    }`}
+                    className={cn(
+                      'rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold transition active:scale-95',
+                      tipOption === amount ? 'border-brand-500 bg-brand-500/10 text-foreground' : 'border-border text-muted-foreground hover:border-border-strong'
+                    )}
                   >
                     {amount === 0 ? t('checkout.tipNone') : formatCurrency(amount)}
                   </button>
@@ -351,9 +429,10 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() => setTipOption('custom')}
                   aria-pressed={tipOption === 'custom'}
-                  className={`rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold transition ${
-                    tipOption === 'custom' ? 'border-brand-500 bg-brand-50 text-brand-900' : 'border-ink-100 text-ink-600'
-                  }`}
+                  className={cn(
+                    'rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold transition active:scale-95',
+                    tipOption === 'custom' ? 'border-brand-500 bg-brand-500/10 text-foreground' : 'border-border text-muted-foreground hover:border-border-strong'
+                  )}
                 >
                   {t('checkout.tipCustom')}
                 </button>
@@ -364,122 +443,90 @@ export default function CheckoutPage() {
                   min="0"
                   step="0.01"
                   inputMode="decimal"
-                  className="mt-2"
+                  className="mt-1"
                   value={customTip}
                   onChange={(e) => setCustomTip(e.target.value)}
                   placeholder={t('checkout.tipCustomPlaceholder')}
                 />
               )}
-            </div>
+            </Card>
           )}
 
-          <div>
-            <Label htmlFor="checkout-promo">{t('checkout.promoCode')}</Label>
-            <div className="relative">
-              <Tag size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden="true" />
-              <Input
-                id="checkout-promo"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                placeholder={t('checkout.promoPlaceholder')}
-                className="pl-9"
-              />
-            </div>
-            {pricing?.promotion_code && (
-              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-success-500">
-                <Check size={12} aria-hidden="true" /> {t('checkout.promoApplied', { code: pricing.promotion_code })}
+          {/* Totales + CTA de escritorio, en su propia tarjeta de marca —
+              el total final es lo más grande de toda la pantalla a
+              propósito. En mobile el botón de acá se oculta: manda el
+              fijo de abajo, que muestra el mismo monto. */}
+          <Card className="space-y-3 border-transparent bg-brand-500 p-5 text-white shadow-pop">
+            {pricingLoading ? (
+              <p className="text-sm text-white/80">{t('checkout.calculatingTotal')}</p>
+            ) : pricingError ? (
+              <p role="alert" className="text-sm font-semibold text-white">
+                {pricingError}
+              </p>
+            ) : pricing ? (
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between text-white/80">
+                  <span>{t('checkout.subtotal')}</span>
+                  <span>{formatCurrency(pricing.subtotal)}</span>
+                </div>
+                {pricing.discount > 0 && (
+                  <div className="flex justify-between text-white">
+                    <span>{t('checkout.discount')}</span>
+                    <span>-{formatCurrency(pricing.discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-white/80">
+                  <span>{t('checkout.shipping')}</span>
+                  <span>{pricing.delivery_fee > 0 ? formatCurrency(pricing.delivery_fee) : t('checkout.free')}</span>
+                </div>
+                {pricing.tax > 0 && (
+                  <div className="flex justify-between text-white/80">
+                    <span>{t('checkout.tax')}</span>
+                    <span>{formatCurrency(pricing.tax)}</span>
+                  </div>
+                )}
+                {tipAmount > 0 && (
+                  <div className="flex justify-between text-white/80">
+                    <span>{t('checkout.tipLineLabel')}</span>
+                    <span>{formatCurrency(tipAmount)}</span>
+                  </div>
+                )}
+                {/* El total: el número más dominante de toda la pantalla —
+                    escala tipográfica display, no solo negrita. */}
+                <div className="flex items-baseline justify-between border-t border-white/20 pt-2">
+                  <span className="text-sm font-bold text-white/90">{t('checkout.totalToPay')}</span>
+                  <span className="text-display font-extrabold text-white">{formatCurrency(finalTotal ?? pricing.total)}</span>
+                </div>
+              </div>
+            ) : null}
+
+            {storeClosed && (
+              <p role="alert" className="text-center text-xs font-semibold text-white">
+                {t('storeStatus.cannotOrder')}
               </p>
             )}
-            {!pricing?.promotion_code && promoCode && !pricingLoading && (
-              <p className="mt-1 text-xs text-ink-400">{t('checkout.promoNotApplicable')}</p>
-            )}
-          </div>
+            {/* Oculto en mobile (< lg): ahí el CTA fijo de abajo es el que
+                manda — mismo label, mismo estado disabled. */}
+            <Button
+              fullWidth
+              size="lg"
+              className="hidden bg-white text-brand-900 hover:bg-white/90 lg:flex"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+            >
+              {ctaLabel}
+            </Button>
+          </Card>
+        </div>
+      </div>
 
-          <div>
-            <Label htmlFor="checkout-notes">{t('checkout.notes')}</Label>
-            <Textarea
-              id="checkout-notes"
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t('checkout.notesPlaceholder')}
-            />
-          </div>
-
-          {formError && (
-            <p role="alert" className="text-xs font-semibold text-danger-500">
-              {formError}
-            </p>
-          )}
-        </Card>
-
-        {/* Resumen + confirmar en su propia tarjeta roja — estilo la
-            referencia (bloque de totales en sólido con el botón de
-            confirmar en blanco encima). */}
-        <Card className="space-y-3 border-transparent bg-brand-500 p-5 text-white shadow-pop">
-          {pricingLoading ? (
-            <p className="text-sm text-white/80">{t('checkout.calculatingTotal')}</p>
-          ) : pricingError ? (
-            <p role="alert" className="text-sm font-semibold text-white">
-              {pricingError}
-            </p>
-          ) : pricing ? (
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between text-white/80">
-                <span>{t('checkout.subtotal')}</span>
-                <span>{formatCurrency(pricing.subtotal)}</span>
-              </div>
-              {pricing.discount > 0 && (
-                <div className="flex justify-between text-white">
-                  <span>{t('checkout.discount')}</span>
-                  <span>-{formatCurrency(pricing.discount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-white/80">
-                <span>{t('checkout.shipping')}</span>
-                <span>{pricing.delivery_fee > 0 ? formatCurrency(pricing.delivery_fee) : t('checkout.free')}</span>
-              </div>
-              {pricing.tax > 0 && (
-                <div className="flex justify-between text-white/80">
-                  <span>{t('checkout.tax')}</span>
-                  <span>{formatCurrency(pricing.tax)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-white">
-                <span>{t('checkout.total')}</span>
-                <span>{formatCurrency(pricing.total)}</span>
-              </div>
-              {/* La propina va aparte del precio del pedido — se muestra en
-                  su propia línea y se suma solo en el "Total a pagar" de
-                  abajo, nunca dentro de subtotal/total (ver tip_amount). */}
-              {tipAmount > 0 && (
-                <div className="flex justify-between text-white/80">
-                  <span>{t('checkout.tipLineLabel')}</span>
-                  <span>{formatCurrency(tipAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between border-t border-white/20 pt-1.5 text-base font-extrabold text-white">
-                <span>{t('checkout.totalToPay')}</span>
-                <span>{formatCurrency(pricing.total + tipAmount)}</span>
-              </div>
-            </div>
-          ) : null}
-
-          {storeClosed && (
-            <p role="alert" className="text-center text-xs font-semibold text-white">
-              {t('storeStatus.cannotOrder')}
-            </p>
-          )}
-          <Button
-            fullWidth
-            size="lg"
-            className="bg-white text-brand-900 hover:bg-white/90"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-          >
-            {submitting ? t('checkout.submitting') : storeClosed ? t('storeStatus.closedGeneric') : t('checkout.confirmOrder')}
-          </Button>
-        </Card>
+      {/* CTA fijo de mobile — nunca compite con la tab bar genérica
+          (customer layout la oculta en /checkout) ni tapa contenido
+          gracias al pb-28 del contenedor raíz de arriba. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-elevated lg:hidden">
+        <Button fullWidth size="lg" onClick={handleSubmit} disabled={!canSubmit}>
+          {ctaLabel}
+        </Button>
       </div>
     </div>
   )
