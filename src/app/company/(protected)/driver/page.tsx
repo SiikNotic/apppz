@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import Link from 'next/link'
 import {
   Bike,
   MapPin,
@@ -18,16 +17,13 @@ import {
   KeyRound,
   MessageCircleWarning,
   LocateFixed,
-  Clock,
   User,
-  Wallet,
   Check,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { DeliveryChat } from '@/components/shared/delivery-chat'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -37,11 +33,10 @@ import { useDriverShift } from '@/hooks/useDriverShift'
 import { fetchAssignmentsWithOrders, ACTIVE_STATUSES, type AssignmentWithOrder } from '@/lib/driverAssignments'
 import { resolveDeliveryLocation, distanceKm } from '@/lib/geo'
 import type { RouteStop } from '@/components/company/driver/driver-route-map'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { formatCurrency } from '@/lib/format'
 import { BRAND_NAME } from '@/lib/config'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
-import type { Driver } from '@/lib/types'
 
 // mapbox-gl necesita `window` — con export estático, evaluarlo durante el
 // build de prerenderizado rompería el build (mismo patrón que
@@ -65,7 +60,6 @@ export default function DriverPage() {
   const { t } = useLanguage()
   const isDriver = profile?.company_role === 'driver'
 
-  const [driver, setDriver] = useState<Driver | null>(null)
   const [active, setActive] = useState<AssignmentWithOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -73,11 +67,13 @@ export default function DriverPage() {
   const [routeCompletedFlash, setRouteCompletedFlash] = useState(false)
   const [advancingFlash, setAdvancingFlash] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
-  // Fichaje: el botón de entrada/salida vive en el menú lateral (mismo
-  // lugar que el resto del personal), esta pantalla solo muestra el
-  // estado (useDriverShift, compartido con ese botón). El estado
-  // "on_delivery" sigue siendo del sistema, no algo que el conductor
-  // active a mano — por eso no tiene botón, solo una etiqueta.
+  // El fichaje (entrada/salida) y las ganancias tienen su propio lugar en
+  // el menú del conductor (sidebar: "Horas y pagos" + el botón de
+  // entrada/salida) — esta pantalla es solo entregas, así que de
+  // useDriverShift acá únicamente se lee si ya fichó entrada, para elegir
+  // el texto correcto del estado vacío ("sin pedidos todavía" vs "activa
+  // tu turno para recibir pedidos"), sin repetir la tarjeta de estado de
+  // turno que ya se ve en todas las pantallas vía el sidebar.
   const { openShift } = useDriverShift(user?.id)
   // Cobro de efectivo: driver_update_assignment ya rechaza "entregado" en
   // el servidor si el pedido es en efectivo y no se confirmó el cobro —
@@ -134,11 +130,7 @@ export default function DriverPage() {
     if (!user) return
     const wasWorkingOnSomething = active.length > 0
     const previousCurrentId = active[0]?.id ?? null
-    const [{ data: driverRow }, activeRows] = await Promise.all([
-      supabase.from('drivers').select('*').eq('user_id', user.id).maybeSingle(),
-      fetchAssignmentsWithOrders(ACTIVE_STATUSES, user.id),
-    ])
-    setDriver(driverRow)
+    const activeRows = await fetchAssignmentsWithOrders(ACTIVE_STATUSES, user.id)
     setActive(activeRows)
     setLoading(false)
     // Si tenía entregas activas y ahora ya no, la ruta se acaba de
@@ -241,7 +233,6 @@ export default function DriverPage() {
   if (loading) return <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
 
   const [current, ...queue] = active
-  const isOnDelivery = driver?.status === 'on_delivery'
   const isClockedIn = !!openShift
   const needsCashConfirm = !!current && current.order.payment_method === 'Efectivo' && current.order.payment_status !== 'paid'
 
@@ -264,6 +255,12 @@ export default function DriverPage() {
 
   return (
     <div className="space-y-5">
+      {/* Mis entregas: solo entregas. El fichaje (entrada/salida) y las
+          ganancias ya tienen su propio lugar permanente en el menú del
+          conductor (sidebar) — repetirlos acá era la misma información
+          dos veces, y le quitaba a esta pantalla el espacio que necesita
+          la entrega actual (mapa + acciones), que es lo único que
+          importa mientras el conductor está trabajando. */}
       <PageHeader
         title={t('driverPage.title')}
         subtitle={
@@ -271,53 +268,7 @@ export default function DriverPage() {
             ? t('driverPage.greeting', { name: profile.full_name.split(' ')[0] })
             : t('driverPage.subtitleFallback')
         }
-        actions={
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/company/driver/earnings">
-              <Wallet size={14} aria-hidden="true" /> {t('driverPage.earningsShortcut')}
-            </Link>
-          </Button>
-        }
       />
-
-      {/* Solo lectura — el botón de entrada/salida vive en el menú
-          lateral (ver nota junto a useDriverShift más arriba). */}
-      <Card
-        className={cn(
-          'flex items-center justify-between gap-3 border-l-4 p-4',
-          isOnDelivery
-            ? 'border-l-brand-500 bg-brand-500/10'
-            : isClockedIn
-              ? 'border-l-success-500 bg-success-500/5'
-              : 'border-l-border'
-        )}
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <span
-            className={cn(
-              'grid h-11 w-11 shrink-0 place-items-center rounded-2xl',
-              isOnDelivery ? 'bg-brand-500 text-white' : isClockedIn ? 'bg-success-500 text-white' : 'bg-white/10 text-muted-foreground'
-            )}
-          >
-            {isClockedIn ? <Bike size={20} aria-hidden="true" /> : <Clock size={20} aria-hidden="true" />}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold text-foreground">
-              {isOnDelivery ? t('driverPage.statusOnDelivery') : isClockedIn ? t('driverPage.shiftActive') : t('driversAdmin.noShiftStarted')}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {openShift ? t('teamAdmin.sinceDate', { date: formatDate(openShift.clock_in_at) }) : t('driverPage.shiftPromptOffline')}
-            </p>
-          </div>
-        </div>
-        {isOnDelivery ? (
-          <Badge variant="brand">{t('driverPage.statusOnDelivery')}</Badge>
-        ) : isClockedIn ? (
-          <Badge variant="success">{t('driverPage.shiftActive')}</Badge>
-        ) : (
-          <Badge variant="neutral">{t('driversAdmin.statusOffline')}</Badge>
-        )}
-      </Card>
 
       {(locationSharing === 'denied' || locationSharing === 'unsupported') && (
         <p className="flex items-center gap-2 rounded-2xl bg-warning-500/10 p-3 text-xs font-semibold text-warning-300">
