@@ -967,6 +967,9 @@ export const translations = {
       driverFallbackName: 'Tu repartidor',
       callAria: 'Llamar a {name}',
       mapNotConfigured: 'El mapa no está disponible en este momento.',
+      orderNotFound: 'No encontramos ese pedido.',
+      reportProblem: 'Reportar un problema',
+      backToMenu: 'Volver al menú',
     },
     sharedChat: {
       chatWithCustomer: 'Chat con el cliente',
@@ -1027,6 +1030,9 @@ export const translations = {
       orderPrefix: 'Pedido',
       adding: 'Agregando…',
       reorder: 'Ordenar de nuevo',
+      viewDetails: 'Ver detalles del pedido #{number}',
+      emptyActive: 'No tienes pedidos en curso.',
+      emptyPast: 'Todavía no tienes pedidos anteriores.',
     },
     receipt: {
       viewReceipt: 'Ver recibo',
@@ -2000,6 +2006,9 @@ export const translations = {
       driverFallbackName: 'Your driver',
       callAria: 'Call {name}',
       mapNotConfigured: "The map isn't available right now.",
+      orderNotFound: "We couldn't find that order.",
+      reportProblem: 'Report a problem',
+      backToMenu: 'Back to menu',
     },
     sharedChat: {
       chatWithCustomer: 'Chat with customer',
@@ -2059,6 +2068,9 @@ export const translations = {
       orderPrefix: 'Order',
       adding: 'Adding…',
       reorder: 'Order again',
+      viewDetails: 'View details for order #{number}',
+      emptyActive: "You don't have any active orders.",
+      emptyPast: "You don't have any past orders yet.",
     },
     receipt: {
       viewReceipt: 'View receipt',

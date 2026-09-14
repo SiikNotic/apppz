@@ -95,10 +95,10 @@ export function SupportChatThread({ reportId, currentUserId, isStaff }: SupportC
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-ink-50 p-3">
-        {loading && <p className="text-xs text-ink-400">{t('common.loading')}</p>}
+      <div className="max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-muted p-3">
+        {loading && <p className="text-xs text-muted-foreground">{t('common.loading')}</p>}
         {!loading && messages.length === 0 && (
-          <p className="text-xs text-ink-400">{t('sharedChat.noMessagesYet')}</p>
+          <p className="text-xs text-muted-foreground">{t('sharedChat.noMessagesYet')}</p>
         )}
         {messages.map((m) => {
           const mine = m.sender_id === currentUserId
@@ -106,11 +106,11 @@ export function SupportChatThread({ reportId, currentUserId, isStaff }: SupportC
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                  mine ? 'bg-brand-500 text-white' : 'bg-white text-ink-700 shadow-card'
+                  mine ? 'bg-brand-500 text-white' : 'bg-card text-foreground shadow-card'
                 }`}
               >
                 {!mine && (
-                  <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-400">
+                  <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                     {m.sender?.full_name || (isStaff ? t('rewardsAdmin.customerFallback') : t('sharedChat.supportFallback'))}
                   </p>
                 )}

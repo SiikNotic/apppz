@@ -2,18 +2,24 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ClipboardList, Receipt, RotateCcw } from 'lucide-react'
+import { ChevronRight, ClipboardList, Receipt, RotateCcw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCart } from '@/contexts/CartContext'
-import { fetchCustomerOrders } from '@/lib/data-access/orders'
+import { fetchCustomerOrders, fetchOrderThumbnails } from '@/lib/data-access/orders'
 import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ItemThumb } from '@/components/ui/item-thumb'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ReceiptDialog } from '@/components/customer/receipt-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { BRAND_NAME } from '@/lib/config'
 import { ORDER_TERMINAL_STATUSES, type Order, type OrderStatus } from '@/lib/types'
 import { useLanguage } from '@/contexts/LanguageContext'
+
+type OrderThumb = { name: string; imageUrl: string | null } | undefined
 
 const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   pending: 'warning',
@@ -33,7 +39,9 @@ export default function OrdersHistoryPage() {
   const { t } = useLanguage()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
+  const [thumbnails, setThumbnails] = useState<Map<string, { name: string; imageUrl: string | null }>>(new Map())
   const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<'active' | 'past'>('active')
   const [reorderingId, setReorderingId] = useState<string | null>(null)
   const [reorderNotice, setReorderNotice] = useState<string | null>(null)
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null)
@@ -47,8 +55,19 @@ export default function OrdersHistoryPage() {
     fetchCustomerOrders(user.id).then((list) => {
       setOrders(list)
       setLoading(false)
+      fetchOrderThumbnails(list.map((o) => o.id)).then(setThumbnails)
     })
   }, [user, authLoading, router])
+
+  const active = orders.filter((o) => !ORDER_TERMINAL_STATUSES.includes(o.status as OrderStatus) && o.status !== 'delivered')
+  const past = orders.filter((o) => o.status === 'delivered' || ORDER_TERMINAL_STATUSES.includes(o.status as OrderStatus))
+
+  // Si no hay nada en curso, no tiene caso aterrizar en una pestaña
+  // vacía — se muestra el historial directo.
+  useEffect(() => {
+    if (!loading && active.length === 0 && past.length > 0) setTab('past')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr una vez, al terminar de cargar
+  }, [loading])
 
   async function handleReorder(order: Order) {
     setReorderingId(order.id)
@@ -69,64 +88,69 @@ export default function OrdersHistoryPage() {
     }
   }
 
-  if (authLoading || loading) return <p className="py-16 text-center text-sm text-ink-400">{t('common.loading')}</p>
-
-  const active = orders.filter((o) => !ORDER_TERMINAL_STATUSES.includes(o.status as OrderStatus) && o.status !== 'delivered')
-  const past = orders.filter((o) => o.status === 'delivered')
-  const cancelled = orders.filter((o) => ORDER_TERMINAL_STATUSES.includes(o.status as OrderStatus))
+  if (authLoading || loading) return <p className="py-16 text-center text-sm text-muted-foreground">{t('common.loading')}</p>
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('orderHistory.title')}</h1>
-        <p className="text-sm text-ink-400">{t('orderHistory.subtitle')}</p>
+        <h1 className="text-2xl font-extrabold text-foreground">{t('orderHistory.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('orderHistory.subtitle')}</p>
       </div>
 
       {reorderNotice && (
-        <p role="status" className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-warning-500">
+        <p role="status" className="rounded-2xl border border-warning-500/30 bg-warning-500/10 p-3 text-xs font-semibold text-warning-300">
           {reorderNotice}
         </p>
       )}
 
       {orders.length === 0 ? (
-        <Card className="flex flex-col items-center gap-3 p-10 text-center">
-          <ClipboardList size={28} className="text-ink-200" aria-hidden="true" />
-          <p className="text-sm text-ink-400">{t('orderHistory.noOrdersYet')}</p>
-          <Button onClick={() => router.push('/menu')}>{t('checkout.seeMenu')}</Button>
-        </Card>
+        <EmptyState
+          icon={<ClipboardList size={28} aria-hidden="true" />}
+          message={t('orderHistory.noOrdersYet')}
+          action={<Button onClick={() => router.push('/menu')}>{t('checkout.seeMenu')}</Button>}
+        />
       ) : (
-        <>
-          {active.length > 0 && (
-            <OrderSection
-              title={t('orderHistory.sectionActive')}
-              orders={active}
-              onReorder={handleReorder}
-              onViewReceipt={setReceiptOrder}
-              reorderingId={reorderingId}
-              router={router}
-            />
-          )}
-          {past.length > 0 && (
-            <OrderSection
-              title={t('orderHistory.sectionPast')}
-              orders={past}
-              onReorder={handleReorder}
-              onViewReceipt={setReceiptOrder}
-              reorderingId={reorderingId}
-              router={router}
-            />
-          )}
-          {cancelled.length > 0 && (
-            <OrderSection
-              title={t('orderHistory.sectionCancelled')}
-              orders={cancelled}
-              onReorder={handleReorder}
-              onViewReceipt={setReceiptOrder}
-              reorderingId={reorderingId}
-              router={router}
-            />
-          )}
-        </>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as 'active' | 'past')}>
+          <TabsList>
+            <TabsTrigger value="active">
+              {t('orderHistory.sectionActive')}
+              {active.length > 0 && ` · ${active.length}`}
+            </TabsTrigger>
+            <TabsTrigger value="past">{t('orderHistory.sectionPast')}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active">
+            {active.length === 0 ? (
+              <EmptyState icon={<ClipboardList size={28} aria-hidden="true" />} message={t('orderHistory.emptyActive')} />
+            ) : (
+              <div className="space-y-3">
+                {active.map((order) => (
+                  <ActiveOrderCard key={order.id} order={order} thumb={thumbnails.get(order.id)} router={router} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="past">
+            {past.length === 0 ? (
+              <EmptyState icon={<ClipboardList size={28} aria-hidden="true" />} message={t('orderHistory.emptyPast')} />
+            ) : (
+              <div className="space-y-2">
+                {past.map((order) => (
+                  <PastOrderCard
+                    key={order.id}
+                    order={order}
+                    thumb={thumbnails.get(order.id)}
+                    router={router}
+                    onReorder={handleReorder}
+                    onViewReceipt={setReceiptOrder}
+                    reorderingId={reorderingId}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       <ReceiptDialog order={receiptOrder} onOpenChange={(open) => !open && setReceiptOrder(null)} />
@@ -134,63 +158,87 @@ export default function OrdersHistoryPage() {
   )
 }
 
-function OrderSection({
-  title,
-  orders,
-  onReorder,
-  onViewReceipt,
-  reorderingId,
+function ActiveOrderCard({
+  order,
+  thumb,
   router,
 }: {
-  title: string
-  orders: Order[]
-  onReorder: (o: Order) => void
-  onViewReceipt: (o: Order) => void
-  reorderingId: string | null
+  order: Order
+  thumb: OrderThumb
   router: ReturnType<typeof useRouter>
 }) {
   const { t } = useLanguage()
+  const status = order.status as OrderStatus
   return (
-    <section>
-      <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-400">{title}</h2>
-      <div className="space-y-3">
-        {orders.map((order) => (
-          <Card key={order.id} className="p-4">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => router.push(`/order?id=${order.id}`)}
-                className="text-left"
-              >
-                <p className="text-sm font-bold text-ink-900 hover:underline">
-                  {t('orderHistory.orderPrefix')} #{order.order_number}
-                </p>
-                <p className="text-xs text-ink-400">{formatDate(order.created_at)}</p>
-              </button>
-              <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>
-                {t(`orderStatus.${order.status as OrderStatus}`)}
-              </Badge>
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <span className="text-sm font-extrabold text-ink-900">{formatCurrency(order.total)}</span>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" onClick={() => onViewReceipt(order)}>
-                  <Receipt size={14} aria-hidden="true" />
-                  {t('receipt.viewReceipt')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => onReorder(order)}
-                  disabled={reorderingId === order.id}
-                >
-                  <RotateCcw size={14} aria-hidden="true" />
-                  {reorderingId === order.id ? t('orderHistory.adding') : t('orderHistory.reorder')}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
+    <button
+      onClick={() => router.push(`/order?id=${order.id}`)}
+      className="block w-full text-left"
+      aria-label={t('orderHistory.viewDetails', { number: order.order_number })}
+    >
+      {/* Prioridad visual real: borde + fondo con tinte de marca y un
+          punto pulsante — distinto de las tarjetas compactas de "Anteriores". */}
+      <Card className="flex items-center gap-3 border-brand-500/30 bg-brand-500/5 p-4 shadow-card transition hover:border-brand-500/50 active:scale-[0.99]">
+        <ItemThumb name={thumb?.name ?? BRAND_NAME} imageUrl={thumb?.imageUrl ?? null} size="md" className="shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="truncate text-sm font-bold text-foreground">{BRAND_NAME}</p>
+            <Badge variant={STATUS_VARIANT[status]}>{t(`orderStatus.${status}`)}</Badge>
+          </div>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {t('orderHistory.orderPrefix')} #{order.order_number} · {formatDate(order.created_at)}
+          </p>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-brand-500" aria-hidden="true" />
+            <span className="text-xs font-bold text-brand-400">{formatCurrency(order.total)}</span>
+          </div>
+        </div>
+        <ChevronRight size={18} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+      </Card>
+    </button>
+  )
+}
+
+function PastOrderCard({
+  order,
+  thumb,
+  router,
+  onReorder,
+  onViewReceipt,
+  reorderingId,
+}: {
+  order: Order
+  thumb: OrderThumb
+  router: ReturnType<typeof useRouter>
+  onReorder: (o: Order) => void
+  onViewReceipt: (o: Order) => void
+  reorderingId: string | null
+}) {
+  const { t } = useLanguage()
+  const status = order.status as OrderStatus
+  return (
+    <Card className="p-3">
+      <button onClick={() => router.push(`/order?id=${order.id}`)} className="flex w-full items-center gap-3 text-left">
+        <ItemThumb name={thumb?.name ?? BRAND_NAME} imageUrl={thumb?.imageUrl ?? null} size="sm" className="shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold text-foreground">{BRAND_NAME}</p>
+          <p className="truncate text-xs text-muted-foreground">{formatDate(order.created_at)}</p>
+        </div>
+        <Badge variant={STATUS_VARIANT[status]} className="hidden shrink-0 sm:inline-flex">
+          {t(`orderStatus.${status}`)}
+        </Badge>
+        <span className="shrink-0 text-sm font-extrabold text-foreground">{formatCurrency(order.total)}</span>
+        <ChevronRight size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+      </button>
+      <div className="mt-2 flex items-center gap-2 border-t border-border pt-2">
+        <Button size="sm" variant="ghost" onClick={() => onViewReceipt(order)}>
+          <Receipt size={14} aria-hidden="true" />
+          {t('receipt.viewReceipt')}
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => onReorder(order)} disabled={reorderingId === order.id}>
+          <RotateCcw size={14} aria-hidden="true" />
+          {reorderingId === order.id ? t('orderHistory.adding') : t('orderHistory.reorder')}
+        </Button>
       </div>
-    </section>
+    </Card>
   )
 }

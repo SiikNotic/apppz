@@ -112,29 +112,29 @@ export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }:
       <DialogContent className="max-w-sm">
         <div className="p-6">
           {checking ? (
-            <p className="py-6 text-center text-sm text-ink-400">{t('common.loading')}</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t('common.loading')}</p>
           ) : existingReport ? (
             <>
               <div className="mb-3 flex items-center justify-between">
-                <DialogTitle className="text-lg font-extrabold text-ink-900">{t('sharedChat.yourReport')}</DialogTitle>
+                <DialogTitle className="text-lg font-extrabold text-foreground">{t('sharedChat.yourReport')}</DialogTitle>
                 <Badge variant={existingReport.status === 'resolved' ? 'success' : 'warning'}>
                   {STATUS_KEYS[existingReport.status] ? t(STATUS_KEYS[existingReport.status]) : existingReport.status}
                 </Badge>
               </div>
-              <p className="mb-3 text-xs text-ink-400">
+              <p className="mb-3 text-xs text-muted-foreground">
                 {CATEGORY_KEYS[existingReport.category] ? t(CATEGORY_KEYS[existingReport.category]) : existingReport.category}
                 {existingReport.description ? ` — ${existingReport.description}` : ''}
               </p>
               {customerId ? (
                 <SupportChatThread reportId={existingReport.id} currentUserId={customerId} isStaff={false} />
               ) : (
-                <p className="text-xs text-ink-400">{t('sharedChat.loginToChat')}</p>
+                <p className="text-xs text-muted-foreground">{t('sharedChat.loginToChat')}</p>
               )}
             </>
           ) : (
             <>
-              <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">{t('sharedChat.reportProblemTitle')}</DialogTitle>
-              <p className="mb-4 text-sm text-ink-400">{t('sharedChat.reportProblemSubtitle')}</p>
+              <DialogTitle className="mb-1 text-lg font-extrabold text-foreground">{t('sharedChat.reportProblemTitle')}</DialogTitle>
+              <p className="mb-4 text-sm text-muted-foreground">{t('sharedChat.reportProblemSubtitle')}</p>
 
               <div className="mb-4">
                 <Label>{t('sharedChat.category')}</Label>
@@ -145,10 +145,10 @@ export function ReportProblemDialog({ open, onOpenChange, orderId, customerId }:
                       type="button"
                       onClick={() => setCategory(key)}
                       aria-pressed={category === key}
-                      className={`rounded-2xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition ${
+                      className={`rounded-2xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition active:scale-[0.98] ${
                         category === key
-                          ? 'border-brand-500 bg-brand-50 text-brand-900'
-                          : 'border-ink-100 bg-white text-ink-600 hover:border-brand-200'
+                          ? 'border-brand-500 bg-brand-500/10 text-foreground'
+                          : 'border-border bg-card text-muted-foreground hover:border-border-strong'
                       }`}
                     >
                       {t(CATEGORY_KEYS[key])}

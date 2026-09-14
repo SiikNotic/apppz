@@ -13,4 +13,8 @@
 // que el build de CI la tenga disponible — ver .github/workflows/*.yml.
 export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
 
-export const MAPBOX_STYLE = 'mapbox://styles/mapbox/streets-v12'
+// Estilo oscuro: la app entera es dark-first desde el sistema de diseño
+// v3 — un mapa de calles claro (el default de Mapbox) desentonaba fuerte
+// en medio de pantallas oscuras. Mismo Mapbox, mismos datos reales de
+// calles/geocoding, solo cambia el tema visual del renderizado.
+export const MAPBOX_STYLE = 'mapbox://styles/mapbox/dark-v11'

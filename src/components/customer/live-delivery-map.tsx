@@ -1,16 +1,23 @@
 'use client'
 
-// Mapa en vivo de la entrega: pines fijos de restaurante y destino, más
-// un marcador de repartidor que se mueve conforme llegan actualizaciones
-// de drivers.current_lat/current_lng (ver useDriverLocationSharing en el
-// lado del repartidor). La línea punteada entre los tres puntos es una
-// línea recta ilustrativa, NO una ruta real por calles — trazar la ruta
-// real requeriría una API de enrutamiento aparte (costo/proveedor extra
-// que no se justificaba solo para esto).
+// Mapa en vivo de la entrega — la pieza visual central de la pantalla de
+// seguimiento. Pines fijos de restaurante y destino, más un marcador de
+// repartidor que se mueve conforme llegan actualizaciones de
+// drivers.current_lat/current_lng (ver useDriverLocationSharing en el
+// lado del repartidor, ya throttleado a ~5s). La línea entre los tres
+// puntos es una línea recta ilustrativa, NO una ruta real por calles —
+// trazar la ruta real requeriría una API de enrutamiento aparte
+// (costo/proveedor extra que no se justificaba solo para esto).
 //
-// Usa Mapbox GL JS (ver src/lib/mapbox.ts para el token). Se importa
-// siempre vía next/dynamic con ssr:false (ver order/page.tsx) porque
-// Mapbox GL necesita `window`, y esta app usa export estático —
+// La cámara solo se reencuadra una vez al llegar la primera posición del
+// repartidor y de nuevo si cambian los pines de restaurante/destino —
+// nunca en cada tick de GPS (mismo criterio que driver-route-map.tsx del
+// lado del conductor): reencuadrar cada 5s se sentía nervioso y no aporta
+// nada si el cliente ya está mirando el mapa.
+//
+// Usa Mapbox GL JS (ver src/lib/mapbox.ts para el token/estilo). Se
+// importa siempre vía next/dynamic con ssr:false (ver order/page.tsx)
+// porque Mapbox GL necesita `window`, y esta app usa export estático —
 // evaluarlo durante el build rompería el prerenderizado.
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
@@ -30,6 +37,7 @@ interface LiveDeliveryMapProps {
   driverId: string
   restaurant: LatLng | null
   destination: LatLng | null
+  heightClassName?: string
 }
 
 function markerEl(className: string, emoji?: string) {
@@ -41,7 +49,7 @@ function markerEl(className: string, emoji?: string) {
 
 const ROUTE_SOURCE_ID = 'live-delivery-route'
 
-export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliveryMapProps) {
+export function LiveDeliveryMap({ driverId, restaurant, destination, heightClassName = 'h-72 lg:h-96' }: LiveDeliveryMapProps) {
   const { t } = useLanguage()
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -49,12 +57,18 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
   const restaurantMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null)
+  const driverPosRef = useRef<LatLng | null>(null)
+  const hasFitRef = useRef(false)
   const [driverPos, setDriverPos] = useState<LatLng | null>(null)
   const [mapBroken, setMapBroken] = useState(false)
   // El token puede estar bien pero el navegador no soportar WebGL (o
   // bloquearlo) — mapboxgl.supported() lo detecta antes de intentar
   // crear el mapa, en vez de dejar un canvas en blanco sin explicación.
   const canRenderMap = Boolean(MAPBOX_TOKEN) && mapboxgl.supported() && !mapBroken
+
+  useEffect(() => {
+    driverPosRef.current = driverPos
+  }, [driverPos])
 
   // Posición inicial (última conocida en la DB) + suscripción en vivo.
   useEffect(() => {
@@ -121,7 +135,7 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
         id: ROUTE_SOURCE_ID,
         type: 'line',
         source: ROUTE_SOURCE_ID,
-        paint: { 'line-color': '#f2601c', 'line-width': 3, 'line-dasharray': [2, 2] },
+        paint: { 'line-color': '#ff4433', 'line-width': 3, 'line-dasharray': [2, 2] },
       })
     })
     mapRef.current = map
@@ -142,14 +156,14 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
     destinationMarkerRef.current?.remove()
     restaurantMarkerRef.current = restaurant
       ? new mapboxgl.Marker({
-          element: markerEl('grid h-4 w-4 place-items-center rounded-full bg-brand-500 ring-2 ring-white shadow-pop'),
+          element: markerEl('grid h-9 w-9 place-items-center rounded-full bg-brand-500 text-base shadow-pop ring-2 ring-white', '🏬'),
         })
           .setLngLat([restaurant.lng, restaurant.lat])
           .addTo(map)
       : null
     destinationMarkerRef.current = destination
       ? new mapboxgl.Marker({
-          element: markerEl('grid h-4 w-4 place-items-center rounded-full bg-ink-900 ring-2 ring-white shadow-pop'),
+          element: markerEl('grid h-9 w-9 place-items-center rounded-full bg-white text-base shadow-pop ring-2 ring-brand-500', '📍'),
         })
           .setLngLat([destination.lng, destination.lat])
           .addTo(map)
@@ -160,56 +174,85 @@ export function LiveDeliveryMap({ driverId, restaurant, destination }: LiveDeliv
     }
   }, [restaurant, destination])
 
-  // Marcador móvil del repartidor + línea punteada + encuadre automático.
+  // Redibuja la línea (restaurante → repartidor → destino) — barato, solo
+  // actualiza datos de una fuente GeoJSON. Devuelve los puntos usados por
+  // si además hace falta reencuadrar la cámara.
+  function redrawLine(): [number, number][] {
+    const map = mapRef.current
+    const pos = driverPosRef.current
+    const points: [number, number][] = [
+      restaurant ? ([restaurant.lng, restaurant.lat] as [number, number]) : null,
+      pos ? ([pos.lng, pos.lat] as [number, number]) : null,
+      destination ? ([destination.lng, destination.lat] as [number, number]) : null,
+    ].filter((p): p is [number, number] => p !== null)
+    function draw() {
+      const source = map!.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
+      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points } })
+    }
+    if (map) {
+      if (loadedRef.current) draw()
+      else map.once('load', draw)
+    }
+    return points
+  }
+
+  function fitToPoints(points: [number, number][]) {
+    const map = mapRef.current
+    if (!map) return
+    if (points.length > 1) {
+      const bounds = points.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(points[0], points[0]))
+      map.fitBounds(bounds, { padding: 48, maxZoom: 15 })
+    } else if (points.length === 1) {
+      map.easeTo({ center: points[0], zoom: 14 })
+    }
+  }
+
+  // Marcador móvil del repartidor — corre en cada actualización de GPS
+  // (ya throttleada a ~5s). Solo mueve el pin y redibuja la línea; NUNCA
+  // toca la cámara acá (ver nota grande arriba del archivo).
   useEffect(() => {
     const map = mapRef.current
     if (!map || !driverPos) return
-
     if (!driverMarkerRef.current) {
       driverMarkerRef.current = new mapboxgl.Marker({
-        element: markerEl('grid h-9 w-9 place-items-center rounded-full bg-brand-500 text-lg shadow-pop', '🛵'),
+        element: markerEl('grid h-9 w-9 place-items-center rounded-full bg-brand-500 text-lg shadow-pop ring-2 ring-white', '🛵'),
       })
         .setLngLat([driverPos.lng, driverPos.lat])
         .addTo(map)
     } else {
       driverMarkerRef.current.setLngLat([driverPos.lng, driverPos.lat])
     }
+    redrawLine()
+  }, [driverPos])
 
-    const points: [number, number][] = [
-      restaurant ? ([restaurant.lng, restaurant.lat] as [number, number]) : null,
-      [driverPos.lng, driverPos.lat],
-      destination ? ([destination.lng, destination.lat] as [number, number]) : null,
-    ].filter((p): p is [number, number] => p !== null)
+  // Encuadre inicial — en cuanto se conoce la posición del repartidor por
+  // primera vez.
+  useEffect(() => {
+    if (!driverPos || hasFitRef.current || !mapRef.current) return
+    hasFitRef.current = true
+    fitToPoints(redrawLine())
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al llegar la primera posición
+  }, [driverPos])
 
-    function drawRoute() {
-      // map ya se validó no-null arriba — TS no propaga ese narrowing
-      // dentro de una función anidada, de ahí el non-null assertion.
-      const source = map!.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
-      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points } })
-    }
-    if (loadedRef.current) drawRoute()
-    else map.once('load', drawRoute)
-
-    if (points.length > 1) {
-      const bounds = points.reduce(
-        (b, p) => b.extend(p),
-        new mapboxgl.LngLatBounds(points[0], points[0])
-      )
-      map.fitBounds(bounds, { padding: 40, maxZoom: 15 })
-    }
-  }, [driverPos, restaurant, destination])
+  // Reencuadre cuando cambia QUÉ hay que mostrar (restaurante o destino)
+  // — no en cada tick de GPS.
+  useEffect(() => {
+    if (!hasFitRef.current) return
+    fitToPoints(redrawLine())
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- redrawLine/fitToPoints se recrean cada render, no deben disparar esto
+  }, [restaurant, destination])
 
   if (!canRenderMap) {
     return (
-      <div className="grid h-64 w-full place-items-center rounded-3xl border border-border bg-muted p-4 text-center text-xs text-muted-foreground">
+      <div className={`grid w-full place-items-center rounded-2xl border border-border bg-muted p-4 text-center text-xs text-muted-foreground ${heightClassName}`}>
         {t('deliveryTracking.mapNotConfigured')}
       </div>
     )
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-border">
-      <div ref={containerRef} className="h-64 w-full" />
+    <div className="overflow-hidden rounded-2xl border border-border shadow-card">
+      <div ref={containerRef} className={`w-full ${heightClassName}`} />
       {!driverPos && (
         <p className="bg-card p-3 text-center text-xs text-muted-foreground">{t('deliveryTracking.waitingLocation')}</p>
       )}

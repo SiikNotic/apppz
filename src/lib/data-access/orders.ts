@@ -126,3 +126,29 @@ export async function fetchCustomerOrders(customerId: string): Promise<Order[]> 
   if (error) throw error
   return data ?? []
 }
+
+/**
+ * Una imagen representativa por pedido (el primer producto real, vía
+ * order_items.menu_item_id → menu_items.image_url) para la miniatura de
+ * "Mis pedidos" — nunca un placeholder inventado. Si el producto ya no
+ * existe en el catálogo (menu_item_id null, o borrado) o no tiene foto,
+ * el llamador cae al ícono genérico de ItemThumb, igual que en todos
+ * lados más — no se inventa ninguna imagen acá.
+ */
+export async function fetchOrderThumbnails(
+  orderIds: string[]
+): Promise<Map<string, { name: string; imageUrl: string | null }>> {
+  const map = new Map<string, { name: string; imageUrl: string | null }>()
+  if (orderIds.length === 0) return map
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('order_id, item_name, menu_items(image_url)')
+    .in('order_id', orderIds)
+  if (error) throw error
+  for (const row of data ?? []) {
+    if (map.has(row.order_id)) continue // el primer item real de cada pedido, no todos
+    const menuItem = Array.isArray(row.menu_items) ? row.menu_items[0] : row.menu_items
+    map.set(row.order_id, { name: row.item_name, imageUrl: menuItem?.image_url ?? null })
+  }
+  return map
+}
