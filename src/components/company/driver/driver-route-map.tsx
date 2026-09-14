@@ -53,8 +53,17 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const pickupMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const stopMarkersRef = useRef<mapboxgl.Marker[]>([])
+  // Última posición conocida, en un ref además de venir por prop — la
+  // línea de ruta se redibuja leyendo esto en vez de depender de
+  // `driverPos` en el efecto de encuadre (ver más abajo, por qué).
+  const driverPosRef = useRef<LatLng | null>(driverPos)
+  const hasFitRef = useRef(false)
   const [mapBroken, setMapBroken] = useState(false)
   const canRenderMap = Boolean(MAPBOX_TOKEN) && mapboxgl.supported() && !mapBroken
+
+  useEffect(() => {
+    driverPosRef.current = driverPos
+  }, [driverPos])
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN || !mapboxgl.supported()) return
@@ -132,12 +141,48 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stops ya viene recalculado por identidad en cada cambio real
   }, [stops])
 
-  // Marcador del propio conductor + línea de ruta (él → recogida →
-  // paradas en orden) + encuadre automático a todos los puntos visibles.
+  // Redibuja la línea (él → recogida → paradas en orden) con los puntos
+  // vigentes — barato (solo actualiza datos de una fuente GeoJSON), a
+  // diferencia de mover la cámara. Devuelve los puntos usados, por si el
+  // que llama decide que además hace falta reencuadrar.
+  function redrawLine(): [number, number][] {
+    const map = mapRef.current
+    const pos = driverPosRef.current
+    const points: [number, number][] = [
+      pos ? ([pos.lng, pos.lat] as [number, number]) : null,
+      pickup ? ([pickup.lng, pickup.lat] as [number, number]) : null,
+      ...stops.map((s) => [s.lng, s.lat] as [number, number]),
+    ].filter((p): p is [number, number] => p !== null)
+    function draw() {
+      const source = map!.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
+      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points } })
+    }
+    if (map) {
+      if (loadedRef.current) draw()
+      else map.once('load', draw)
+    }
+    return points
+  }
+
+  function fitToPoints(points: [number, number][]) {
+    const map = mapRef.current
+    if (!map) return
+    if (points.length > 1) {
+      const bounds = points.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(points[0], points[0]))
+      map.fitBounds(bounds, { padding: 48, maxZoom: 15 })
+    } else if (points.length === 1) {
+      map.easeTo({ center: points[0], zoom: 14 })
+    }
+  }
+
+  // Marcador del propio conductor — corre en cada actualización de GPS
+  // (ya viene throttleada a ~5s, ver useDriverLocationSharing). Solo
+  // mueve el pin y redibuja la línea; NUNCA toca la cámara acá — reanimar
+  // el WebGL (fitBounds) a la frecuencia del GPS es lo que podía tumbar
+  // la pestaña en celulares de gama media.
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-
     if (driverPos) {
       if (!driverMarkerRef.current) {
         driverMarkerRef.current = new mapboxgl.Marker({
@@ -152,27 +197,27 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
       driverMarkerRef.current?.remove()
       driverMarkerRef.current = null
     }
+    redrawLine()
+  }, [driverPos])
 
-    const points: [number, number][] = [
-      driverPos ? ([driverPos.lng, driverPos.lat] as [number, number]) : null,
-      pickup ? ([pickup.lng, pickup.lat] as [number, number]) : null,
-      ...stops.map((s) => [s.lng, s.lat] as [number, number]),
-    ].filter((p): p is [number, number] => p !== null)
+  // Encuadre inicial — en cuanto se conoce la posición del conductor por
+  // primera vez, para no arrancar centrado en el default genérico.
+  useEffect(() => {
+    if (!driverPos || hasFitRef.current || !mapRef.current) return
+    hasFitRef.current = true
+    fitToPoints(redrawLine())
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al llegar la primera posición
+  }, [driverPos])
 
-    function draw() {
-      const source = map!.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
-      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points } })
-    }
-    if (loadedRef.current) draw()
-    else map.once('load', draw)
-
-    if (points.length > 1) {
-      const bounds = points.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(points[0], points[0]))
-      map.fitBounds(bounds, { padding: 48, maxZoom: 15 })
-    } else if (points.length === 1) {
-      map.easeTo({ center: points[0], zoom: 14 })
-    }
-  }, [driverPos, pickup, stops])
+  // Reencuadre cuando cambia QUÉ hay que mostrar (recogida o la cola) —
+  // no en cada tick de GPS (ver nota arriba). Si el primer encuadre
+  // todavía no ocurrió (sin posición aún), lo salta: el efecto de arriba
+  // ya se encarga en cuanto llegue.
+  useEffect(() => {
+    if (!hasFitRef.current) return
+    fitToPoints(redrawLine())
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- redrawLine/fitToPoints se recrean cada render, no deben disparar esto
+  }, [pickup, stops])
 
   if (!canRenderMap) {
     return (

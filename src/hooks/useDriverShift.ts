@@ -8,7 +8,7 @@
 // hook. Compartido entre /company/driver (antes tenía esta lógica en
 // línea) y el botón de entrada/salida del menú lateral (CompanyChrome),
 // para no duplicarla ni fichar en dos lugares independientes.
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { DriverShift } from '@/lib/types'
 
@@ -16,6 +16,12 @@ export function useDriverShift(userId: string | undefined) {
   const [openShift, setOpenShift] = useState<DriverShift | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  // Este hook se monta dos veces a la vez con el mismo userId (el botón
+  // del menú lateral en CompanyChrome y la tarjeta de estado en
+  // /company/driver) — un id de instancia propio evita que ambas
+  // suscripciones Realtime compitan por el mismo nombre de canal.
+  // useId (no Math.random) para que sea puro durante el render.
+  const instanceId = useId()
 
   async function load(id: string) {
     const { data } = await supabase
@@ -35,7 +41,7 @@ export function useDriverShift(userId: string | undefined) {
     }
     load(userId)
     const channel = supabase
-      .channel(`driver-shift-${userId}`)
+      .channel(`driver-shift-${userId}-${instanceId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'driver_shifts', filter: `driver_id=eq.${userId}` },

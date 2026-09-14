@@ -50,11 +50,18 @@ export function useDriverLocationSharing(
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         setStatus('sharing')
-        setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-        if (!active) return
+        // Throttleado igual que la escritura a la base — no solo por
+        // tráfico de red, sino porque cada cambio de `position` hace que
+        // DriverRouteMap mueva la cámara del mapa (fitBounds/easeTo).
+        // watchPosition con enableHighAccuracy puede disparar varias veces
+        // por segundo en algunos teléfonos; sin este límite, el mapa
+        // reanima la cámara WebGL a esa misma frecuencia — de ahí un tab
+        // que se cae en celulares de gama media.
         const now = Date.now()
         if (now - lastSentRef.current < MIN_INTERVAL_MS) return
         lastSentRef.current = now
+        setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        if (!active) return
         supabase
           .from('drivers')
           .update({ current_lat: pos.coords.latitude, current_lng: pos.coords.longitude })
