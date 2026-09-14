@@ -215,7 +215,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                       <button
                         onClick={() => handleDelete(item)}
                         aria-label={t('rewardsAdmin.deleteRewardAria', { name: item.name })}
-                        className="grid h-8 w-8 place-items-center rounded-full bg-card text-danger-500 hover:bg-red-50"
+                        className="grid h-8 w-8 place-items-center rounded-full bg-card text-danger-500 hover:bg-danger-500/15"
                       >
                         <Trash2 size={14} aria-hidden="true" />
                       </button>
@@ -267,7 +267,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                             <button
                               onClick={() => handleDelete(item)}
                               aria-label={t('rewardsAdmin.deleteRewardAria', { name: item.name })}
-                              className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                              className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                             >
                               <Trash2 size={14} aria-hidden="true" />
                             </button>
@@ -306,7 +306,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-sm">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {form.id ? t('rewardsAdmin.editRewardTitle') : t('rewardsAdmin.newRewardTitle')}
             </DialogTitle>
             <div className="space-y-3">
@@ -380,7 +380,7 @@ export function RewardCatalogManager({ canManage }: { canManage: boolean }) {
                   />
                 </div>
               </div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+              <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Checkbox
                   checked={form.active}
                   onCheckedChange={(checked) => setForm({ ...form, active: checked === true })}

@@ -163,7 +163,7 @@ export default function PromotionsPage() {
             {promotions.map((promo) => (
               <Card key={promo.id} className="space-y-3 p-4">
                 <div className="flex items-start gap-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-900">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-500/15 text-brand-400">
                     <Tag size={16} aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -194,7 +194,7 @@ export default function PromotionsPage() {
                     <button
                       onClick={() => handleDelete(promo)}
                       aria-label={t('promotionsAdmin.deleteAria', { name: promo.name })}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                     >
                       <Trash2 size={14} aria-hidden="true" />
                     </button>
@@ -252,7 +252,7 @@ export default function PromotionsPage() {
                           <button
                             onClick={() => handleDelete(promo)}
                             aria-label={t('promotionsAdmin.deleteAria', { name: promo.name })}
-                            className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                            className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                           >
                             <Trash2 size={14} aria-hidden="true" />
                           </button>
@@ -272,7 +272,7 @@ export default function PromotionsPage() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {editingId ? t('promotionsAdmin.editPromoTitle') : t('promotionsAdmin.newPromoTitle')}
             </DialogTitle>
             <div className="space-y-3">

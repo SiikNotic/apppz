@@ -149,7 +149,7 @@ export function CategoriesTab() {
                   </Button>
                   <button
                     onClick={() => handleDelete(cat)}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                   >
                     <Trash2 size={14} aria-hidden="true" />
                   </button>
@@ -196,7 +196,7 @@ export function CategoriesTab() {
                         </button>
                         <button
                           onClick={() => handleDelete(cat)}
-                          className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                          className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                         >
                           <Trash2 size={14} aria-hidden="true" />
                         </button>
@@ -213,7 +213,7 @@ export function CategoriesTab() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-sm">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {editingId ? t('menuMgmt.editCategoryTitle') : t('menuMgmt.newCategoryTitle')}
             </DialogTitle>
             <div className="space-y-3">
@@ -258,7 +258,7 @@ export function CategoriesTab() {
                         </>
                       )}
                     </Button>
-                    <p className="text-[11px] text-ink-400">{t('menuMgmt.fileHint')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('menuMgmt.fileHint')}</p>
                     {uploadError && (
                       <p role="alert" className="text-xs font-semibold text-danger-500">
                         {uploadError}

@@ -213,15 +213,25 @@ export default function ReportsPage() {
           </div>
 
           <Card className="p-5">
-            <h2 className="mb-4 text-base font-extrabold text-ink-900">{t('analyticsAdmin.salesByDay')}</h2>
+            <h2 className="mb-4 text-base font-extrabold text-foreground">{t('analyticsAdmin.salesByDay')}</h2>
             <div className="h-72 w-full overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailySeries}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1dcbe" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#7a746b" />
-                  <YAxis tick={{ fontSize: 12 }} stroke="#7a746b" width={70} tickFormatter={(v) => formatCurrency(Number(v))} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Bar dataKey="total" fill="#f2601c" radius={[8, 8, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    stroke="var(--muted-foreground)"
+                    axisLine={false}
+                    tickLine={false}
+                    width={70}
+                    tickFormatter={(v) => formatCurrency(Number(v))}
+                  />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                    contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--popover-foreground)' }}
+                  />
+                  <Bar dataKey="total" fill="var(--brand-500)" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -229,7 +239,7 @@ export default function ReportsPage() {
 
           <Card className="p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-base font-extrabold text-ink-900">{t('analyticsAdmin.topProducts')}</h2>
+              <h2 className="text-base font-extrabold text-foreground">{t('analyticsAdmin.topProducts')}</h2>
               {topItems.length > 0 && (
                 <Button size="sm" variant="secondary" onClick={exportTopItemsCsv}>
                   <Download size={14} aria-hidden="true" /> {t('analyticsAdmin.csvShort')}
@@ -238,20 +248,20 @@ export default function ReportsPage() {
             </div>
             <div className="space-y-3">
               {topItems.length === 0 && (
-                <p className="text-sm text-ink-400">{t('analyticsAdmin.noSalesPeriod')}</p>
+                <p className="text-sm text-muted-foreground">{t('analyticsAdmin.noSalesPeriod')}</p>
               )}
               {topItems.map(([name, data], i) => (
                 <div key={name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2.5">
-                    <span className="grid h-6 w-6 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-900">
+                    <span className="grid h-6 w-6 place-items-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-400">
                       {i + 1}
                     </span>
-                    <span className="font-semibold text-ink-900">{name}</span>
-                    <span className="text-xs text-ink-400">
+                    <span className="font-semibold text-foreground">{name}</span>
+                    <span className="text-xs text-muted-foreground">
                       {data.quantity} {t('analyticsAdmin.unitsSuffix')}
                     </span>
                   </div>
-                  <span className="font-bold text-ink-900">{formatCurrency(data.revenue)}</span>
+                  <span className="font-bold text-foreground">{formatCurrency(data.revenue)}</span>
                 </div>
               ))}
             </div>

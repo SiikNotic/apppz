@@ -122,7 +122,7 @@ export default function RewardsSettingsPage() {
       <PageHeader title={t('dashboardNav.rewards')} subtitle={t('rewardsAdmin.subtitle')} />
 
       <Card className="p-6">
-        <h2 className="mb-4 text-sm font-bold text-ink-900">{t('rewardsAdmin.pointsRules')}</h2>
+        <h2 className="mb-4 text-sm font-bold text-foreground">{t('rewardsAdmin.pointsRules')}</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           {Object.entries(settings).map(([key, setting]) => (
             <div key={key}>
@@ -150,7 +150,7 @@ export default function RewardsSettingsPage() {
 
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-ink-900">{t('rewardsAdmin.tiersHeading')}</h2>
+          <h2 className="text-sm font-bold text-foreground">{t('rewardsAdmin.tiersHeading')}</h2>
           {canManage && (
             <Button size="sm" onClick={openCreate}>
               <Plus size={14} aria-hidden="true" /> {t('rewardsAdmin.newTier')}
@@ -159,18 +159,18 @@ export default function RewardsSettingsPage() {
         </div>
         <div className="space-y-3">
           {tiers.map((tier) => (
-            <div key={tier.id} className="flex items-center justify-between rounded-2xl bg-ink-50 p-4">
+            <div key={tier.id} className="flex items-center justify-between rounded-2xl bg-muted p-4">
               <div className="flex items-center gap-3">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-900">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-500/15 text-brand-400">
                   <Gift size={16} aria-hidden="true" />
                 </span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-ink-900">{tier.name}</span>
+                    <span className="text-sm font-bold text-foreground">{tier.name}</span>
                     <Badge variant="brand">{t('rewardsAdmin.ptsPlus', { points: tier.min_lifetime_points })}</Badge>
                   </div>
                   {Array.isArray(tier.benefits) && tier.benefits.length > 0 && (
-                    <p className="text-xs text-ink-400">{(tier.benefits as string[]).join(' · ')}</p>
+                    <p className="text-xs text-muted-foreground">{(tier.benefits as string[]).join(' · ')}</p>
                   )}
                 </div>
               </div>
@@ -179,14 +179,14 @@ export default function RewardsSettingsPage() {
                   <button
                     onClick={() => openEdit(tier)}
                     aria-label={t('rewardsAdmin.editTierAria', { name: tier.name })}
-                    className="grid h-8 w-8 place-items-center rounded-full bg-white text-ink-600 hover:bg-ink-100"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-muted-foreground hover:bg-white/15 hover:text-foreground"
                   >
                     <Pencil size={14} aria-hidden="true" />
                   </button>
                   <button
                     onClick={() => handleDeleteTier(tier)}
                     aria-label={t('rewardsAdmin.deleteTierAria', { name: tier.name })}
-                    className="grid h-8 w-8 place-items-center rounded-full bg-white text-danger-500 hover:bg-red-50"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                   >
                     <Trash2 size={14} aria-hidden="true" />
                   </button>
@@ -200,7 +200,7 @@ export default function RewardsSettingsPage() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-sm">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {editingId ? t('rewardsAdmin.editTierTitle') : t('rewardsAdmin.newTierTitle')}
             </DialogTitle>
             <div className="space-y-3">

@@ -393,7 +393,7 @@ export function ProductsTab() {
                     onClick={() => handleDelete(item)}
                     aria-label={t('productForm.deleteAria', { name: item.name })}
                     title={t('common.delete')}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                   >
                     <Trash2 size={14} aria-hidden="true" />
                   </button>
@@ -466,7 +466,7 @@ export function ProductsTab() {
                           onClick={() => handleDelete(item)}
                           aria-label={t('productForm.deleteAria', { name: item.name })}
                           title={t('common.delete')}
-                          className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                          className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                         >
                           <Trash2 size={14} aria-hidden="true" />
                         </button>
@@ -483,7 +483,7 @@ export function ProductsTab() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-lg">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {form.id ? t('productForm.editProductTitle') : t('productForm.newProductTitle')}
             </DialogTitle>
             <div className="space-y-3">
@@ -572,7 +572,7 @@ export function ProductsTab() {
                         <Sparkles size={14} /> {t('productForm.generateWithAI')}
                       </Button>
                     </div>
-                    <p className="text-[11px] text-ink-400">{t('productForm.fileHint')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('productForm.fileHint')}</p>
                     {uploadError && (
                       <p role="alert" className="text-xs font-semibold text-danger-500">
                         {uploadError}
@@ -582,14 +582,14 @@ export function ProductsTab() {
                 </div>
 
                 {aiPanelOpen && (
-                  <div className="mt-3 space-y-2 rounded-xl border border-ink-100 bg-ink-50/50 p-3">
+                  <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/50 p-3">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="ai-prompt">{t('productForm.describeImage')}</Label>
                       <button
                         type="button"
                         onClick={resetAiPanel}
                         aria-label={t('common.close')}
-                        className="text-ink-400 hover:text-ink-600"
+                        className="text-muted-foreground hover:text-muted-foreground"
                       >
                         <X size={14} />
                       </button>
@@ -638,7 +638,7 @@ export function ProductsTab() {
                       </Button>
                     )}
                     {aiMessage && (
-                      <p role="status" className="text-xs font-semibold text-ink-500">
+                      <p role="status" className="text-xs font-semibold text-muted-foreground">
                         {aiMessage}
                       </p>
                     )}
@@ -646,7 +646,7 @@ export function ProductsTab() {
                 )}
               </div>
 
-              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+              <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Checkbox
                   checked={form.is_customizable_pizza}
                   onCheckedChange={(checked) =>
@@ -665,10 +665,10 @@ export function ProductsTab() {
                     value={form.free_toppings_limit}
                     onChange={(e) => setForm({ ...form, free_toppings_limit: e.target.value })}
                   />
-                  <p className="mt-1 text-[11px] text-ink-400">{t('productForm.freeToppingsHint')}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{t('productForm.freeToppingsHint')}</p>
                 </div>
               )}
-              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+              <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Checkbox
                   checked={form.active}
                   onCheckedChange={(checked) => setForm({ ...form, active: checked === true })}
@@ -677,19 +677,19 @@ export function ProductsTab() {
               </label>
 
               {form.is_customizable_pizza && (
-                <div className="rounded-2xl bg-ink-50 p-3.5">
+                <div className="rounded-2xl bg-muted p-3.5">
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wide text-ink-600">{t('productForm.sizesHeading')}</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('productForm.sizesHeading')}</p>
                     <button
                       onClick={addSizeRow}
-                      className="text-xs font-bold text-brand-900 hover:underline"
+                      className="text-xs font-bold text-brand-400 hover:underline"
                     >
                       {t('productForm.addSize')}
                     </button>
                   </div>
                   <div className="space-y-2">
                     {sizes.map((size, i) => (
-                      <div key={i} className="rounded-xl bg-white p-2.5">
+                      <div key={i} className="rounded-xl bg-card p-2.5">
                         <div className="flex items-center gap-2">
                           <Input
                             placeholder={t('productForm.sizeNamePlaceholder')}
@@ -707,7 +707,7 @@ export function ProductsTab() {
                           />
                           <button
                             onClick={() => removeSizeRow(i)}
-                            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink-50 text-ink-400 hover:text-danger-500"
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-muted-foreground hover:text-danger-500"
                           >
                             <X size={14} />
                           </button>
@@ -733,7 +733,7 @@ export function ProductsTab() {
                       </div>
                     ))}
                     {sizes.length === 0 && (
-                      <p className="text-xs text-ink-400">{t('productForm.addAtLeastOneSize')}</p>
+                      <p className="text-xs text-muted-foreground">{t('productForm.addAtLeastOneSize')}</p>
                     )}
                   </div>
                 </div>

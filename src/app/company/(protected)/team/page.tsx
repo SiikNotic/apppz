@@ -494,7 +494,7 @@ export default function TeamPage() {
                             onClick={() => openTerminate(member)}
                             aria-label={t('teamAdmin.terminateAria', { name: member.full_name || t('teamAdmin.employeeFallback') })}
                             title={t('teamAdmin.terminateTitle')}
-                            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                           >
                             <UserX size={14} aria-hidden="true" />
                           </button>
@@ -514,14 +514,14 @@ export default function TeamPage() {
           <div className="max-h-[85vh] overflow-y-auto p-6">
             {created ? (
               <>
-                <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
+                <DialogTitle className="mb-2 text-lg font-extrabold text-foreground">
                   {t('teamAdmin.accountCreated')}
                 </DialogTitle>
-                <p className="mb-4 text-sm text-ink-600">
+                <p className="mb-4 text-sm text-muted-foreground">
                   {t('teamAdmin.shareCredentialsPre')}{' '}
                   <span className="font-semibold">/company/login</span> {t('teamAdmin.shareCredentialsPost')}
                 </p>
-                <div className="space-y-2 rounded-2xl bg-ink-50 p-4 text-sm">
+                <div className="space-y-2 rounded-2xl bg-muted p-4 text-sm">
                   <p>
                     <span className="font-semibold">{t('teamAdmin.emailLabel')}</span> {created.email}
                   </p>
@@ -535,7 +535,7 @@ export default function TeamPage() {
               </>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-3">
-                <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">
+                <DialogTitle className="mb-1 text-lg font-extrabold text-foreground">
                   {t('teamAdmin.newStaffAccount')}
                 </DialogTitle>
                 <div>
@@ -560,7 +560,7 @@ export default function TeamPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
-                  <p className="mt-1 text-[11px] text-ink-400">{t('teamAdmin.tempPasswordHint')}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{t('teamAdmin.tempPasswordHint')}</p>
                 </div>
                 <div>
                   <Label>{t('teamAdmin.roleLabel')}</Label>
@@ -576,12 +576,12 @@ export default function TeamPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="mt-1 text-[11px] text-ink-400">
+                  <p className="mt-1 text-[11px] text-muted-foreground">
                     {ROLE_OPTIONS.find((r) => r.value === role)?.hint}
                   </p>
                 </div>
 
-                <div className="border-t border-ink-100 pt-3">
+                <div className="border-t border-border pt-3">
                   <EmployeeDetailsForm role={role} values={extras} onChange={(patch) => setExtras((prev) => ({ ...prev, ...patch }))} />
                 </div>
 
@@ -605,10 +605,10 @@ export default function TeamPage() {
           <div className="p-6">
             {statusAction === 'terminate' ? (
               <>
-                <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
+                <DialogTitle className="mb-2 text-lg font-extrabold text-foreground">
                   {t('teamAdmin.confirmTerminateTitle', { name: statusTarget?.full_name || t('teamAdmin.personFallback') })}
                 </DialogTitle>
-                <p className="mb-4 text-sm text-ink-600">{t('teamAdmin.confirmTerminateBody')}</p>
+                <p className="mb-4 text-sm text-muted-foreground">{t('teamAdmin.confirmTerminateBody')}</p>
                 {statusError && (
                   <p role="alert" className="mb-3 text-xs font-semibold text-danger-500">
                     {statusError}
@@ -630,12 +630,12 @@ export default function TeamPage() {
               </>
             ) : (
               <>
-                <DialogTitle className="mb-2 text-lg font-extrabold text-ink-900">
+                <DialogTitle className="mb-2 text-lg font-extrabold text-foreground">
                   {statusAction === 'reactivate'
                     ? t('teamAdmin.reactivatePersonTitle', { name: statusTarget?.full_name || t('teamAdmin.personFallback') })
                     : t('teamAdmin.changeRolePersonTitle', { name: statusTarget?.full_name || t('teamAdmin.personFallback') })}
                 </DialogTitle>
-                <p className="mb-4 text-sm text-ink-600">
+                <p className="mb-4 text-sm text-muted-foreground">
                   {statusAction === 'reactivate' ? t('teamAdmin.reactivateBody') : t('teamAdmin.changeRoleBody')}
                 </p>
                 <div className="mb-4">
@@ -674,11 +674,11 @@ export default function TeamPage() {
       <Dialog open={!!detailsTarget} onOpenChange={(open) => !open && setDetailsTarget(null)}>
         <DialogContent className="max-w-lg">
           <div className="max-h-[85vh] overflow-y-auto p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {t('teamAdmin.detailsOf', { name: detailsTarget?.full_name || t('teamAdmin.employeeFallback') })}
             </DialogTitle>
             {detailsLoading ? (
-              <p className="text-sm text-ink-400">{t('common.loading')}</p>
+              <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
             ) : (
               <div className="space-y-4">
                 <EmployeeDetailsForm

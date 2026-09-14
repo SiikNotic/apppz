@@ -140,9 +140,9 @@ export default function DriverEarningsPage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-600">{t('driverPage.recentHeading')}</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">{t('driverPage.recentHeading')}</h2>
         {recent.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-ink-400">{t('driverEarnings.noDeliveriesYet')}</Card>
+          <Card className="p-6 text-center text-sm text-muted-foreground">{t('driverEarnings.noDeliveriesYet')}</Card>
         ) : (
           <Card className="divide-y divide-ink-100 p-0">
             {recent.map((a) => (
@@ -154,8 +154,8 @@ export default function DriverEarningsPage() {
                 )}
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-900">#{a.order.order_number}</p>
-                  <p className="text-xs text-ink-400">{formatDate(a.assigned_at)}</p>
+                  <p className="text-sm font-semibold text-foreground">#{a.order.order_number}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(a.assigned_at)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {a.status === 'delivered' && a.order.tip_amount > 0 && (

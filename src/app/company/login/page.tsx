@@ -103,7 +103,7 @@ export default function CompanyLoginPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-[11px] text-ink-400">{t('companyLogin.staffAccountsNotice')}</p>
+        <p className="mt-4 text-center text-[11px] text-muted-foreground">{t('companyLogin.staffAccountsNotice')}</p>
       </Card>
     </div>
   )

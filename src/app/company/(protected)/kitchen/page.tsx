@@ -19,10 +19,12 @@ import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
 type AvailableDriver = { user_id: string; full_name: string; active_count: number }
 
-const STATUS_VARIANT: Record<string, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
-  pending: 'warning',
-  preparing: 'brand',
-  ready: 'success',
+// Barra de acento por columna — para que "Nuevos/Preparando/Listos" se
+// distingan de un vistazo sin tener que leer la etiqueta.
+const COLUMN_ACCENT: Record<string, string> = {
+  pending: 'bg-warning-500',
+  preparing: 'bg-brand-500',
+  ready: 'bg-success-500',
 }
 
 function minutesAgo(dateStr: string): number {
@@ -235,16 +237,11 @@ export default function KitchenViewPage() {
     loadAvailableDrivers()
   }
 
-  if (loading) return <p className="text-sm text-ink-400">{t('kitchen.loadingKitchen')}</p>
+  if (loading) return <p className="text-sm text-muted-foreground">{t('kitchen.loadingKitchen')}</p>
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader title={t('kitchen.title')} subtitle={t('kitchen.subtitle')} />
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-500/10 px-3.5 py-1.5 text-xs font-bold text-success-500">
-          {t('kitchen.colCompleted')}: {completedToday}
-        </span>
-      </div>
+      <PageHeader title={t('kitchen.title')} subtitle={t('kitchen.subtitle')} />
 
       {needsUnlock && (
         <button
@@ -270,12 +267,13 @@ export default function KitchenViewPage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-4">
         {COLUMNS.map((col) => {
           const columnOrders = orders.filter((o) => o.status === col.status)
           return (
             <div key={col.status}>
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-600">
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${COLUMN_ACCENT[col.status]}`} aria-hidden="true" />
                 {col.label} <Badge variant="neutral">{columnOrders.length}</Badge>
               </h2>
               <div className="space-y-3">
@@ -291,21 +289,22 @@ export default function KitchenViewPage() {
                       className={`animate-in fade-in slide-in-from-top-2 duration-300 p-4 ${priority ? 'border-2 border-danger-500' : ''}`}
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
+                        {/* Sin badge de estado por tarjeta a propósito: la
+                            columna (punto de color + "Nuevos/Preparando/
+                            Listos") ya lo comunica sin ambigüedad, y
+                            repetirlo acá + el tiempo transcurrido en la
+                            misma fila se encimaba en columnas angostas de
+                            escritorio (3-4 por fila). */}
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base font-extrabold text-ink-900">#{order.order_number}</span>
-                            <Badge variant={STATUS_VARIANT[order.status] ?? 'neutral'}>
-                              {t(`orderStatus.${order.status}`)}
-                            </Badge>
-                          </div>
+                          <span className="text-base font-extrabold text-foreground">#{order.order_number}</span>
                           {/* Antes este contexto solo se veía en la pantalla
                               aparte de Pedidos — al quitarla, Cocina necesita
                               mostrarlo directamente. */}
-                          <span className="block truncate text-xs text-ink-400">{order.customer_name}</span>
+                          <span className="block truncate text-xs text-muted-foreground">{order.customer_name}</span>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <span
-                            className={`flex items-center gap-1 text-xs font-bold ${priority ? 'text-danger-500' : 'text-ink-400'}`}
+                            className={`flex items-center gap-1 text-xs font-bold ${priority ? 'text-danger-500' : 'text-muted-foreground'}`}
                           >
                             {priority ? <Flame size={12} aria-hidden="true" /> : <Clock size={12} aria-hidden="true" />}
                             {elapsed} min
@@ -313,7 +312,7 @@ export default function KitchenViewPage() {
                           <button
                             onClick={() => setLabelOrder(order)}
                             aria-label={t('kitchen.viewLabel', { number: order.order_number })}
-                            className="grid h-7 w-7 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                            className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-muted-foreground hover:bg-white/15 hover:text-foreground"
                           >
                             <Printer size={13} aria-hidden="true" />
                           </button>
@@ -322,7 +321,7 @@ export default function KitchenViewPage() {
                               onClick={() => cancelOrder(order)}
                               disabled={busyId === order.id}
                               aria-label={t('common.cancel')}
-                              className="grid h-7 w-7 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95 disabled:opacity-50"
+                              className="grid h-7 w-7 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25 disabled:opacity-50"
                             >
                               <Ban size={13} aria-hidden="true" />
                             </button>
@@ -331,18 +330,18 @@ export default function KitchenViewPage() {
                       </div>
                       <ul className="space-y-2 text-sm">
                         {order.order_items.map((item) => (
-                          <li key={item.id} className="border-b border-ink-100 pb-2 last:border-0">
-                            <p className="font-semibold text-ink-900">
+                          <li key={item.id} className="border-b border-border pb-2 last:border-0">
+                            <p className="font-semibold text-foreground">
                               {item.quantity}× {item.item_name}
                               {item.size_name ? ` (${item.size_name})` : ''}
                             </p>
                             {(item.crust_name || item.sauce_name) && (
-                              <p className="text-xs text-ink-400">
+                              <p className="text-xs text-muted-foreground">
                                 {[item.crust_name, item.sauce_name].filter(Boolean).join(' · ')}
                               </p>
                             )}
                             {item.order_item_toppings.length > 0 && (
-                              <p className="text-xs text-ink-400">
+                              <p className="text-xs text-muted-foreground">
                                 + {item.order_item_toppings.map((t) => t.topping_name).join(', ')}
                               </p>
                             )}
@@ -350,7 +349,7 @@ export default function KitchenViewPage() {
                         ))}
                       </ul>
                       {order.notes && (
-                        <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-semibold text-warning-500">
+                        <p className="mt-2 rounded-xl bg-warning-500/10 p-2 text-xs font-semibold text-warning-300">
                           ⚠ {order.notes}
                         </p>
                       )}
@@ -372,7 +371,7 @@ export default function KitchenViewPage() {
                       )}
                       {col.status === 'ready' && order.order_type === 'pickup' && (
                         <>
-                          <p className="mt-3 rounded-xl bg-ink-50 p-2 text-center text-xs font-semibold text-ink-600">
+                          <p className="mt-3 rounded-xl bg-muted p-2 text-center text-xs font-semibold text-muted-foreground">
                             {t('kitchen.pickupWaiting')}
                           </p>
                           <Button
@@ -393,6 +392,21 @@ export default function KitchenViewPage() {
             </div>
           )
         })}
+
+        {/* "Completados hoy" no es una cola accionable (no hay tarjetas que
+            mover acá) pero necesita verse igual de reconocible que las
+            otras tres columnas — mismo tratamiento visual, solo con un
+            conteo en vez de una lista. */}
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-white/40" aria-hidden="true" />
+            {t('kitchen.colCompleted')}
+          </h2>
+          <Card className="flex flex-col items-center justify-center gap-1 p-8 text-center">
+            <p className="text-3xl font-extrabold text-foreground">{completedToday}</p>
+            <p className="text-xs text-muted-foreground">{t('kitchen.colCompleted')}</p>
+          </Card>
+        </div>
       </div>
 
       {/* Etiqueta del pedido: pensada para imprimirse y pegarse en la caja. */}
@@ -400,14 +414,18 @@ export default function KitchenViewPage() {
         <DialogContent className="max-w-sm">
           {labelOrder && (
             <div className="p-6">
-              <div id="order-label-print" className="space-y-3 font-mono text-sm">
+              {/* Etiqueta térmica de verdad: papel blanco con texto negro
+                  siempre, sin importar el tema — igual que OrderReceipt del
+                  lado del cliente (ver su nota), porque esto imprime en
+                  papel real, no se ve en pantalla oscura. */}
+              <div id="order-label-print" className="space-y-3 rounded-2xl bg-white p-4 font-mono text-sm text-black">
                 <div className="text-center">
                   <p className="text-lg font-extrabold">
                     {t('kitchen.orderWord')} #{labelOrder.order_number}
                   </p>
                   <p className="text-xs">{formatDate(labelOrder.created_at)}</p>
                 </div>
-                <div className="border-t border-dashed border-ink-300 pt-2">
+                <div className="border-t border-dashed border-neutral-400 pt-2">
                   <p className="font-bold uppercase">
                     {labelOrder.order_type === 'delivery' ? t('kitchen.deliveryLabel') : t('home.pickup')}
                   </p>
@@ -419,7 +437,7 @@ export default function KitchenViewPage() {
                   )}
                   {labelOrder.address && <p>{labelOrder.address}</p>}
                 </div>
-                <div className="border-t border-dashed border-ink-300 pt-2">
+                <div className="border-t border-dashed border-neutral-400 pt-2">
                   {labelOrder.order_items.map((item) => (
                     <div key={item.id} className="mb-1.5">
                       <p className="font-bold">
@@ -436,13 +454,13 @@ export default function KitchenViewPage() {
                   ))}
                 </div>
                 {labelOrder.notes && (
-                  <div className="border-t border-dashed border-ink-300 pt-2">
+                  <div className="border-t border-dashed border-neutral-400 pt-2">
                     <p className="font-bold">
                       {t('kitchen.noteLabel')} {labelOrder.notes}
                     </p>
                   </div>
                 )}
-                <div className="border-t border-dashed border-ink-300 pt-2">
+                <div className="border-t border-dashed border-neutral-400 pt-2">
                   <div className="flex justify-between">
                     <span>{t('checkout.subtotal')}</span>
                     <span>{formatCurrency(labelOrder.subtotal)}</span>
@@ -482,13 +500,13 @@ export default function KitchenViewPage() {
         <DialogContent className="max-w-sm">
           {assignOrder && (
             <div className="p-6">
-              <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">
+              <DialogTitle className="mb-1 text-lg font-extrabold text-foreground">
                 {t('kitchen.sendOrderTitle', { number: assignOrder.order_number })}
               </DialogTitle>
-              <p className="mb-4 text-sm text-ink-600">{t('kitchen.chooseDriver')}</p>
+              <p className="mb-4 text-sm text-muted-foreground">{t('kitchen.chooseDriver')}</p>
 
               {drivers.length === 0 ? (
-                <p className="rounded-2xl bg-ink-50 p-4 text-center text-sm text-ink-400">
+                <p className="rounded-2xl bg-muted p-4 text-center text-sm text-muted-foreground">
                   {t('kitchen.noDriversAvailable')}
                 </p>
               ) : (

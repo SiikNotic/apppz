@@ -146,7 +146,7 @@ export function StoreHoursCard({ canManage }: { canManage: boolean }) {
                 checked={h.is_closed}
                 onChange={(e) => updateHour(h.day_of_week, { is_closed: e.target.checked })}
                 disabled={!canManage}
-                className="h-4 w-4 rounded border-ink-200"
+                className="h-4 w-4 rounded border-input"
               />
               {t('storeHoursAdmin.closedAllDay')}
             </label>
@@ -214,7 +214,7 @@ export function StoreHoursCard({ canManage }: { canManage: boolean }) {
               {canManage && (
                 <button
                   onClick={() => handleDeleteClosure(c.id)}
-                  className="shrink-0 rounded-full bg-red-50 p-2 text-danger-500 hover:brightness-95"
+                  className="shrink-0 rounded-full bg-danger-500/15 p-2 text-danger-500 hover:bg-danger-500/25"
                   aria-label={t('common.delete')}
                 >
                   <Trash2 size={14} aria-hidden="true" />

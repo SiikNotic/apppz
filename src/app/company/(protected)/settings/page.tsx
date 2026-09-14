@@ -79,13 +79,13 @@ export default function CompanySettingsPage() {
           const isBoolean = typeof setting.value === 'boolean'
           if (isBoolean) {
             return (
-              <label key={setting.key} className="flex items-center gap-2.5 text-sm font-semibold text-ink-600">
+              <label key={setting.key} className="flex items-center gap-2.5 text-sm font-semibold text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={draft[setting.key] === 'true'}
                   onChange={(e) => setDraft({ ...draft, [setting.key]: String(e.target.checked) })}
                   disabled={!canManage}
-                  className="h-4 w-4 rounded border-ink-200"
+                  className="h-4 w-4 rounded border-input"
                 />
                 {setting.description ?? setting.key}
               </label>

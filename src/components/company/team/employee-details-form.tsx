@@ -111,7 +111,7 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.employmentHeading')}</p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('employeeForm.employmentHeading')}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="emp-hired">{t('employeeForm.dateHired')}</Label>
@@ -167,7 +167,7 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
 
       {role === 'driver' && (
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.driverDataHeading')}</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('employeeForm.driverDataHeading')}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label>{t('employeeForm.vehicleMake')}</Label>
@@ -238,7 +238,7 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
       )}
 
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.personalInfoHeading')}</p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('employeeForm.personalInfoHeading')}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="emp-street">{t('employeeForm.address')}</Label>
@@ -264,7 +264,7 @@ export function EmployeeDetailsForm({ role, values, onChange }: EmployeeDetailsF
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{t('employeeForm.emergencyContactHeading')}</p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('employeeForm.emergencyContactHeading')}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="emp-ec-name">{t('menuMgmt.name')}</Label>

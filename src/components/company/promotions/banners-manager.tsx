@@ -226,7 +226,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                     <button
                       onClick={() => handleDelete(banner)}
                       aria-label={t('promotionsAdmin.deleteAria', { name: banner.title })}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                     >
                       <Trash2 size={14} aria-hidden="true" />
                     </button>
@@ -286,7 +286,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                           <button
                             onClick={() => handleDelete(banner)}
                             aria-label={t('promotionsAdmin.deleteAria', { name: banner.title })}
-                            className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                            className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                           >
                             <Trash2 size={14} aria-hidden="true" />
                           </button>
@@ -304,7 +304,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {editingId ? t('promotionsAdmin.editBannerTitle') : t('promotionsAdmin.newBannerTitle')}
             </DialogTitle>
             <div className="space-y-3">
@@ -328,7 +328,7 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
               <div>
                 <Label>{t('menuMgmt.imageOptional')}</Label>
                 <div className="flex items-center gap-3">
-                  <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-ink-50 text-ink-400">
+                  <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-muted text-muted-foreground">
                     {form.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={form.imageUrl} alt="" className="h-full w-full object-cover" />
@@ -476,12 +476,12 @@ export function BannersManager({ canManage }: { canManage: boolean }) {
                   />
                 </div>
               </div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+              <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={form.active}
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
-                  className="h-4 w-4 rounded border-ink-200"
+                  className="h-4 w-4 rounded border-input"
                 />
                 {t('promotionsAdmin.visibleOnHome')}
               </label>

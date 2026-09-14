@@ -160,7 +160,7 @@ export function ToppingsTab() {
                   </Button>
                   <button
                     onClick={() => handleDelete(topping)}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                   >
                     <Trash2 size={14} aria-hidden="true" />
                   </button>
@@ -209,7 +209,7 @@ export function ToppingsTab() {
                         </button>
                         <button
                           onClick={() => handleDelete(topping)}
-                          className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                          className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                         >
                           <Trash2 size={14} aria-hidden="true" />
                         </button>
@@ -226,7 +226,7 @@ export function ToppingsTab() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-sm">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {editingId ? t('menuMgmt.editToppingTitle') : t('menuMgmt.newToppingTitle')}
             </DialogTitle>
             <div className="space-y-3">

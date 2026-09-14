@@ -180,11 +180,11 @@ export default function InventoryPage() {
               <Card key={ing.id} className="flex flex-col gap-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="flex items-center gap-1.5 truncate text-sm font-bold text-ink-900">
+                    <p className="flex items-center gap-1.5 truncate text-sm font-bold text-foreground">
                       {low && <AlertTriangle size={14} className="shrink-0 text-danger-500" aria-hidden="true" />}
                       <span className="truncate">{ing.name}</span>
                     </p>
-                    <p className="text-xs text-ink-400">{ing.supplier || t('inventoryAdmin.noSupplier')}</p>
+                    <p className="text-xs text-muted-foreground">{ing.supplier || t('inventoryAdmin.noSupplier')}</p>
                   </div>
                   <Badge variant={low ? 'danger' : 'success'} className="shrink-0">
                     {formatNumber(ing.stock_quantity)} {ing.unit}
@@ -192,19 +192,19 @@ export default function InventoryPage() {
                 </div>
 
                 <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                  <dt className="text-ink-400">{t('inventoryAdmin.minimum')}</dt>
-                  <dd className="text-right font-semibold text-ink-600">
+                  <dt className="text-muted-foreground">{t('inventoryAdmin.minimum')}</dt>
+                  <dd className="text-right font-semibold text-muted-foreground">
                     {formatNumber(ing.min_stock)} {ing.unit}
                   </dd>
-                  <dt className="text-ink-400">{t('inventoryAdmin.costPerUnit')}</dt>
-                  <dd className="text-right font-semibold text-ink-600">{formatCurrency(ing.cost_per_unit)}</dd>
+                  <dt className="text-muted-foreground">{t('inventoryAdmin.costPerUnit')}</dt>
+                  <dd className="text-right font-semibold text-muted-foreground">{formatCurrency(ing.cost_per_unit)}</dd>
                 </dl>
 
-                <div className="mt-auto flex items-center justify-between gap-1.5 border-t border-ink-100 pt-3">
+                <div className="mt-auto flex items-center justify-between gap-1.5 border-t border-border pt-3">
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openAdjust(ing, 'in')}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-green-50 text-success-500 hover:brightness-95"
+                      className="grid h-9 w-9 place-items-center rounded-full bg-success-500/15 text-success-500 hover:bg-success-500/25"
                       aria-label={t('inventoryAdmin.registerInAria', { name: ing.name })}
                       title={t('inventoryAdmin.registerIn')}
                     >
@@ -212,7 +212,7 @@ export default function InventoryPage() {
                     </button>
                     <button
                       onClick={() => openAdjust(ing, 'out')}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-amber-50 text-warning-500 hover:brightness-95"
+                      className="grid h-9 w-9 place-items-center rounded-full bg-warning-500/15 text-warning-300 hover:bg-warning-500/25"
                       aria-label={t('inventoryAdmin.registerOutAria', { name: ing.name })}
                       title={t('inventoryAdmin.registerOut')}
                     >
@@ -222,7 +222,7 @@ export default function InventoryPage() {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openEdit(ing)}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                      className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-muted-foreground hover:bg-white/15 hover:text-foreground"
                       aria-label={t('inventoryAdmin.editAria', { name: ing.name })}
                       title={t('common.edit')}
                     >
@@ -230,7 +230,7 @@ export default function InventoryPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(ing)}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                      className="grid h-9 w-9 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                       aria-label={t('inventoryAdmin.deleteAria', { name: ing.name })}
                       title={t('common.delete')}
                     >
@@ -247,7 +247,7 @@ export default function InventoryPage() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {form.id ? t('inventoryAdmin.editIngredientTitle') : t('inventoryAdmin.newIngredientTitle')}
             </DialogTitle>
             <div className="space-y-3">
@@ -309,7 +309,7 @@ export default function InventoryPage() {
                   onChange={(e) => setForm({ ...form, supplier: e.target.value })}
                 />
               </div>
-              {form.id && <p className="text-[11px] text-ink-400">{t('inventoryAdmin.stockChangeHint')}</p>}
+              {form.id && <p className="text-[11px] text-muted-foreground">{t('inventoryAdmin.stockChangeHint')}</p>}
               {error && <p className="text-xs font-semibold text-danger-500">{error}</p>}
               <Button fullWidth onClick={handleSave} disabled={saving}>
                 {saving ? t('menuMgmt.savingButton') : t('common.save')}
@@ -323,10 +323,10 @@ export default function InventoryPage() {
         <DialogContent className="max-w-sm">
           {adjustTarget && (
             <div className="p-6">
-              <DialogTitle className="mb-1 text-lg font-extrabold text-ink-900">
+              <DialogTitle className="mb-1 text-lg font-extrabold text-foreground">
                 {adjustType === 'in' ? t('inventoryAdmin.registerIn') : t('inventoryAdmin.registerOut')}
               </DialogTitle>
-              <p className="mb-4 text-sm text-ink-400">{adjustTarget.name}</p>
+              <p className="mb-4 text-sm text-muted-foreground">{adjustTarget.name}</p>
               <div className="space-y-3">
                 <div>
                   <Label>{t('inventoryAdmin.quantityUnit', { unit: adjustTarget.unit })}</Label>

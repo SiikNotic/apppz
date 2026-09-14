@@ -117,25 +117,25 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-extrabold text-ink-900">{title}</h2>
+        <h2 className="text-base font-extrabold text-foreground">{title}</h2>
         <Button size="sm" onClick={openCreate}>
           <Plus size={14} /> {itemLabel}
         </Button>
       </div>
 
-      <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
+      <Card className="divide-y divide-border p-0">
+        {loading && <p className="p-5 text-sm text-muted-foreground">{t('common.loading')}</p>}
         {!loading && items.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">{t('menuMgmt.noRecords')}</p>
+          <p className="p-5 text-sm text-muted-foreground">{t('menuMgmt.noRecords')}</p>
         )}
         {items.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <ItemThumb name={item.name} imageUrl={item.image_url} size="sm" />
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
-                <span className="text-sm font-semibold text-ink-900">{item.name}</span>
+                <span className="text-sm font-semibold text-foreground">{item.name}</span>
                 {item.extra_price > 0 && (
-                  <span className="text-xs font-semibold text-ink-400">
+                  <span className="text-xs font-semibold text-muted-foreground">
                     +{formatCurrency(item.extra_price)}
                   </span>
                 )}
@@ -149,13 +149,13 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
             <div className="flex shrink-0 items-center gap-1.5">
               <button
                 onClick={() => openEdit(item)}
-                className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-muted-foreground hover:bg-white/15 hover:text-foreground"
               >
                 <Pencil size={14} />
               </button>
               <button
                 onClick={() => handleDelete(item)}
-                className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
               >
                 <Trash2 size={14} />
               </button>
@@ -167,7 +167,7 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-sm">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {editingId ? t('common.edit') : itemLabel}
             </DialogTitle>
             <div className="space-y-3">

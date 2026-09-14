@@ -44,7 +44,7 @@ import type { Driver } from '@/lib/types'
 // (customer)/order/page.tsx con LiveDeliveryMap).
 const DriverRouteMap = dynamic(
   () => import('@/components/company/driver/driver-route-map').then((m) => m.DriverRouteMap),
-  { ssr: false, loading: () => <div className="h-64 w-full animate-pulse bg-ink-100" /> }
+  { ssr: false, loading: () => <div className="h-64 w-full animate-pulse bg-muted" /> }
 )
 
 interface LatLng {
@@ -252,26 +252,26 @@ export default function DriverPage() {
         className={cn(
           'flex items-center justify-between gap-3 border-l-4 p-4',
           isOnDelivery
-            ? 'border-l-brand-500 bg-brand-50'
+            ? 'border-l-brand-500 bg-brand-500/10'
             : isClockedIn
               ? 'border-l-success-500 bg-success-500/5'
-              : 'border-l-ink-200'
+              : 'border-l-border'
         )}
       >
         <div className="flex min-w-0 items-center gap-3">
           <span
             className={cn(
               'grid h-11 w-11 shrink-0 place-items-center rounded-2xl',
-              isOnDelivery ? 'bg-brand-500 text-white' : isClockedIn ? 'bg-success-500 text-white' : 'bg-ink-100 text-ink-400'
+              isOnDelivery ? 'bg-brand-500 text-white' : isClockedIn ? 'bg-success-500 text-white' : 'bg-white/10 text-muted-foreground'
             )}
           >
             {isClockedIn ? <Bike size={20} aria-hidden="true" /> : <Clock size={20} aria-hidden="true" />}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold text-ink-900">
+            <p className="truncate text-sm font-extrabold text-foreground">
               {isOnDelivery ? t('driverPage.statusOnDelivery') : isClockedIn ? t('driverPage.shiftActive') : t('driversAdmin.noShiftStarted')}
             </p>
-            <p className="truncate text-xs text-ink-400">
+            <p className="truncate text-xs text-muted-foreground">
               {openShift ? t('teamAdmin.sinceDate', { date: formatDate(openShift.clock_in_at) }) : t('driverPage.shiftPromptOffline')}
             </p>
           </div>
@@ -286,14 +286,14 @@ export default function DriverPage() {
       </Card>
 
       {(locationSharing === 'denied' || locationSharing === 'unsupported') && (
-        <p className="flex items-center gap-2 rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-warning-500">
+        <p className="flex items-center gap-2 rounded-2xl bg-warning-500/10 p-3 text-xs font-semibold text-warning-300">
           <LocateFixed size={16} className="shrink-0" aria-hidden="true" />
           {locationSharing === 'denied' ? t('driverPage.locationSharingDenied') : t('driverPage.locationSharingUnsupported')}
         </p>
       )}
 
       {error && (
-        <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-danger-500">
+        <p role="alert" className="rounded-2xl bg-danger-500/10 p-3 text-sm font-semibold text-danger-500">
           {error}
         </p>
       )}
@@ -309,14 +309,14 @@ export default function DriverPage() {
           <div className="flex flex-col items-center gap-2 p-8 text-center">
             {routeCompletedFlash ? (
               <>
-                <PartyPopper size={28} className="text-brand-900" aria-hidden="true" />
-                <p className="text-base font-extrabold text-ink-900">{t('driverPage.routeCompletedTitle')}</p>
-                <p className="text-sm text-ink-400">{t('driverPage.routeCompletedBody')}</p>
+                <PartyPopper size={28} className="text-brand-400" aria-hidden="true" />
+                <p className="text-base font-extrabold text-foreground">{t('driverPage.routeCompletedTitle')}</p>
+                <p className="text-sm text-muted-foreground">{t('driverPage.routeCompletedBody')}</p>
               </>
             ) : (
               <>
-                <Package size={24} className="text-ink-200" aria-hidden="true" />
-                <p className="text-sm text-ink-400">
+                <Package size={24} className="text-muted-foreground" aria-hidden="true" />
+                <p className="text-sm text-muted-foreground">
                   {isClockedIn ? t('driverPage.noAssignmentsAvailable') : t('driverPage.goAvailablePrompt')}
                 </p>
               </>
@@ -355,9 +355,9 @@ export default function DriverPage() {
             />
 
             <div className="space-y-4 p-4">
-              <div className="space-y-2 text-sm text-ink-600">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <p className="flex items-start gap-2">
-                  <MapPin size={16} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
+                  <MapPin size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                   <span>
                     {current.order.address || t('driverPage.noAddress')}
                     {current.address?.apartment && ` · ${t('driverPage.apartmentPrefix')} ${current.address.apartment}`}
@@ -375,19 +375,19 @@ export default function DriverPage() {
                   </p>
                 )}
                 {(current.address?.instructions || current.address?.delivery_notes) && (
-                  <p className="rounded-2xl bg-ink-50 p-3 text-xs text-ink-600">
+                  <p className="rounded-2xl bg-muted p-3 text-xs text-muted-foreground">
                     {current.address?.instructions}
                     {current.address?.instructions && current.address?.delivery_notes ? ' · ' : ''}
                     {current.address?.delivery_notes}
                   </p>
                 )}
                 {current.notes && (
-                  <p className="rounded-2xl bg-amber-50 p-3 text-xs text-warning-500">
+                  <p className="rounded-2xl bg-warning-500/10 p-3 text-xs text-warning-300">
                     {t('driverPage.orderNote')} {current.notes}
                   </p>
                 )}
                 <div className="flex items-baseline justify-between">
-                  <p className="text-lg font-extrabold text-ink-900">
+                  <p className="text-lg font-extrabold text-foreground">
                     {formatCurrency(current.order.total + current.order.tip_amount)}
                   </p>
                   {current.order.tip_amount > 0 && (
@@ -405,7 +405,7 @@ export default function DriverPage() {
                 <div
                   className={cn(
                     'rounded-2xl border-2 p-3.5',
-                    needsCashConfirm ? 'border-warning-500 bg-amber-50' : 'border-success-500 bg-success-500/5'
+                    needsCashConfirm ? 'border-warning-500 bg-warning-500/10' : 'border-success-500 bg-success-500/5'
                   )}
                 >
                   <p className={cn('text-sm font-bold', needsCashConfirm ? 'text-warning-500' : 'text-success-500')}>
@@ -452,7 +452,7 @@ export default function DriverPage() {
                 <MessageCircleWarning size={16} aria-hidden="true" /> {t('driverPage.reportProblem')}
               </Button>
 
-              <div className="flex gap-2 border-t border-ink-100 pt-3">
+              <div className="flex gap-2 border-t border-border pt-3">
                 {current.status === 'assigned' && (
                   <Button
                     fullWidth
@@ -500,7 +500,7 @@ export default function DriverPage() {
               una sola ruta y no una lista suelta de pedidos. */}
           {queue.length > 0 && (
             <div>
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 {t('driverPage.nextCount', { count: queue.length })}
               </h2>
               <div className="space-y-2">
@@ -508,20 +508,20 @@ export default function DriverPage() {
                   const queueIndex = i + 1 // índice real dentro de `active`
                   return (
                     <Card key={a.id} className="flex items-center gap-3 p-3">
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink-100 text-sm font-extrabold text-ink-600">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-extrabold text-muted-foreground">
                         {i + 2}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-ink-900">
+                        <p className="truncate text-sm font-semibold text-foreground">
                           #{a.order.order_number} · {a.order.address || t('driverPage.noAddressShort')}
                         </p>
-                        <p className="text-xs text-ink-400">{formatCurrency(a.order.total)}</p>
+                        <p className="text-xs text-muted-foreground">{formatCurrency(a.order.total)}</p>
                       </div>
                       <div className="flex shrink-0 flex-col">
                         <button
                           onClick={() => moveInQueue(queueIndex, -1)}
                           aria-label={t('driverPage.moveUpAria')}
-                          className="grid h-7 w-7 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900"
+                          className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground"
                         >
                           <ChevronUp size={16} />
                         </button>
@@ -529,7 +529,7 @@ export default function DriverPage() {
                           onClick={() => moveInQueue(queueIndex, 1)}
                           disabled={i === queue.length - 1}
                           aria-label={t('driverPage.moveDownAria')}
-                          className="grid h-7 w-7 place-items-center rounded-lg text-ink-400 hover:bg-ink-50 hover:text-ink-900 disabled:opacity-30"
+                          className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground disabled:opacity-30"
                         >
                           <ChevronDown size={16} />
                         </button>

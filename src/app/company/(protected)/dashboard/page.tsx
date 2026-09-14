@@ -9,15 +9,23 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
   CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { DollarSign, ClipboardList, Clock, Users, AlertTriangle } from 'lucide-react'
+import {
+  DollarSign,
+  ClipboardList,
+  Users,
+  AlertTriangle,
+  Flame,
+  Bike,
+  PackageX,
+  MessageCircleWarning,
+  Timer,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { StatCard } from '@/components/ui/stat-card'
@@ -33,6 +41,7 @@ import { type Order, type OrderStatus } from '@/lib/types'
 
 const LOST_STATUSES: OrderStatus[] = ['cancelled', 'refunded', 'failed']
 const PROCESSING_STATUSES: OrderStatus[] = ['confirmed', 'preparing', 'ready', 'out_for_delivery']
+const STUCK_MINUTES = 20
 
 const STATUS_VARIANT: Record<OrderStatus, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   pending: 'warning',
@@ -86,10 +95,20 @@ export default function DashboardPage() {
   const [ordersLastWeek, setOrdersLastWeek] = useState(0)
   const [newCustomersThisWeek, setNewCustomersThisWeek] = useState(0)
   const [newCustomersLastWeek, setNewCustomersLastWeek] = useState(0)
-  const [pendingCount, setPendingCount] = useState(0)
   const [statusCounts, setStatusCounts] = useState({ delivered: 0, pending: 0, cancelled: 0, processing: 0 })
   const [topItems, setTopItems] = useState<TopItem[]>([])
   const [recentOrders, setRecentOrders] = useState<RecentOrderRow[]>([])
+
+  // --- Prioridades operativas del día (ver PageHeader de abajo) ---------
+  const [salesToday, setSalesToday] = useState(0)
+  const [ordersTodayCount, setOrdersTodayCount] = useState(0)
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0)
+  const [kitchenCounts, setKitchenCounts] = useState({ pending: 0, preparing: 0, ready: 0 })
+  const [outForDeliveryCount, setOutForDeliveryCount] = useState(0)
+  const [driverCounts, setDriverCounts] = useState({ available: 0, on_delivery: 0 })
+  const [lowStockCount, setLowStockCount] = useState(0)
+  const [openSupportCount, setOpenSupportCount] = useState(0)
+  const [stuckOrdersCount, setStuckOrdersCount] = useState(0)
 
   useEffect(() => {
     if (!canView) {
@@ -100,8 +119,9 @@ export default function DashboardPage() {
 
     async function load() {
       const since30 = daysAgo(29).toISOString()
+      const today0 = daysAgo(0)
 
-      const [ordersRes, customersRes, menuItemsRes, recentRes] = await Promise.all([
+      const [ordersRes, customersRes, menuItemsRes, recentRes, driversRes, ingredientsRes, supportRes] = await Promise.all([
         supabase.from('orders').select('*').gte('created_at', since30),
         supabase
           .from('profiles')
@@ -110,6 +130,13 @@ export default function DashboardPage() {
           .gte('created_at', daysAgo(13).toISOString()),
         supabase.from('menu_items').select('id, name, image_url'),
         supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(6),
+        // Las 3 consultas siguientes son informativas para las alertas —
+        // si el rol actual no tiene permiso para verlas, RLS simplemente
+        // devuelve vacío y la alerta correspondiente no se muestra, en vez
+        // de romper el resto del dashboard.
+        supabase.from('drivers').select('status'),
+        supabase.from('ingredients').select('stock_quantity, min_stock'),
+        supabase.from('issue_reports').select('id', { count: 'exact', head: true }).neq('status', 'resolved'),
       ])
       if (!active) return
 
@@ -159,14 +186,46 @@ export default function DashboardPage() {
         return d >= daysAgo(13) && d < daysAgo(6)
       }).length
 
+      // --- Hoy, operación activa y cocina/entrega en vivo — todo
+      // derivado de la misma ventana de 30 días ya cargada, sin
+      // consultas adicionales. "Activo" = no entregado ni perdido.
+      let todaySalesSum = 0
+      let todayCount = 0
+      let activeCount = 0
+      const kitchenTally = { pending: 0, preparing: 0, ready: 0 }
+      let outForDelivery = 0
+      let stuckCount = 0
       const statusTally = { delivered: 0, pending: 0, cancelled: 0, processing: 0 }
+      const now = Date.now()
       for (const o of windowOrders) {
         const s = o.status as OrderStatus
+        const createdAt = new Date(o.created_at)
+        if (createdAt >= today0) {
+          todayCount++
+          if (!LOST_STATUSES.includes(s)) todaySalesSum += o.total
+        }
         if (s === 'delivered') statusTally.delivered++
         else if (s === 'pending') statusTally.pending++
         else if (LOST_STATUSES.includes(s)) statusTally.cancelled++
         else if (PROCESSING_STATUSES.includes(s)) statusTally.processing++
+
+        if (s === 'pending' || PROCESSING_STATUSES.includes(s)) {
+          activeCount++
+          const minutesElapsed = (now - createdAt.getTime()) / 60000
+          if ((s === 'pending' || s === 'preparing') && minutesElapsed > STUCK_MINUTES) stuckCount++
+        }
+        if (s === 'pending') kitchenTally.pending++
+        else if (s === 'preparing') kitchenTally.preparing++
+        else if (s === 'ready') kitchenTally.ready++
+        else if (s === 'out_for_delivery') outForDelivery++
       }
+
+      const driverTally = { available: 0, on_delivery: 0 }
+      for (const d of driversRes.data ?? []) {
+        if (d.status === 'available') driverTally.available++
+        else if (d.status === 'on_delivery') driverTally.on_delivery++
+      }
+      const lowStock = (ingredientsRes.data ?? []).filter((i) => i.stock_quantity <= i.min_stock).length
 
       // Más vendidos: solo de pedidos que sí se concretaron (se excluyen
       // cancelados/reembolsados/fallidos) — igual que en Analytics.
@@ -203,10 +262,18 @@ export default function DashboardPage() {
       setOrdersLastWeek(ordersLast)
       setNewCustomersThisWeek(customersThis)
       setNewCustomersLastWeek(customersLast)
-      setPendingCount(statusTally.pending)
       setStatusCounts(statusTally)
       setTopItems(top)
       setRecentOrders(recent.map((o) => ({ ...o, itemCount: countByOrder.get(o.id) ?? 0 })))
+      setSalesToday(todaySalesSum)
+      setOrdersTodayCount(todayCount)
+      setActiveOrdersCount(activeCount)
+      setKitchenCounts(kitchenTally)
+      setOutForDeliveryCount(outForDelivery)
+      setDriverCounts(driverTally)
+      setLowStockCount(lowStock)
+      setOpenSupportCount(supportRes.count ?? 0)
+      setStuckOrdersCount(stuckCount)
       setLoading(false)
     }
     load()
@@ -223,47 +290,126 @@ export default function DashboardPage() {
 
   const totalStatusOrders = statusCounts.delivered + statusCounts.pending + statusCounts.cancelled + statusCounts.processing
   const donutData = [
-    { key: 'delivered', name: t('dashboardHome.statusDelivered'), value: statusCounts.delivered, color: '#16c79a' },
-    { key: 'processing', name: t('dashboardHome.statusProcessing'), value: statusCounts.processing, color: '#ff0000' },
-    { key: 'pending', name: t('dashboardHome.statusPending'), value: statusCounts.pending, color: '#e0a800' },
-    { key: 'cancelled', name: t('dashboardHome.statusCancelled'), value: statusCounts.cancelled, color: '#e0402e' },
+    { key: 'delivered', name: t('dashboardHome.statusDelivered'), value: statusCounts.delivered, color: 'var(--success-500)' },
+    { key: 'processing', name: t('dashboardHome.statusProcessing'), value: statusCounts.processing, color: 'var(--brand-500)' },
+    { key: 'pending', name: t('dashboardHome.statusPending'), value: statusCounts.pending, color: 'var(--warning-500)' },
+    // Gris neutro (no rojo) para "Cancelados" — el rojo/danger se
+    // reserva para alertas activas; un pedido cancelado ya es historia,
+    // no algo urgente, y con "En proceso" en brand-500 (rojo-naranja)
+    // los dos tonos rojos eran casi indistinguibles en el donut.
+    { key: 'cancelled', name: t('dashboardHome.statusCancelled'), value: statusCounts.cancelled, color: 'var(--border-strong)' },
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader title={t('dashboardHome.title')} subtitle={t('dashboardHome.subtitle')} />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* Alertas — solo aparecen si hay algo real que atender, nunca como
+          relleno visual. Cada una usa datos ya cargados arriba. */}
+      {(openSupportCount > 0 || stuckOrdersCount > 0 || lowStockCount > 0) && (
+        <div className="space-y-2">
+          {stuckOrdersCount > 0 && (
+            <div role="status" className="flex items-center gap-2.5 rounded-2xl bg-danger-500/10 px-4 py-3 text-sm font-semibold text-danger-500">
+              <Timer size={16} className="shrink-0" aria-hidden="true" />
+              {t('dashboardHome.stuckOrdersAlert', { count: stuckOrdersCount })}
+              <Link href="/company/kitchen" className="ml-auto shrink-0 font-bold underline">
+                {t('dashboardHome.viewAll')}
+              </Link>
+            </div>
+          )}
+          {openSupportCount > 0 && (
+            <div role="status" className="flex items-center gap-2.5 rounded-2xl bg-warning-500/10 px-4 py-3 text-sm font-semibold text-warning-300">
+              <MessageCircleWarning size={16} className="shrink-0" aria-hidden="true" />
+              {t('dashboardHome.openSupportAlert', { count: openSupportCount })}
+              <Link href="/company/support" className="ml-auto shrink-0 font-bold underline">
+                {t('dashboardHome.viewAll')}
+              </Link>
+            </div>
+          )}
+          {lowStockCount > 0 && (
+            <div role="status" className="flex items-center gap-2.5 rounded-2xl bg-warning-500/10 px-4 py-3 text-sm font-semibold text-warning-300">
+              <PackageX size={16} className="shrink-0" aria-hidden="true" />
+              {t('dashboardHome.stockAlerts')}: {t('dashboardHome.lowIngredients')} ({lowStockCount})
+              <Link href="/company/inventory" className="ml-auto shrink-0 font-bold underline">
+                {t('dashboardHome.viewInventory')}
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Prioridad #1: cuánto se vendió y cuántos pedidos hoy — un vistazo,
+          sin tener que interpretar un gráfico. Deliberadamente solo 2
+          tarjetas (no una por cada métrica posible). */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard
-          label={t('dashboardHome.totalRevenue')}
-          value={formatCurrency(revenueThisWeek)}
+          label={t('dashboardHome.salesToday')}
+          value={formatCurrency(salesToday)}
           icon={<DollarSign size={20} />}
           tone="highlight"
-          trend={{ pct: pctChange(revenueThisWeek, revenueLastWeek), label: t('dashboardHome.fromLastWeek', { pct: pctChange(revenueThisWeek, revenueLastWeek).toFixed(1) }) }}
         />
         <StatCard
-          label={t('dashboardHome.totalOrders')}
-          value={String(ordersThisWeek)}
+          label={t('dashboardHome.ordersToday')}
+          value={String(ordersTodayCount)}
           icon={<ClipboardList size={20} />}
           tone="brand"
-          trend={{ pct: pctChange(ordersThisWeek, ordersLastWeek), label: t('dashboardHome.fromLastWeek', { pct: pctChange(ordersThisWeek, ordersLastWeek).toFixed(1) }) }}
-        />
-        <StatCard
-          label={t('dashboardHome.pendingOrders')}
-          value={String(pendingCount)}
-          icon={<Clock size={20} />}
-          tone="warning"
-        />
-        <StatCard
-          label={t('dashboardHome.newCustomers')}
-          value={String(newCustomersThisWeek)}
-          icon={<Users size={20} />}
-          tone="success"
-          trend={{ pct: pctChange(newCustomersThisWeek, newCustomersLastWeek), label: t('dashboardHome.fromLastWeek', { pct: pctChange(newCustomersThisWeek, newCustomersLastWeek).toFixed(1) }) }}
+          hint={t('dashboardHome.activeCount', { count: activeOrdersCount })}
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.6fr,1fr]">
+      {/* Operación en vivo: cocina y entregas en una sola tarjeta densa en
+          vez de una StatCard por número — es exactamente el tipo de
+          "sobreuso de tarjetas de estadística" que se quiere evitar. */}
+      <Card className="p-5">
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+          {t('dashboardHome.liveOperationsHeading')}
+        </h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <Link href="/company/kitchen" className="flex items-center gap-3 rounded-2xl p-2 -m-2 transition hover:bg-accent">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-500/15 text-brand-400">
+              <ClipboardList size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-2xl font-extrabold leading-none text-foreground">{activeOrdersCount}</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">{t('dashboardHome.activeOrdersLabel')}</p>
+            </div>
+          </Link>
+
+          <Link href="/company/kitchen" className="rounded-2xl p-2 -m-2 transition hover:bg-accent">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+              <Flame size={14} className="text-brand-400" aria-hidden="true" /> {t('dashboardHome.kitchenStatusLabel')}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+              <span className="flex items-center gap-1.5 font-bold text-foreground">
+                <span className="h-2 w-2 rounded-full bg-warning-500" aria-hidden="true" /> {kitchenCounts.pending} {t('kitchen.colNew')}
+              </span>
+              <span className="flex items-center gap-1.5 font-bold text-foreground">
+                <span className="h-2 w-2 rounded-full bg-brand-500" aria-hidden="true" /> {kitchenCounts.preparing} {t('kitchen.colPreparing')}
+              </span>
+              <span className="flex items-center gap-1.5 font-bold text-foreground">
+                <span className="h-2 w-2 rounded-full bg-success-500" aria-hidden="true" /> {kitchenCounts.ready} {t('kitchen.colReady')}
+              </span>
+            </div>
+          </Link>
+
+          <Link href="/company/drivers" className="rounded-2xl p-2 -m-2 transition hover:bg-accent">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+              <Bike size={14} className="text-success-500" aria-hidden="true" /> {t('dashboardHome.deliveryStatusLabel')}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+              <span className="font-bold text-foreground">
+                {outForDeliveryCount} <span className="font-normal text-muted-foreground">{t('orderStatus.out_for_delivery')}</span>
+              </span>
+              <span className="font-bold text-foreground">
+                {driverCounts.available}{' '}
+                <span className="font-normal text-muted-foreground">{t('dashboardHome.availableDriversLabel')}</span>
+              </span>
+            </div>
+          </Link>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-extrabold text-foreground">{t('dashboardHome.revenueOverview')}</h2>
@@ -272,7 +418,7 @@ export default function DashboardPage() {
                 <span className="h-2 w-2 rounded-full bg-brand-500" aria-hidden="true" /> {t('dashboardHome.thisWeek')}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-ink-100" aria-hidden="true" /> {t('dashboardHome.lastWeek')}
+                <span className="h-2 w-2 rounded-full bg-white/20" aria-hidden="true" /> {t('dashboardHome.lastWeek')}
               </span>
             </div>
           </div>
@@ -282,9 +428,12 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} width={56} tickFormatter={(v) => formatCurrency(Number(v))} />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Area type="monotone" dataKey="thisWeek" stroke="#ff0000" fill="#ff0000" fillOpacity={0.15} strokeWidth={2.5} name={t('dashboardHome.thisWeek')} />
-                <Line type="monotone" dataKey="lastWeek" stroke="#c9c9c9" strokeWidth={2} strokeDasharray="4 4" dot={false} name={t('dashboardHome.lastWeek')} />
+                <Tooltip
+                  formatter={(value) => formatCurrency(Number(value))}
+                  contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--popover-foreground)' }}
+                />
+                <Area type="monotone" dataKey="thisWeek" stroke="var(--brand-500)" fill="var(--brand-500)" fillOpacity={0.15} strokeWidth={2.5} name={t('dashboardHome.thisWeek')} />
+                <Line type="monotone" dataKey="lastWeek" stroke="var(--border-strong)" strokeWidth={2} strokeDasharray="4 4" dot={false} name={t('dashboardHome.lastWeek')} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -304,7 +453,7 @@ export default function DashboardPage() {
                         <Cell key={d.key} fill={d.color} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--popover-foreground)' }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -317,7 +466,7 @@ export default function DashboardPage() {
               <div className="mt-4 space-y-2">
                 {donutData.map((d) => (
                   <div key={d.key} className="flex items-center justify-between text-xs font-semibold">
-                    <span className="flex items-center gap-2 text-ink-600">
+                    <span className="flex items-center gap-2 text-muted-foreground">
                       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} aria-hidden="true" />
                       {d.name}
                     </span>
@@ -330,95 +479,78 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.6fr,1fr]">
-        <Card className="p-0">
-          <div className="flex items-center justify-between p-5 pb-0">
-            <h2 className="text-base font-extrabold text-foreground">{t('dashboardHome.recentOrders')}</h2>
-            <Link href="/company/kitchen" className="text-xs font-bold text-brand-900">
-              {t('dashboardHome.viewAll')}
-            </Link>
-          </div>
-          {recentOrders.length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">{t('dashboardHome.noOrdersYet')}</p>
-          ) : (
-            <>
-              {/* Móvil: tarjetas — la tabla de abajo necesitaba scroll
-                  horizontal para ver cliente/total/estado a la vez, justo lo
-                  que se quiere evitar en el teléfono (mismo patrón que ya se
-                  usa en el historial de pedidos del cliente). */}
-              <div className="space-y-2 p-3 md:hidden">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="rounded-2xl border border-border bg-muted/30 p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground">#{order.order_number}</p>
-                        <p className="truncate text-xs text-muted-foreground">{order.customer_name}</p>
-                      </div>
-                      <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>
-                        {t(`orderStatus.${order.status}`)}
-                      </Badge>
+      <Card className="p-0">
+        <div className="flex items-center justify-between p-5 pb-0">
+          <h2 className="text-base font-extrabold text-foreground">{t('dashboardHome.recentOrders')}</h2>
+          <Link href="/company/kitchen" className="text-xs font-bold text-brand-400">
+            {t('dashboardHome.viewAll')}
+          </Link>
+        </div>
+        {recentOrders.length === 0 ? (
+          <p className="p-5 text-sm text-muted-foreground">{t('dashboardHome.noOrdersYet')}</p>
+        ) : (
+          <>
+            {/* Móvil: tarjetas — la tabla de abajo necesitaba scroll
+                horizontal para ver cliente/total/estado a la vez, justo lo
+                que se quiere evitar en el teléfono (mismo patrón que ya se
+                usa en el historial de pedidos del cliente). */}
+            <div className="space-y-2 p-3 md:hidden">
+              {recentOrders.map((order) => (
+                <div key={order.id} className="rounded-2xl border border-border bg-muted/30 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground">#{order.order_number}</p>
+                      <p className="truncate text-xs text-muted-foreground">{order.customer_name}</p>
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span>
-                        {t('dashboardHome.itemsSuffix', { count: order.itemCount })} · {formatDate(order.created_at)}
-                      </span>
-                      <span className="shrink-0 font-bold text-foreground">{formatCurrency(order.total)}</span>
-                    </div>
+                    <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>
+                      {t(`orderStatus.${order.status}`)}
+                    </Badge>
                   </div>
-                ))}
-              </div>
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {t('dashboardHome.itemsSuffix', { count: order.itemCount })} · {formatDate(order.created_at)}
+                    </span>
+                    <span className="shrink-0 font-bold text-foreground">{formatCurrency(order.total)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-              <Table className="mt-3 hidden md:table">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('ordersAdmin.orderLabel')}</TableHead>
-                    <TableHead>{t('ordersAdmin.customer')}</TableHead>
-                    <TableHead>{t('checkout.total')}</TableHead>
-                    <TableHead>{t('ordersAdmin.status')}</TableHead>
+            <Table className="mt-3 hidden md:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('ordersAdmin.orderLabel')}</TableHead>
+                  <TableHead>{t('ordersAdmin.customer')}</TableHead>
+                  <TableHead>{t('checkout.total')}</TableHead>
+                  <TableHead>{t('ordersAdmin.status')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>
+                      <p className="font-semibold text-foreground">#{order.order_number}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('dashboardHome.itemsSuffix', { count: order.itemCount })} · {formatDate(order.created_at)}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{order.customer_name}</TableCell>
+                    <TableCell className="font-bold text-foreground">{formatCurrency(order.total)}</TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>{t(`orderStatus.${order.status}`)}</Badge>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <p className="font-semibold text-foreground">#{order.order_number}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t('dashboardHome.itemsSuffix', { count: order.itemCount })} · {formatDate(order.created_at)}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-ink-600">{order.customer_name}</TableCell>
-                      <TableCell className="font-bold text-foreground">{formatCurrency(order.total)}</TableCell>
-                      <TableCell>
-                        <Badge variant={STATUS_VARIANT[order.status as OrderStatus]}>{t(`orderStatus.${order.status}`)}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </>
-          )}
-        </Card>
-
-        <Card className="min-w-0 p-5">
-          <h2 className="mb-1 text-base font-extrabold text-foreground">{t('dashboardHome.salesAnalytics')}</h2>
-          <p className="mb-4 break-words text-xl font-extrabold text-foreground">{formatCurrency(revenueThisWeek)}</p>
-          <div className="h-32 w-full overflow-hidden">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Bar dataKey="thisWeek" fill="#ff0000" radius={[6, 6, 0, 0]} name={t('dashboardHome.thisWeek')} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        )}
+      </Card>
 
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-extrabold text-foreground">{t('dashboardHome.topSellingItems')}</h2>
-          <Link href="/company/menu" className="text-xs font-bold text-brand-900">
+          <Link href="/company/menu" className="text-xs font-bold text-brand-400">
             {t('dashboardHome.viewAll')}
           </Link>
         </div>
@@ -438,6 +570,27 @@ export default function DashboardPage() {
           </div>
         )}
       </Card>
+
+      {/* Comparativa semanal (nuevos clientes/pedidos vs. semana pasada) —
+          se mantiene, pero deliberadamente al final: es contexto de
+          tendencia, no algo que la operación necesite ver antes que el
+          estado de cocina/entregas de ahora mismo. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <StatCard
+          label={t('dashboardHome.totalOrders')}
+          value={String(ordersThisWeek)}
+          icon={<ClipboardList size={20} />}
+          tone="brand"
+          trend={{ pct: pctChange(ordersThisWeek, ordersLastWeek), label: t('dashboardHome.fromLastWeek', { pct: pctChange(ordersThisWeek, ordersLastWeek).toFixed(1) }) }}
+        />
+        <StatCard
+          label={t('dashboardHome.newCustomers')}
+          value={String(newCustomersThisWeek)}
+          icon={<Users size={20} />}
+          tone="success"
+          trend={{ pct: pctChange(newCustomersThisWeek, newCustomersLastWeek), label: t('dashboardHome.fromLastWeek', { pct: pctChange(newCustomersThisWeek, newCustomersLastWeek).toFixed(1) }) }}
+        />
+      </div>
     </div>
   )
 }

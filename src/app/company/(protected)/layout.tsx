@@ -243,13 +243,83 @@ function CompanyChrome({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background lg:flex">
+    <div className="min-h-screen bg-background md:flex">
       <a
         href="#company-main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-pop"
       >
         {t('common.skipToContent')}
       </a>
+
+      {/* Tablet: riel de solo íconos (persistente, nunca un drawer) —
+          "colapsado" en el sentido de que no repite las etiquetas del
+          sidebar de escritorio, pero sigue siendo navegación fija en
+          pantalla; el botón de arriba abre el mismo Sheet de mobile para
+          quien prefiera ver las etiquetas completas sin llegar a 1024px. */}
+      <aside className="hidden w-[72px] shrink-0 flex-col items-center justify-between bg-ink-900 py-4 text-white md:flex lg:hidden">
+        <div className="flex flex-col items-center gap-1">
+          <Link
+            href="/"
+            title={t('nav.viewSite')}
+            className="mb-3 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-500 text-white"
+          >
+            <ChefHat size={20} aria-hidden="true" />
+          </Link>
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            aria-label={t('common.openMenu')}
+            aria-expanded={mobileNavOpen}
+            className="mb-2 grid h-10 w-10 place-items-center rounded-2xl text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <Menu size={18} aria-hidden="true" />
+          </button>
+          <nav aria-label={t('common.mainNav')} className="flex flex-col items-center gap-1">
+            {items.map(({ href, label }) => {
+              const isActive = pathname === href
+              const Icon = ICONS[href] ?? Package
+              const unreadCount = href === '/company/support' ? openReportIds.length : 0
+              const navLabel = NAV_LABEL_KEYS[href] ? t(`dashboardNav.${NAV_LABEL_KEYS[href]}`) : label
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  title={navLabel}
+                  aria-label={navLabel}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition',
+                    isActive ? 'bg-brand-500 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                  )}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  {unreadCount > 0 && (
+                    <span className="absolute right-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger-500 px-0.5 text-[9px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+        <div className="flex flex-col items-center gap-1 border-t border-white/10 pt-3">
+          <span
+            title={profile?.full_name || user?.email || undefined}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-xs font-extrabold text-white"
+          >
+            {initialsFor(profile?.full_name, user?.email)}
+          </span>
+          <button
+            onClick={handleSignOut}
+            aria-label={t('nav.signOut')}
+            title={t('nav.signOut')}
+            className="grid h-10 w-10 place-items-center rounded-2xl text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <LogOut size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </aside>
+
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-ink-900 p-5 text-white lg:flex">
         <div>
           <Link
@@ -377,8 +447,9 @@ function CompanyChrome({ children }: { children: ReactNode }) {
 
       {/* Barra superior para móvil: con 10+ secciones no cabían como iconos
           en una barra inferior, así que en móvil se navega desde un menú
-          de pantalla completa (mismas secciones que el sidebar de escritorio). */}
-      <header className="sticky top-0 z-30 flex items-center justify-between bg-ink-900 px-4 py-3 text-white lg:hidden">
+          de pantalla completa (mismas secciones que el sidebar de escritorio).
+          Solo por debajo de md — la tablet ya tiene su riel de íconos arriba. */}
+      <header className="sticky top-0 z-30 flex items-center justify-between bg-ink-900 px-4 py-3 text-white md:hidden">
         <Link href="/" title={t('nav.viewSite')} className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-brand-500 text-white">
             <ChefHat size={18} />

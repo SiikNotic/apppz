@@ -116,17 +116,17 @@ export default function SupportPage() {
         actions={
           <button
             onClick={() => setShowResolved((v) => !v)}
-            className="text-sm font-semibold text-brand-900 hover:underline"
+            className="text-sm font-semibold text-brand-400 hover:underline"
           >
             {showResolved ? t('support.hideResolved') : t('support.showResolved')}
           </button>
         }
       />
 
-      <Card className="divide-y divide-ink-100 p-0">
-        {loading && <p className="p-5 text-sm text-ink-400">{t('common.loading')}</p>}
+      <Card className="divide-y divide-border p-0">
+        {loading && <p className="p-5 text-sm text-muted-foreground">{t('common.loading')}</p>}
         {!loading && visible.length === 0 && (
-          <p className="p-5 text-sm text-ink-400">{t('support.noReports')}</p>
+          <p className="p-5 text-sm text-muted-foreground">{t('support.noReports')}</p>
         )}
         {visible.map((report) => {
           const isMine = report.assigned_to === profile?.id
@@ -136,7 +136,7 @@ export default function SupportPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-bold text-ink-900">
+                    <span className="text-sm font-bold text-foreground">
                       {report.order ? `${t('ordersAdmin.orderLabel')} #${report.order.order_number}` : t('support.orderDeleted')}
                     </span>
                     <Badge variant="brand">
@@ -147,10 +147,10 @@ export default function SupportPage() {
                     </Badge>
                   </div>
                   {report.order?.customer_name && (
-                    <p className="mt-1 text-xs text-ink-400">{report.order.customer_name}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{report.order.customer_name}</p>
                   )}
-                  {report.description && <p className="mt-1.5 text-sm text-ink-600">{report.description}</p>}
-                  <p className="mt-1 text-xs text-ink-400">
+                  {report.description && <p className="mt-1.5 text-sm text-muted-foreground">{report.description}</p>}
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {formatDate(report.created_at)} ·{' '}
                     {report.assignee?.full_name
                       ? t('support.assignedTo', { name: report.assignee.full_name })
@@ -179,7 +179,7 @@ export default function SupportPage() {
                 </div>
               </div>
               {chatOpen && isMine && profile && (
-                <div className="mt-3 border-t border-ink-100 pt-3">
+                <div className="mt-3 border-t border-border pt-3">
                   <SupportChatThread reportId={report.id} currentUserId={profile.id} isStaff />
                 </div>
               )}
