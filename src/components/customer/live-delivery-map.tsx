@@ -4,10 +4,15 @@
 // seguimiento. Pines fijos de restaurante y destino, más un marcador de
 // repartidor que se mueve conforme llegan actualizaciones de
 // drivers.current_lat/current_lng (ver useDriverLocationSharing en el
-// lado del repartidor, ya throttleado a ~5s). La línea entre los tres
-// puntos es una línea recta ilustrativa, NO una ruta real por calles —
-// trazar la ruta real requeriría una API de enrutamiento aparte
-// (costo/proveedor extra que no se justificaba solo para esto).
+// lado del repartidor, ya throttleado a ~5s). La línea que se dibuja es
+// la ruta REAL por calles (Mapbox Directions, vía useRoadRoute) desde la
+// posición actual del repartidor hasta el destino — antes era una
+// LineString recta ilustrativa; ver useRoadRoute (hooks/) para el
+// throttle/desvío que evita pedir una ruta nueva en cada tick de GPS. El
+// pin de restaurante se sigue mostrando como referencia fija, pero ya no
+// forma parte de la línea: una vez que el repartidor salió a entregar, la
+// ruta que importa es "de él hacia el cliente", no "del restaurante hacia
+// el cliente pasando por él".
 //
 // La cámara solo se reencuadra una vez al llegar la primera posición del
 // repartidor y de nuevo si cambian los pines de restaurante/destino —
@@ -25,6 +30,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { supabase } from '@/lib/supabase'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { MAPBOX_TOKEN, MAPBOX_STYLE } from '@/lib/mapbox'
+import { useRoadRoute } from '@/hooks/useRoadRoute'
 
 mapboxgl.accessToken = MAPBOX_TOKEN
 
@@ -57,7 +63,6 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
   const restaurantMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null)
-  const driverPosRef = useRef<LatLng | null>(null)
   const hasFitRef = useRef(false)
   const [driverPos, setDriverPos] = useState<LatLng | null>(null)
   const [mapBroken, setMapBroken] = useState(false)
@@ -66,9 +71,10 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
   // crear el mapa, en vez de dejar un canvas en blanco sin explicación.
   const canRenderMap = Boolean(MAPBOX_TOKEN) && mapboxgl.supported() && !mapBroken
 
-  useEffect(() => {
-    driverPosRef.current = driverPos
-  }, [driverPos])
+  // Ruta real por calles del repartidor hacia el destino — null mientras
+  // no haya posición del repartidor o destino, o si el proveedor no pudo
+  // calcularla (ver useRoadRoute para el throttle/desvío).
+  const { coordinates: routeCoords, status: routeStatus } = useRoadRoute([driverPos, destination])
 
   // Posición inicial (última conocida en la DB) + suscripción en vivo.
   useEffect(() => {
@@ -135,7 +141,10 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
         id: ROUTE_SOURCE_ID,
         type: 'line',
         source: ROUTE_SOURCE_ID,
-        paint: { 'line-color': '#ff4433', 'line-width': 3, 'line-dasharray': [2, 2] },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        // Línea sólida (ya no punteada): es la ruta real por calles, no
+        // una aproximación ilustrativa.
+        paint: { 'line-color': '#ff4433', 'line-width': 4 },
       })
     })
     mapRef.current = map
@@ -174,31 +183,35 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
     }
   }, [restaurant, destination])
 
-  // Redibuja la línea (restaurante → repartidor → destino) — barato, solo
-  // actualiza datos de una fuente GeoJSON. Devuelve los puntos usados por
-  // si además hace falta reencuadrar la cámara.
-  function redrawLine(): [number, number][] {
-    const map = mapRef.current
-    const pos = driverPosRef.current
-    const points: [number, number][] = [
-      restaurant ? ([restaurant.lng, restaurant.lat] as [number, number]) : null,
-      pos ? ([pos.lng, pos.lat] as [number, number]) : null,
-      destination ? ([destination.lng, destination.lat] as [number, number]) : null,
-    ].filter((p): p is [number, number] => p !== null)
-    function draw() {
-      const source = map!.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
-      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points } })
-    }
-    if (map) {
-      if (loadedRef.current) draw()
-      else map.once('load', draw)
-    }
-    return points
-  }
-
-  function fitToPoints(points: [number, number][]) {
+  // Pinta la geometría real de la ruta (o la vacía si todavía no hay
+  // ninguna) — barato, solo actualiza datos de una fuente GeoJSON.
+  function drawRoute(coords: [number, number][]) {
     const map = mapRef.current
     if (!map) return
+    function draw() {
+      const source = map!.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
+      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } })
+    }
+    if (loadedRef.current) draw()
+    else map.once('load', draw)
+  }
+
+  useEffect(() => {
+    drawRoute(routeCoords ?? [])
+  }, [routeCoords])
+
+  // Encuadre: une los pines fijos + la posición del repartidor + (si ya
+  // hay una) la geometría real de la ruta, para que el marco capture
+  // también las vueltas del camino, no solo los extremos.
+  function fitAll() {
+    const map = mapRef.current
+    if (!map) return
+    const points: [number, number][] = [
+      restaurant ? ([restaurant.lng, restaurant.lat] as [number, number]) : null,
+      driverPos ? ([driverPos.lng, driverPos.lat] as [number, number]) : null,
+      destination ? ([destination.lng, destination.lat] as [number, number]) : null,
+      ...(routeCoords ?? []),
+    ].filter((p): p is [number, number] => p !== null)
     if (points.length > 1) {
       const bounds = points.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(points[0], points[0]))
       map.fitBounds(bounds, { padding: 48, maxZoom: 15 })
@@ -208,8 +221,8 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
   }
 
   // Marcador móvil del repartidor — corre en cada actualización de GPS
-  // (ya throttleada a ~5s). Solo mueve el pin y redibuja la línea; NUNCA
-  // toca la cámara acá (ver nota grande arriba del archivo).
+  // (ya throttleada a ~5s). Solo mueve el pin; NUNCA toca la cámara acá
+  // (ver nota grande arriba del archivo).
   useEffect(() => {
     const map = mapRef.current
     if (!map || !driverPos) return
@@ -222,7 +235,6 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
     } else {
       driverMarkerRef.current.setLngLat([driverPos.lng, driverPos.lat])
     }
-    redrawLine()
   }, [driverPos])
 
   // Encuadre inicial — en cuanto se conoce la posición del repartidor por
@@ -230,17 +242,17 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
   useEffect(() => {
     if (!driverPos || hasFitRef.current || !mapRef.current) return
     hasFitRef.current = true
-    fitToPoints(redrawLine())
+    fitAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al llegar la primera posición
   }, [driverPos])
 
-  // Reencuadre cuando cambia QUÉ hay que mostrar (restaurante o destino)
-  // — no en cada tick de GPS.
+  // Reencuadre cuando cambia QUÉ hay que mostrar (restaurante, destino o
+  // la ruta recién calculada) — no en cada tick de GPS.
   useEffect(() => {
     if (!hasFitRef.current) return
-    fitToPoints(redrawLine())
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- redrawLine/fitToPoints se recrean cada render, no deben disparar esto
-  }, [restaurant, destination])
+    fitAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fitAll se recrea cada render, no debe disparar esto
+  }, [restaurant, destination, routeCoords])
 
   if (!canRenderMap) {
     return (
@@ -255,6 +267,16 @@ export function LiveDeliveryMap({ driverId, restaurant, destination, heightClass
       <div ref={containerRef} className={`w-full ${heightClassName}`} />
       {!driverPos && (
         <p className="bg-card p-3 text-center text-xs text-muted-foreground">{t('deliveryTracking.waitingLocation')}</p>
+      )}
+      {/* "Calculando" solo en la primerísima carga (todavía no hay
+          ninguna ruta que mostrar); una vez que hay una, un recálculo en
+          curso o fallido no vuelve a mostrar este aviso — la línea
+          anterior se queda visible, que es el fallback razonable. */}
+      {driverPos && !routeCoords && routeStatus === 'loading' && (
+        <p className="bg-card p-3 text-center text-xs text-muted-foreground">{t('deliveryTracking.calculatingRoute')}</p>
+      )}
+      {driverPos && !routeCoords && routeStatus === 'error' && (
+        <p className="bg-card p-3 text-center text-xs text-warning-300">{t('deliveryTracking.routeUnavailable')}</p>
       )}
     </div>
   )

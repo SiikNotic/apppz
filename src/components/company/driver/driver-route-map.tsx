@@ -7,14 +7,18 @@
 // app no tiene ese concepto en el esquema — solo lo real: dónde está él,
 // dónde recoge, y a dónde va en orden.
 //
-// La línea entre puntos es recta e ilustrativa, no una ruta real por
-// calles (mismo alcance que LiveDeliveryMap del lado del cliente — trazar
-// una ruta real necesitaría una API de enrutamiento aparte).
+// La línea entre puntos es la ruta REAL por calles (Mapbox Directions, vía
+// useRoadRoute) desde la posición del conductor, pasando por la recogida y
+// cada parada en orden — antes era una LineString recta ilustrativa. Ver
+// useRoadRoute (hooks/) para el throttle/desvío que evita pedir una ruta
+// nueva en cada tick de GPS (mismo criterio que LiveDeliveryMap del lado
+// del cliente).
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { MAPBOX_TOKEN, MAPBOX_STYLE } from '@/lib/mapbox'
+import { useRoadRoute } from '@/hooks/useRoadRoute'
 
 mapboxgl.accessToken = MAPBOX_TOKEN
 
@@ -53,17 +57,14 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const pickupMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const stopMarkersRef = useRef<mapboxgl.Marker[]>([])
-  // Última posición conocida, en un ref además de venir por prop — la
-  // línea de ruta se redibuja leyendo esto en vez de depender de
-  // `driverPos` en el efecto de encuadre (ver más abajo, por qué).
-  const driverPosRef = useRef<LatLng | null>(driverPos)
   const hasFitRef = useRef(false)
   const [mapBroken, setMapBroken] = useState(false)
   const canRenderMap = Boolean(MAPBOX_TOKEN) && mapboxgl.supported() && !mapBroken
 
-  useEffect(() => {
-    driverPosRef.current = driverPos
-  }, [driverPos])
+  // Puntos de la ruta: [móvil (él), fijo1 (recogida), fijo2... (paradas en
+  // orden)]. Si `pickup` todavía no se conoce (config sin cargar aún), el
+  // hook simplemente no pide nada — no rompe, no dibuja nada raro.
+  const { coordinates: routeCoords, status: routeStatus } = useRoadRoute([driverPos, pickup, ...stops])
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN || !mapboxgl.supported()) return
@@ -89,12 +90,13 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
         id: ROUTE_SOURCE_ID,
         type: 'line',
         source: ROUTE_SOURCE_ID,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
         // #ff4433 = brand-500 — Mapbox paint properties no leen variables
         // CSS, así que queda como literal (mismo color que usa
         // LiveDeliveryMap del lado del cliente para esta misma línea).
-        // Antes tenía el naranja de marca anterior (#f2601c), desalineado
-        // desde el rebrand a rojo/negro.
-        paint: { 'line-color': '#ff4433', 'line-width': 3, 'line-dasharray': [2, 2] },
+        // Línea sólida (ya no punteada): ahora es una ruta real por calles,
+        // no un trazo ilustrativo.
+        paint: { 'line-color': '#ff4433', 'line-width': 4 },
       })
     })
     mapRef.current = map
@@ -146,26 +148,33 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stops ya viene recalculado por identidad en cada cambio real
   }, [stops])
 
-  // Redibuja la línea (él → recogida → paradas en orden) con los puntos
-  // vigentes — barato (solo actualiza datos de una fuente GeoJSON), a
-  // diferencia de mover la cámara. Devuelve los puntos usados, por si el
-  // que llama decide que además hace falta reencuadrar.
-  function redrawLine(): [number, number][] {
+  // Dibuja la geometría de la ruta real (lo que devuelve useRoadRoute) en
+  // la fuente GeoJSON — barato, a diferencia de mover la cámara.
+  function drawRoute(coords: [number, number][]) {
     const map = mapRef.current
-    const pos = driverPosRef.current
-    const points: [number, number][] = [
-      pos ? ([pos.lng, pos.lat] as [number, number]) : null,
-      pickup ? ([pickup.lng, pickup.lat] as [number, number]) : null,
-      ...stops.map((s) => [s.lng, s.lat] as [number, number]),
-    ].filter((p): p is [number, number] => p !== null)
+    if (!map) return
     function draw() {
       const source = map!.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
-      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points } })
+      source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } })
     }
-    if (map) {
-      if (loadedRef.current) draw()
-      else map.once('load', draw)
-    }
+    if (loadedRef.current) draw()
+    else map.once('load', draw)
+  }
+
+  useEffect(() => {
+    drawRoute(routeCoords ?? [])
+  }, [routeCoords])
+
+  // Todos los puntos a considerar para encuadrar la cámara: los pines
+  // (él, recogida, paradas) unidos con la geometría de la ruta real, para
+  // que el encuadre cubra las calles por las que pasa, no solo los pines.
+  function allPoints(): [number, number][] {
+    const points: [number, number][] = [
+      driverPos ? ([driverPos.lng, driverPos.lat] as [number, number]) : null,
+      pickup ? ([pickup.lng, pickup.lat] as [number, number]) : null,
+      ...stops.map((s) => [s.lng, s.lat] as [number, number]),
+      ...(routeCoords ?? []),
+    ].filter((p): p is [number, number] => p !== null)
     return points
   }
 
@@ -181,10 +190,12 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
   }
 
   // Marcador del propio conductor — corre en cada actualización de GPS
-  // (ya viene throttleada a ~5s, ver useDriverLocationSharing). Solo
-  // mueve el pin y redibuja la línea; NUNCA toca la cámara acá — reanimar
-  // el WebGL (fitBounds) a la frecuencia del GPS es lo que podía tumbar
-  // la pestaña en celulares de gama media.
+  // (ya viene throttleada a ~5s, ver useDriverLocationSharing). Solo mueve
+  // el pin; NUNCA toca la cámara acá — reanimar el WebGL (fitBounds) a la
+  // frecuencia del GPS es lo que podía tumbar la pestaña en celulares de
+  // gama media. El redibujo de la línea de ruta lo maneja el efecto de
+  // routeCoords de arriba, que a su vez solo cambia cuando useRoadRoute
+  // decide que vale la pena recalcular (no en cada tick).
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
@@ -202,7 +213,6 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
       driverMarkerRef.current?.remove()
       driverMarkerRef.current = null
     }
-    redrawLine()
   }, [driverPos])
 
   // Encuadre inicial — en cuanto se conoce la posición del conductor por
@@ -210,19 +220,19 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
   useEffect(() => {
     if (!driverPos || hasFitRef.current || !mapRef.current) return
     hasFitRef.current = true
-    fitToPoints(redrawLine())
+    fitToPoints(allPoints())
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al llegar la primera posición
   }, [driverPos])
 
-  // Reencuadre cuando cambia QUÉ hay que mostrar (recogida o la cola) —
-  // no en cada tick de GPS (ver nota arriba). Si el primer encuadre
-  // todavía no ocurrió (sin posición aún), lo salta: el efecto de arriba
-  // ya se encarga en cuanto llegue.
+  // Reencuadre cuando cambia QUÉ hay que mostrar (recogida, la cola, o la
+  // ruta real ya calculada) — no en cada tick de GPS (ver nota arriba). Si
+  // el primer encuadre todavía no ocurrió (sin posición aún), lo salta: el
+  // efecto de arriba ya se encarga en cuanto llegue.
   useEffect(() => {
     if (!hasFitRef.current) return
-    fitToPoints(redrawLine())
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- redrawLine/fitToPoints se recrean cada render, no deben disparar esto
-  }, [pickup, stops])
+    fitToPoints(allPoints())
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- allPoints/fitToPoints se recrean cada render, no deben disparar esto
+  }, [pickup, stops, routeCoords])
 
   if (!canRenderMap) {
     return (
@@ -232,5 +242,15 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
     )
   }
 
-  return <div ref={containerRef} className={`w-full ${heightClassName}`} />
+  return (
+    <div>
+      <div ref={containerRef} className={`w-full ${heightClassName}`} />
+      {driverPos && pickup && !routeCoords && routeStatus === 'loading' && (
+        <p className="bg-card p-2 text-center text-xs text-muted-foreground">{t('deliveryTracking.calculatingRoute')}</p>
+      )}
+      {driverPos && pickup && !routeCoords && routeStatus === 'error' && (
+        <p className="bg-card p-2 text-center text-xs text-warning-300">{t('deliveryTracking.routeUnavailable')}</p>
+      )}
+    </div>
+  )
 }
