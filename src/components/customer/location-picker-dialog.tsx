@@ -88,13 +88,21 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
 
   // Geocodifica el centro cada vez que deja de moverse (con un pequeño
   // debounce) — así el panel inferior muestra una dirección legible en
-  // vez de solo coordenadas.
+  // vez de solo coordenadas. `resolvedOnce` se usa para no dejar
+  // confirmar mientras esto no ha corrido ni una vez — antes se podía
+  // tocar "Guardar ubicación" apenas se abría el diálogo, antes de que el
+  // primer reverse-geocode siquiera empezara, guardando el centro por
+  // defecto (Ciudad de México) sin que nada avisara que no era la
+  // ubicación real.
+  const [resolvedOnce, setResolvedOnce] = useState(false)
   useEffect(() => {
     if (!open) return
     let active = true
     const timeout = setTimeout(() => {
       reverseGeocode(center.lat, center.lng).then((result) => {
-        if (active) setAddress(result)
+        if (!active) return
+        setAddress(result)
+        setResolvedOnce(true)
       })
     }, 500)
     return () => {
@@ -102,6 +110,10 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
       clearTimeout(timeout)
     }
   }, [center, open])
+
+  useEffect(() => {
+    if (open) setResolvedOnce(false)
+  }, [open])
 
   async function handleSearch() {
     if (!search.trim()) return
@@ -195,8 +207,8 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
                   {address ? [address.street, address.city, address.state].filter(Boolean).join(', ') : t('account.locatingAddress')}
                 </p>
               </div>
-              <Button fullWidth size="lg" onClick={handleConfirm}>
-                {t('account.setLocation')}
+              <Button fullWidth size="lg" onClick={handleConfirm} disabled={!resolvedOnce}>
+                {resolvedOnce ? t('account.setLocation') : t('account.locatingAddress')}
               </Button>
             </div>
           )}

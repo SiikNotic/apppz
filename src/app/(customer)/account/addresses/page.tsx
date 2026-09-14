@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, Home, Briefcase, MapPin, Dog } from 'lucide-react
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchUserAddresses, createAddress, updateAddress, deleteAddress } from '@/lib/data-access/addresses'
 import { addressSchema, firstFieldErrors, type AddressInput } from '@/lib/validation/address.schema'
+import { geocodeAddress } from '@/lib/geo'
 import { Card } from '@/components/ui/card'
 
 // Mapbox GL necesita `window` — con export estático hay que saltarlo del
@@ -56,6 +57,8 @@ export default function AddressesPage() {
   const [saving, setSaving] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [locatedNotice, setLocatedNotice] = useState(false)
+  // Centro inicial del selector de mapa — ver openLocationPicker().
+  const [pickerInitial, setPickerInitial] = useState<{ lat: number; lng: number } | null>(null)
 
   async function load() {
     if (!user) return
@@ -98,6 +101,27 @@ export default function AddressesPage() {
     setFieldErrors({})
     setLocatedNotice(false)
     setFormOpen(true)
+  }
+
+  // Abre el selector de mapa. Si ya hay lat/lng (dirección ya ubicada
+  // antes) lo centra ahí; si no pero ya se tipeó calle+ciudad, geocodifica
+  // ese texto para arrancar en el lugar correcto — antes siempre abría en
+  // Ciudad de México (DEFAULT_CENTER del diálogo) sin importar lo que ya
+  // se hubiera escrito, y confirmar sin mover el mapa guardaba esa
+  // coordenada equivocada aunque la calle/ciudad tecleadas fueran
+  // correctas (así terminó una dirección real de Philadelphia con
+  // coordenadas de CDMX).
+  async function openLocationPicker() {
+    setFormOpen(false)
+    if (form.lat != null && form.lng != null) {
+      setPickerInitial({ lat: form.lat, lng: form.lng })
+    } else if (form.street.trim() && form.city.trim()) {
+      const query = [form.street, form.city, form.state, form.zip].filter(Boolean).join(', ')
+      setPickerInitial(await geocodeAddress(query))
+    } else {
+      setPickerInitial(null)
+    }
+    setPickerOpen(true)
   }
 
   function handleLocationConfirm({
@@ -226,15 +250,7 @@ export default function AddressesPage() {
                 </Select>
               </div>
 
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                onClick={() => {
-                  setFormOpen(false)
-                  setPickerOpen(true)
-                }}
-              >
+              <Button type="button" variant="secondary" fullWidth onClick={openLocationPicker}>
                 <MapPin size={16} aria-hidden="true" /> {t('account.pickOnMapButton')}
               </Button>
               {locatedNotice && (
@@ -297,7 +313,7 @@ export default function AddressesPage() {
 
       <LocationPickerDialog
         open={pickerOpen}
-        initial={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+        initial={pickerInitial}
         onClose={() => {
           setPickerOpen(false)
           setFormOpen(true)
