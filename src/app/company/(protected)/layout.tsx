@@ -37,6 +37,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase'
 import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { useStaffClock } from '@/hooks/useStaffClock'
+import { useDriverShift } from '@/hooks/useDriverShift'
 import { BRAND_NAME } from '@/lib/config'
 import { NAV_ITEMS_BY_PERMISSION } from '@/lib/auth/permissions'
 import type { Driver } from '@/lib/types'
@@ -137,6 +138,13 @@ function CompanyChrome({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { isDriver: isClockDriver, openShift, loading: clockLoading, busy: clockBusy, toggle: toggleClock } = useStaffClock()
   const isDriverRole = profile?.company_role === 'driver'
+  // Fichaje del conductor — antes vivía como botón en /company/driver,
+  // ahora el botón está aquí (mismo lugar que el resto del personal);
+  // esa pantalla solo lee el estado (useDriverShift también, ver nota
+  // ahí). Se llama siempre (no solo si isDriverRole) por las reglas de
+  // hooks — el hook mismo no hace nada sin un userId de conductor real.
+  const { openShift: driverOpenShift, busy: driverShiftBusy, clockIn: driverClockIn, clockOut: driverClockOut } =
+    useDriverShift(isDriverRole ? user?.id : undefined)
 
   // Datos reales para el encabezado del menú móvil del conductor (ver
   // DriverMobileMenu más abajo) — conteo de entregas completadas y estado
@@ -299,29 +307,55 @@ function CompanyChrome({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
-          {/* Fichaje de horas — conductores ya lo hacen desde /company/driver,
-              este control es para el resto del personal (ver useStaffClock). */}
-          {!isClockDriver && !clockLoading && (
+          {/* Fichaje de horas — antes el conductor lo hacía desde una
+              tarjeta en /company/driver, ahora vive aquí igual que el
+              resto del personal (useDriverShift en vez de useStaffClock,
+              ver nota junto a su declaración más arriba). */}
+          {isDriverRole ? (
             <button
-              onClick={handleClockToggle}
-              disabled={clockBusy}
+              onClick={driverOpenShift ? driverClockOut : driverClockIn}
+              disabled={driverShiftBusy}
               className={cn(
                 'flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition disabled:opacity-60',
-                openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                driverOpenShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/60 hover:bg-white/10 hover:text-white'
               )}
             >
-              {openShift ? <Clock size={18} aria-hidden="true" /> : <LogIn size={18} aria-hidden="true" />}
+              {driverOpenShift ? <Clock size={18} aria-hidden="true" /> : <LogIn size={18} aria-hidden="true" />}
               <span className="min-w-0 flex-1 text-left">
-                {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
-                {openShift && (
+                {driverOpenShift ? t('driverPage.clockOut') : t('driverPage.clockIn')}
+                {driverOpenShift && (
                   <span className="block truncate text-[10px] font-normal normal-case opacity-80">
                     {t('teamAdmin.clockedInSince', {
-                      time: new Date(openShift.clock_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      time: new Date(driverOpenShift.clock_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     })}
                   </span>
                 )}
               </span>
             </button>
+          ) : (
+            !isClockDriver &&
+            !clockLoading && (
+              <button
+                onClick={handleClockToggle}
+                disabled={clockBusy}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition disabled:opacity-60',
+                  openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                )}
+              >
+                {openShift ? <Clock size={18} aria-hidden="true" /> : <LogIn size={18} aria-hidden="true" />}
+                <span className="min-w-0 flex-1 text-left">
+                  {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
+                  {openShift && (
+                    <span className="block truncate text-[10px] font-normal normal-case opacity-80">
+                      {t('teamAdmin.clockedInSince', {
+                        time: new Date(openShift.clock_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      })}
+                    </span>
+                  )}
+                </span>
+              </button>
+            )
           )}
           <Link
             href="/"
@@ -461,18 +495,37 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="space-y-1 border-t border-white/10 px-4 py-4">
-            {!isClockDriver && !clockLoading && (
+            {/* Entrada/salida — antes vivía como botón en /company/driver
+                para el conductor, ahora está aquí para todo el personal
+                (useDriverShift vs. useStaffClock, ver notas junto a sus
+                declaraciones más arriba). */}
+            {isDriverRole ? (
               <button
-                onClick={handleClockToggle}
-                disabled={clockBusy}
+                onClick={driverOpenShift ? driverClockOut : driverClockIn}
+                disabled={driverShiftBusy}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition disabled:opacity-60',
-                  openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  driverOpenShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/70 hover:bg-white/5 hover:text-white'
                 )}
               >
-                {openShift ? <Clock size={20} aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
-                {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
+                {driverOpenShift ? <Clock size={20} aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
+                {driverOpenShift ? t('driverPage.clockOut') : t('driverPage.clockIn')}
               </button>
+            ) : (
+              !isClockDriver &&
+              !clockLoading && (
+                <button
+                  onClick={handleClockToggle}
+                  disabled={clockBusy}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-semibold transition disabled:opacity-60',
+                    openShift ? 'bg-success-500/15 text-success-500 hover:bg-success-500/25' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  )}
+                >
+                  {openShift ? <Clock size={20} aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
+                  {openShift ? t('teamAdmin.clockOut') : t('teamAdmin.clockIn')}
+                </button>
+              )
             )}
             <Link
               href="/"

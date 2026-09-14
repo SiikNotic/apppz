@@ -29,6 +29,7 @@ import { ReportProblemDialog } from '@/components/customer/report-problem-dialog
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/company/page-header'
 import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing'
+import { useDriverShift } from '@/hooks/useDriverShift'
 import { fetchAssignmentsWithOrders, ACTIVE_STATUSES, type AssignmentWithOrder } from '@/lib/driverAssignments'
 import { resolveDeliveryLocation } from '@/lib/geo'
 import type { RouteStop } from '@/components/company/driver/driver-route-map'
@@ -36,7 +37,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { BRAND_NAME } from '@/lib/config'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
-import type { Driver, DriverShift } from '@/lib/types'
+import type { Driver } from '@/lib/types'
 
 // mapbox-gl necesita `window` — con export estático, evaluarlo durante el
 // build de prerenderizado rompería el build (mismo patrón que
@@ -67,16 +68,12 @@ export default function DriverPage() {
   const [error, setError] = useState<string | null>(null)
   const [routeCompletedFlash, setRouteCompletedFlash] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
-  // Un solo registro de turno: antes había dos controles separados
-  // (Disponible/Offline arriba, Marcar entrada/salida en su propia
-  // tarjeta) que confundían — "estoy trabajando" y "puedo recibir una
-  // entrega" son, en la práctica, la misma decisión para un conductor de
-  // esta cocina. Marcar entrada abre el turno Y pone status=available a
-  // la vez; marcar salida cierra el turno Y pone status=offline. El
-  // estado "on_delivery" sigue siendo del sistema, no algo que el
-  // conductor active a mano — por eso no tiene botón, solo una etiqueta.
-  const [openShift, setOpenShift] = useState<DriverShift | null>(null)
-  const [shiftBusy, setShiftBusy] = useState(false)
+  // Fichaje: el botón de entrada/salida vive en el menú lateral (mismo
+  // lugar que el resto del personal), esta pantalla solo muestra el
+  // estado (useDriverShift, compartido con ese botón). El estado
+  // "on_delivery" sigue siendo del sistema, no algo que el conductor
+  // active a mano — por eso no tiene botón, solo una etiqueta.
+  const { openShift } = useDriverShift(user?.id)
   // Cobro de efectivo: driver_update_assignment ya rechaza "entregado" en
   // el servidor si el pedido es en efectivo y no se confirmó el cobro —
   // esto solo hace que la interfaz lo pida antes de intentarlo.
@@ -127,14 +124,12 @@ export default function DriverPage() {
   async function loadAll() {
     if (!user) return
     const wasWorkingOnSomething = active.length > 0
-    const [{ data: driverRow }, activeRows, { data: shiftRow }] = await Promise.all([
+    const [{ data: driverRow }, activeRows] = await Promise.all([
       supabase.from('drivers').select('*').eq('user_id', user.id).maybeSingle(),
       fetchAssignmentsWithOrders(ACTIVE_STATUSES, user.id),
-      supabase.from('driver_shifts').select('*').eq('driver_id', user.id).is('clock_out_at', null).maybeSingle(),
     ])
     setDriver(driverRow)
     setActive(activeRows)
-    setOpenShift(shiftRow)
     setLoading(false)
     // Si tenía entregas activas y ahora ya no, la ruta se acaba de
     // completar — se lo hacemos notar en vez de dejarlo caer en el mismo
@@ -161,28 +156,6 @@ export default function DriverPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isDriver])
-
-  async function clockIn() {
-    if (!user) return
-    setShiftBusy(true)
-    await Promise.all([
-      supabase.from('driver_shifts').insert({ driver_id: user.id }),
-      supabase.from('drivers').update({ status: 'available' }).eq('user_id', user.id),
-    ])
-    setShiftBusy(false)
-    loadAll()
-  }
-
-  async function clockOut() {
-    if (!user || !openShift) return
-    setShiftBusy(true)
-    await Promise.all([
-      supabase.from('driver_shifts').update({ clock_out_at: new Date().toISOString() }).eq('id', openShift.id),
-      supabase.from('drivers').update({ status: 'offline' }).eq('user_id', user.id),
-    ])
-    setShiftBusy(false)
-    loadAll()
-  }
 
   async function updateAssignment(assignmentId: string, next: 'en_route' | 'delivered' | 'failed') {
     setBusyId(assignmentId)
@@ -273,9 +246,8 @@ export default function DriverPage() {
         }
       />
 
-      {/* Un solo control de turno/disponibilidad — ver nota junto a
-          openShift más arriba sobre por qué se fusionaron los dos que
-          había antes. */}
+      {/* Solo lectura — el botón de entrada/salida vive en el menú
+          lateral (ver nota junto a useDriverShift más arriba). */}
       <Card
         className={cn(
           'flex items-center justify-between gap-3 border-l-4 p-4',
@@ -307,13 +279,9 @@ export default function DriverPage() {
         {isOnDelivery ? (
           <Badge variant="brand">{t('driverPage.statusOnDelivery')}</Badge>
         ) : isClockedIn ? (
-          <Button size="sm" variant="secondary" disabled={shiftBusy} onClick={clockOut}>
-            {shiftBusy ? t('menuMgmt.savingButton') : t('driverPage.clockOut')}
-          </Button>
+          <Badge variant="success">{t('driverPage.shiftActive')}</Badge>
         ) : (
-          <Button size="sm" disabled={shiftBusy} onClick={clockIn}>
-            {shiftBusy ? t('menuMgmt.savingButton') : t('driverPage.clockIn')}
-          </Button>
+          <Badge variant="neutral">{t('driversAdmin.statusOffline')}</Badge>
         )}
       </Card>
 
