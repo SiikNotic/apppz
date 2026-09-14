@@ -12,7 +12,7 @@ import { MenuGrid } from '@/components/customer/menu-grid'
 import { ProductCard } from '@/components/customer/product-card'
 import { PizzaBuilderModal } from '@/components/customer/pizza-builder-modal'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
-import { PromoBannerHero } from '@/components/customer/promo-banner-hero'
+import { PromoBannerCarousel } from '@/components/customer/promo-banner-carousel'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { CategoryPillIcon } from '@/components/customer/category-pill-icon'
@@ -22,7 +22,7 @@ import type { MenuItem } from '@/lib/types'
 
 export default function HomePage() {
   const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
-  const { banner } = usePromoBanner()
+  const { banners } = usePromoBanner()
   const { addLine } = useCart()
   const { t } = useLanguage()
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery')
@@ -121,14 +121,16 @@ export default function HomePage() {
         </section>
       ) : (
         <>
-          {/* Hero: la promoción activa manda cuando existe — es la que
-              vende. Sin promo configurada, se arma un hero de marca con
-              la foto de un producto real del menú (nunca una imagen o
-              dato inventado) en vez del degradado de color plano de
-              antes. */}
-          {banner ? (
+          {/* Hero: la(s) promoción(es) activa(s) mandan cuando existen —
+              son las que venden. Con 2+ banners activos a la vez,
+              PromoBannerCarousel arma la rotación (nunca varios apilados);
+              con 1 solo, lo muestra tal cual. Sin ninguna promo
+              configurada, se arma un hero de marca con la foto de un
+              producto real del menú (nunca una imagen o dato inventado)
+              en vez del degradado de color plano de antes. */}
+          {banners.length > 0 ? (
             <>
-              <PromoBannerHero banner={banner} />
+              <PromoBannerCarousel banners={banners} />
               <section className="flex items-center gap-2 px-1 text-xs font-semibold text-muted-foreground">
                 <MapPin size={12} className="shrink-0" aria-hidden="true" />
                 {t('home.heroTitle')} · {BRAND_TAGLINE}
