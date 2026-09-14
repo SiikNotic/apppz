@@ -149,15 +149,17 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
             <div className="flex shrink-0 items-center gap-1.5">
               <button
                 onClick={() => openEdit(item)}
-                className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-muted-foreground hover:bg-white/15 hover:text-foreground"
+                aria-label={t('common.edit')}
+                className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
               >
-                <Pencil size={14} />
+                <Pencil size={14} aria-hidden="true" />
               </button>
               <button
                 onClick={() => handleDelete(item)}
+                aria-label={t('menuMgmt.deleteAria', { name: item.name })}
                 className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
               >
-                <Trash2 size={14} />
+                <Trash2 size={14} aria-hidden="true" />
               </button>
             </div>
           </div>

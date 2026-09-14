@@ -89,7 +89,12 @@ export function DriverRouteMap({ driverPos, pickup, pickupLabel, stops, heightCl
         id: ROUTE_SOURCE_ID,
         type: 'line',
         source: ROUTE_SOURCE_ID,
-        paint: { 'line-color': '#f2601c', 'line-width': 3, 'line-dasharray': [2, 2] },
+        // #ff4433 = brand-500 — Mapbox paint properties no leen variables
+        // CSS, así que queda como literal (mismo color que usa
+        // LiveDeliveryMap del lado del cliente para esta misma línea).
+        // Antes tenía el naranja de marca anterior (#f2601c), desalineado
+        // desde el rebrand a rojo/negro.
+        paint: { 'line-color': '#ff4433', 'line-width': 3, 'line-dasharray': [2, 2] },
       })
     })
     mapRef.current = map

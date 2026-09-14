@@ -149,6 +149,7 @@ export function CategoriesTab() {
                   </Button>
                   <button
                     onClick={() => handleDelete(cat)}
+                    aria-label={t('menuMgmt.deleteAria', { name: cat.name })}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                   >
                     <Trash2 size={14} aria-hidden="true" />
@@ -190,12 +191,14 @@ export function CategoriesTab() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openEdit(cat)}
+                          aria-label={t('common.edit')}
                           className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
                         >
                           <Pencil size={14} aria-hidden="true" />
                         </button>
                         <button
                           onClick={() => handleDelete(cat)}
+                          aria-label={t('menuMgmt.deleteAria', { name: cat.name })}
                           className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                         >
                           <Trash2 size={14} aria-hidden="true" />

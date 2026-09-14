@@ -14,5 +14,5 @@ export default function LegacyOrdersRedirect() {
   useEffect(() => {
     router.replace('/account/orders')
   }, [router])
-  return <p className="py-16 text-center text-sm text-ink-400">Redirigiendo…</p>
+  return <p className="py-16 text-center text-sm text-muted-foreground">Redirigiendo…</p>
 }

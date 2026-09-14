@@ -6,9 +6,13 @@ import { cn } from '@/lib/utils'
 
 interface LanguageToggleProps {
   className?: string
-  /** 'dark' es para chrome oscuro fijo (sidebar de compañía, bg-ink-900)
-   *  que no sigue el tema claro/oscuro del sitio — 'light' (default) es
-   *  para el resto de la app. */
+  /** 'dark' es para chrome oscuro FIJO (sidebar/menú de compañía,
+   *  bg-ink-900) que nunca sigue el tema claro/oscuro del sitio — usa
+   *  blanco/negro literales a propósito. 'light' (default, mal llamado —
+   *  en realidad es la variante "con tokens semánticos") es para el resto
+   *  de la app, que sí es dark-first/theming real; usa tokens
+   *  (text-muted-foreground, bg-muted) que ya se ven bien sobre el fondo
+   *  oscuro por defecto de la app de cliente. */
   variant?: 'light' | 'dark'
 }
 
@@ -20,8 +24,8 @@ export function LanguageToggle({ className, variant = 'light' }: LanguageToggleP
   const dark = variant === 'dark'
   return (
     <div className={cn('inline-flex items-center gap-1.5', className)}>
-      <Languages size={14} className={cn('shrink-0', dark ? 'text-white/40' : 'text-ink-400')} aria-hidden="true" />
-      <div className={cn('relative inline-flex rounded-full p-1 text-xs font-bold', dark ? 'bg-white/10' : 'bg-ink-900/5')}>
+      <Languages size={14} className={cn('shrink-0', dark ? 'text-white/40' : 'text-muted-foreground')} aria-hidden="true" />
+      <div className={cn('relative inline-flex rounded-full p-1 text-xs font-bold', dark ? 'bg-white/10' : 'bg-muted')}>
         <span
           aria-hidden="true"
           className={cn(
@@ -41,7 +45,7 @@ export function LanguageToggle({ className, variant = 'light' }: LanguageToggleP
                 : 'text-white'
               : dark
                 ? 'text-white/60 hover:text-white'
-                : 'text-ink-500 hover:text-ink-700'
+                : 'text-muted-foreground hover:text-foreground'
           )}
         >
           ES
@@ -57,7 +61,7 @@ export function LanguageToggle({ className, variant = 'light' }: LanguageToggleP
                 : 'text-white'
               : dark
                 ? 'text-white/60 hover:text-white'
-                : 'text-ink-500 hover:text-ink-700'
+                : 'text-muted-foreground hover:text-foreground'
           )}
         >
           EN

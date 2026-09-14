@@ -152,7 +152,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
         <div className="space-y-0">
           <div className="flex items-center gap-2 p-4 pb-0">
             <div className="relative flex-1">
-              <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden="true" />
+              <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -186,7 +186,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
               <button
                 onClick={handleUseMyLocation}
                 disabled={locating}
-                className="absolute bottom-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white text-brand-900 shadow-pop disabled:opacity-50"
+                className="absolute bottom-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-card text-brand-400 shadow-pop disabled:opacity-50"
                 aria-label={t('account.useMyLocation')}
                 title={t('account.useMyLocation')}
               >
@@ -194,7 +194,7 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
               </button>
             </div>
           ) : (
-            <div className="mt-3 grid h-72 w-full place-items-center bg-ink-50 p-4 text-center text-xs text-ink-400">
+            <div className="mt-3 grid h-72 w-full place-items-center bg-muted p-4 text-center text-xs text-muted-foreground">
               {t('account.mapNotConfigured')}
             </div>
           )}
@@ -202,8 +202,8 @@ export function LocationPickerDialog({ open, onClose, initial, onConfirm }: Loca
           {canRenderMap && (
             <div className="space-y-3 p-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-ink-400">{t('account.yourLocation')}</p>
-                <p className="text-sm font-semibold text-ink-900">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('account.yourLocation')}</p>
+                <p className="text-sm font-semibold text-foreground">
                   {address ? [address.street, address.city, address.state].filter(Boolean).join(', ') : t('account.locatingAddress')}
                 </p>
               </div>

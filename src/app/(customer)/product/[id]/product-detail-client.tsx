@@ -130,12 +130,12 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
     setTimeout(() => setAdded(false), 2000)
   }
 
-  if (loading) return <p className="py-16 text-center text-sm text-ink-400">{t('product.loadingProduct')}</p>
+  if (loading) return <p className="py-16 text-center text-sm text-muted-foreground">{t('product.loadingProduct')}</p>
 
   if (!item) {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-center">
-        <p className="text-sm font-semibold text-ink-600">{t('product.notFound')}</p>
+        <p className="text-sm font-semibold text-muted-foreground">{t('product.notFound')}</p>
         <Button onClick={() => router.push('/menu')}>{t('checkout.seeMenu')}</Button>
       </div>
     )
@@ -145,7 +145,7 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="relative mb-5 overflow-hidden rounded-3xl bg-brand-50">
+      <div className="relative mb-5 overflow-hidden rounded-3xl bg-muted">
         {item.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.image_url} alt={item.name} className="h-56 w-full object-cover sm:h-72" />
@@ -158,16 +158,16 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
           onClick={toggleFavorite}
           aria-pressed={isFavorite}
           aria-label={isFavorite ? t('product.removeFavorite') : t('product.addFavorite')}
-          className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white shadow-card text-ink-600 hover:text-brand-900"
+          className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-card text-muted-foreground shadow-card hover:text-brand-400"
         >
-          <Heart size={18} className={isFavorite ? 'fill-brand-900 text-brand-900' : ''} aria-hidden="true" />
+          <Heart size={18} className={isFavorite ? 'fill-brand-500 text-brand-500' : ''} aria-hidden="true" />
         </button>
       </div>
 
       <div className="mb-5">
-        <h1 className="text-2xl font-extrabold text-ink-900">{item.name}</h1>
-        {item.description && <p className="mt-1 text-sm text-ink-600">{item.description}</p>}
-        <p className="mt-2 text-lg font-extrabold text-brand-900">
+        <h1 className="text-2xl font-extrabold text-foreground">{item.name}</h1>
+        {item.description && <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>}
+        <p className="mt-2 text-lg font-extrabold text-brand-400">
           {item.is_customizable_pizza ? t('product.from') : ''}
           {formatCurrency(displayPrice)}
         </p>
@@ -186,9 +186,9 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
           />
         </div>
       ) : (
-        <div className="flex items-center gap-2 rounded-2xl bg-white p-3">
-          <PizzaIcon size={18} className="text-ink-300" aria-hidden="true" />
-          <span className="text-sm text-ink-600">{t('product.quantityLabel')}</span>
+        <div className="flex items-center gap-2 rounded-2xl bg-card p-3">
+          <PizzaIcon size={18} className="text-muted-foreground" aria-hidden="true" />
+          <span className="text-sm text-muted-foreground">{t('product.quantityLabel')}</span>
         </div>
       )}
 

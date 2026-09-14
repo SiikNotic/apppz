@@ -395,7 +395,7 @@ export const translations = {
       redirecting: 'Redirigiendo…',
       noProductsInCategory: 'No hay productos en esta categoría.',
       from: 'Desde ',
-      createNow: 'Crear ahora',
+      createNow: 'Crear',
       addToCartAria: 'Agregar {name} al carrito',
       stepOf: 'Paso {step} de 2',
       backStep: 'Volver al paso anterior',
@@ -543,6 +543,7 @@ export const translations = {
       ingredientOptional: 'Ingrediente que consume (opcional)',
       noIngredientLink: 'Sin vincular',
       noIngredientDash: '—',
+      deleteAria: 'Eliminar {name}',
     },
     productForm: {
       noCategoryFallback: 'Sin categoría',
@@ -1468,7 +1469,7 @@ export const translations = {
       redirecting: 'Redirecting…',
       noProductsInCategory: 'There are no products in this category.',
       from: 'From ',
-      createNow: 'Build now',
+      createNow: 'Build',
       addToCartAria: 'Add {name} to cart',
       stepOf: 'Step {step} of 2',
       backStep: 'Go back to the previous step',
@@ -1616,6 +1617,7 @@ export const translations = {
       ingredientOptional: 'Ingredient it uses (optional)',
       noIngredientLink: 'Not linked',
       noIngredientDash: '—',
+      deleteAria: 'Delete {name}',
     },
     productForm: {
       noCategoryFallback: 'No category',

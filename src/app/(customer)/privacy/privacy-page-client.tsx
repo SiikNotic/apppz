@@ -24,7 +24,7 @@ export function PrivacyPageClient() {
       <h2>{t('legal.privacyRightsHeading')}</h2>
       <p>
         {t('legal.privacyRightsPre')}{' '}
-        <Link href="/account/profile" className="text-brand-900 underline">
+        <Link href="/account/profile" className="text-brand-400 underline hover:text-brand-300">
           {t('legal.privacyProfileLink')}
         </Link>
         .

@@ -11,7 +11,7 @@ export function TermsPageClient() {
     <LegalPage title={t('legal.termsTitle')} updated="8 de septiembre de 2026">
       <p>
         {t('legal.termsIntro', { brand: BRAND_NAME })}{' '}
-        <Link href="/privacy" className="text-brand-900 underline">
+        <Link href="/privacy" className="text-brand-400 underline hover:text-brand-300">
           {t('auth.privacyPolicy')}
         </Link>
         .
@@ -23,7 +23,7 @@ export function TermsPageClient() {
       <h2>{t('legal.termsCancellationsHeading')}</h2>
       <p>
         {t('legal.termsCancellationsPre')}{' '}
-        <Link href="/help" className="text-brand-900 underline">
+        <Link href="/help" className="text-brand-400 underline hover:text-brand-300">
           {t('nav.help')}
         </Link>{' '}
         {t('legal.termsCancellationsPost')}
@@ -35,7 +35,7 @@ export function TermsPageClient() {
       <h2>{t('legal.termsContactHeading')}</h2>
       <p>
         {t('legal.termsContactPre')}{' '}
-        <Link href="/help" className="text-brand-900 underline">
+        <Link href="/help" className="text-brand-400 underline hover:text-brand-300">
           {t('nav.help')}
         </Link>
         .

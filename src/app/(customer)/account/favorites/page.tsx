@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { formatCurrency } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -55,17 +56,14 @@ export default function FavoritesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">{t('account.favoritesTitle')}</h1>
-        <p className="text-sm text-ink-400">{t('account.favoritesSubtitle')}</p>
+        <h1 className="text-2xl font-extrabold text-foreground">{t('account.favoritesTitle')}</h1>
+        <p className="text-sm text-muted-foreground">{t('account.favoritesSubtitle')}</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-ink-400">{t('common.loading')}</p>
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       ) : favorites.length === 0 ? (
-        <Card className="flex flex-col items-center gap-3 p-10 text-center">
-          <Heart size={28} className="text-ink-200" aria-hidden="true" />
-          <p className="text-sm text-ink-400">{t('account.noFavorites')}</p>
-        </Card>
+        <EmptyState icon={<Heart size={28} aria-hidden="true" />} message={t('account.noFavorites')} />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {favorites.map((fav) => {
@@ -75,8 +73,8 @@ export default function FavoritesPage() {
               <Card key={fav.id} className="flex items-center gap-3 p-3.5">
                 <ItemThumb name={item.name} imageUrl={item.image_url} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-ink-900">{item.name}</p>
-                  <p className="text-sm font-semibold text-brand-900">{formatCurrency(item.base_price)}</p>
+                  <p className="truncate text-sm font-bold text-foreground">{item.name}</p>
+                  <p className="text-sm font-semibold text-brand-400">{formatCurrency(item.base_price)}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => removeFavorite(fav.id)}>
                   {t('account.remove')}

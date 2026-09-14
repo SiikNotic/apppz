@@ -631,17 +631,17 @@ export default function DriverPage() {
                         <button
                           onClick={() => moveInQueue(queueIndex, -1)}
                           aria-label={t('driverPage.moveUpAria')}
-                          className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground"
+                          className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground"
                         >
-                          <ChevronUp size={16} />
+                          <ChevronUp size={16} aria-hidden="true" />
                         </button>
                         <button
                           onClick={() => moveInQueue(queueIndex, 1)}
                           disabled={i === queue.length - 1}
                           aria-label={t('driverPage.moveDownAria')}
-                          className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground disabled:opacity-30"
+                          className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-foreground disabled:opacity-30"
                         >
-                          <ChevronDown size={16} />
+                          <ChevronDown size={16} aria-hidden="true" />
                         </button>
                       </div>
                     </Card>

@@ -23,7 +23,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   }, [loading, session, pathname, router])
 
   if (loading || !session) {
-    return <p className="py-16 text-center text-sm text-ink-400">{t('common.loading')}</p>
+    return <p className="py-16 text-center text-sm text-muted-foreground">{t('common.loading')}</p>
   }
 
   return <>{children}</>

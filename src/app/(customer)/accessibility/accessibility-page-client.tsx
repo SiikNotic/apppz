@@ -22,7 +22,7 @@ export function AccessibilityPageClient() {
       <h2>{t('legal.accessibilityBarrierHeading')}</h2>
       <p>
         {t('legal.accessibilityBarrierPre')}{' '}
-        <Link href="/help" className="text-brand-900 underline">
+        <Link href="/help" className="text-brand-400 underline hover:text-brand-300">
           {t('nav.help')}
         </Link>{' '}
         {t('legal.accessibilityBarrierPost')}

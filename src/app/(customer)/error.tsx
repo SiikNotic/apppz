@@ -18,16 +18,16 @@ export default function CustomerError({ error, reset }: { error: Error & { diges
   // No mostramos la tarjeta roja para esto — un segundo después ya se
   // fue a recargar. Verlo como error real solo confunde.
   if (reloading) {
-    return <p className="py-24 text-center text-sm text-ink-400">Cargando la última versión…</p>
+    return <p className="py-24 text-center text-sm text-muted-foreground">Cargando la última versión…</p>
   }
 
   return (
     <div className="flex flex-col items-center gap-3 py-24 text-center">
-      <span className="grid h-14 w-14 place-items-center rounded-full bg-red-50 text-danger-500">
+      <span className="grid h-14 w-14 place-items-center rounded-full bg-danger-500/15 text-danger-500">
         <AlertTriangle size={24} aria-hidden="true" />
       </span>
-      <h1 className="text-lg font-extrabold text-ink-900">Algo no salió bien</h1>
-      <p className="max-w-sm text-sm text-ink-600">
+      <h1 className="text-lg font-extrabold text-foreground">Algo no salió bien</h1>
+      <p className="max-w-sm text-sm text-muted-foreground">
         No pudimos cargar esta página. Tu carrito y tu sesión siguen intactos — intenta de
         nuevo.
       </p>

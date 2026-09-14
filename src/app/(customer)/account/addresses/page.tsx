@@ -173,8 +173,8 @@ export default function AddressesPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">{t('account.addressesTitle')}</h1>
-          <p className="text-sm text-ink-400">{t('account.addressesSubtitle')}</p>
+          <h1 className="text-2xl font-extrabold text-foreground">{t('account.addressesTitle')}</h1>
+          <p className="text-sm text-muted-foreground">{t('account.addressesSubtitle')}</p>
         </div>
         <Button onClick={openCreate}>
           <Plus size={16} aria-hidden="true" /> {t('account.newAddress')}
@@ -182,9 +182,9 @@ export default function AddressesPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-ink-400">{t('common.loading')}</p>
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       ) : addresses.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-ink-400">{t('account.noAddresses')}</Card>
+        <Card className="p-8 text-center text-sm text-muted-foreground">{t('account.noAddresses')}</Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {addresses.map((address) => {
@@ -193,36 +193,36 @@ export default function AddressesPage() {
               <Card key={address.id} className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <Icon size={16} className="text-brand-900" aria-hidden="true" />
-                    <span className="text-sm font-bold text-ink-900">{address.label}</span>
+                    <Icon size={16} className="text-brand-400" aria-hidden="true" />
+                    <span className="text-sm font-bold text-foreground">{address.label}</span>
                     {address.is_default && <Badge variant="brand">{t('account.defaultBadge')}</Badge>}
                     {address.dog_warning && <Dog size={14} className="text-warning-500" aria-label={t('account.dogWarningAlt')} />}
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => openEdit(address)}
-                      className="grid h-8 w-8 place-items-center rounded-full bg-ink-50 text-ink-600 hover:bg-ink-100"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
                       aria-label={`${t('account.editAddress')} ${address.label}`}
                     >
                       <Pencil size={14} aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => handleDelete(address)}
-                      className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-danger-500 hover:brightness-95"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                       aria-label={`${t('account.deleteAddress')} ${address.label}`}
                     >
                       <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-ink-600">
+                <p className="mt-2 text-sm text-muted-foreground">
                   {address.street}
                   {address.apartment ? `, ${address.apartment}` : ''}
                 </p>
-                <p className="text-sm text-ink-600">
+                <p className="text-sm text-muted-foreground">
                   {address.city}, {address.state} {address.zip}
                 </p>
-                {address.instructions && <p className="mt-1 text-xs text-ink-400">{address.instructions}</p>}
+                {address.instructions && <p className="mt-1 text-xs text-muted-foreground">{address.instructions}</p>}
               </Card>
             )
           })}
@@ -232,7 +232,7 @@ export default function AddressesPage() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
           <div className="p-6">
-            <DialogTitle className="mb-4 text-lg font-extrabold text-ink-900">
+            <DialogTitle className="mb-4 text-lg font-extrabold text-foreground">
               {editingId ? t('account.editAddressTitle') : t('account.newAddressTitle')}
             </DialogTitle>
             <div className="space-y-3">
@@ -294,11 +294,11 @@ export default function AddressesPage() {
                 <Label htmlFor="addr-code">{t('account.accessCode')}</Label>
                 <Input id="addr-code" value={form.accessCode} onChange={(e) => setForm({ ...form, accessCode: e.target.value })} />
               </div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+              <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Checkbox checked={form.dogWarning} onCheckedChange={(c) => setForm({ ...form, dogWarning: c === true })} />
                 {t('account.dogWarningLabel')}
               </label>
-              <label className="flex items-center gap-2 text-sm font-semibold text-ink-600">
+              <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Checkbox checked={form.isDefault} onCheckedChange={(c) => setForm({ ...form, isDefault: c === true })} />
                 {t('account.useAsDefault')}
               </label>

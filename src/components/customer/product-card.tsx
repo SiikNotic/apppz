@@ -78,7 +78,16 @@ export function ProductCard({ item, sizes, onQuickAdd, onOpenBuilder, className 
           )}
         </Link>
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <PriceDisplay value={displayPrice} prefix={isBuilder ? t('product.from') : undefined} size="sm" />
+          {/* Sin prefijo "Desde " acá (a diferencia del detalle de
+              producto y el armador, que sí tienen espacio): en una
+              tarjeta angosta (carril de recomendados, grilla de 2
+              columnas) "Desde $189.00" + el botón no caben — el precio
+              terminaba truncado o empujando al botón fuera de la
+              tarjeta. min-w-0+truncate se deja como respaldo para
+              nombres/monedas largos, no como la solución principal. */}
+          <div className="min-w-0 truncate">
+            <PriceDisplay value={displayPrice} size="sm" />
+          </div>
           {isBuilder ? (
             <button
               onClick={() => onOpenBuilder(item)}

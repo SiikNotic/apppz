@@ -160,6 +160,7 @@ export function ToppingsTab() {
                   </Button>
                   <button
                     onClick={() => handleDelete(topping)}
+                    aria-label={t('menuMgmt.deleteAria', { name: topping.name })}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                   >
                     <Trash2 size={14} aria-hidden="true" />
@@ -203,12 +204,14 @@ export function ToppingsTab() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openEdit(topping)}
+                          aria-label={t('common.edit')}
                           className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
                         >
                           <Pencil size={14} aria-hidden="true" />
                         </button>
                         <button
                           onClick={() => handleDelete(topping)}
+                          aria-label={t('menuMgmt.deleteAria', { name: topping.name })}
                           className="grid h-8 w-8 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25"
                         >
                           <Trash2 size={14} aria-hidden="true" />
