@@ -233,6 +233,13 @@ export type Database = {
             referencedRelation: "drivers"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "delivery_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
         ]
       }
       driver_shifts: {
