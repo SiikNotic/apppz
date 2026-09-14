@@ -30,15 +30,10 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { AvatarUpload } from '@/components/ui/avatar-upload'
 import { formatMonthYear } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { RewardsAccount, RewardTier } from '@/lib/types'
-
-function initialsFor(name?: string | null): string {
-  if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
-}
 
 interface RowProps {
   icon: React.ElementType
@@ -74,7 +69,7 @@ function NavRow({ icon: Icon, tone, label, subtitle, href }: RowProps) {
 }
 
 export default function ProfilePage() {
-  const { user, profile, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile, setAvatarUrl } = useAuth()
   const { t } = useLanguage()
 
   const [ordersCount, setOrdersCount] = useState<number | null>(null)
@@ -137,13 +132,15 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-lg space-y-4">
       <Card className="p-6">
         <div className="flex items-center gap-4">
-          {profile?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.avatar_url} alt="" className="h-20 w-20 shrink-0 rounded-full object-cover ring-2 ring-border" />
-          ) : (
-            <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-brand-500 text-2xl font-extrabold text-white">
-              {initialsFor(fullName || user?.email)}
-            </span>
+          {user && (
+            <AvatarUpload
+              userId={user.id}
+              url={profile?.avatar_url ?? null}
+              name={fullName || profile?.full_name}
+              email={user.email}
+              size={80}
+              onUpdated={setAvatarUrl}
+            />
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">

@@ -34,6 +34,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageToggle } from '@/components/ui/language-toggle'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { AvatarUpload } from '@/components/ui/avatar-upload'
 import { supabase } from '@/lib/supabase'
 import { useNewOrderAlert } from '@/hooks/useNewOrderAlert'
 import { useStaffClock } from '@/hooks/useStaffClock'
@@ -120,18 +121,8 @@ const DRIVER_STATUS_DOT: Record<Driver['status'], string> = {
   on_delivery: 'bg-brand-500',
 }
 
-/** Iniciales para el avatar circular del sidebar — "Ana López" → "AL",
- *  sin nombre cae al correo, sin ninguno de los dos cae a "?". */
-function initialsFor(name?: string | null, email?: string | null): string {
-  const source = name?.trim() || email || ''
-  if (!source) return '?'
-  const parts = source.split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return source.slice(0, 2).toUpperCase()
-}
-
 function CompanyChrome({ children }: { children: ReactNode }) {
-  const { profile, user, can, signOut } = useAuth()
+  const { profile, user, can, signOut, setAvatarUrl } = useAuth()
   const { t } = useLanguage()
   const pathname = usePathname()
   const router = useRouter()
@@ -303,12 +294,16 @@ function CompanyChrome({ children }: { children: ReactNode }) {
           </nav>
         </div>
         <div className="flex flex-col items-center gap-1 border-t border-white/10 pt-3">
-          <span
-            title={profile?.full_name || user?.email || undefined}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-xs font-extrabold text-white"
-          >
-            {initialsFor(profile?.full_name, user?.email)}
-          </span>
+          {user && (
+            <AvatarUpload
+              userId={user.id}
+              url={profile?.avatar_url ?? null}
+              name={profile?.full_name}
+              email={user.email}
+              size={36}
+              onUpdated={setAvatarUrl}
+            />
+          )}
           <button
             onClick={handleSignOut}
             aria-label={t('nav.signOut')}
@@ -367,9 +362,16 @@ function CompanyChrome({ children }: { children: ReactNode }) {
 
         <div className="space-y-3 border-t border-white/10 pt-4">
           <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500 text-xs font-extrabold text-white">
-              {initialsFor(profile?.full_name, user?.email)}
-            </span>
+            {user && (
+              <AvatarUpload
+                userId={user.id}
+                url={profile?.avatar_url ?? null}
+                name={profile?.full_name}
+                email={user.email}
+                size={36}
+                onUpdated={setAvatarUrl}
+              />
+            )}
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{profile?.full_name || user?.email}</p>
               <p className="truncate text-[11px] uppercase tracking-wide text-white/40">

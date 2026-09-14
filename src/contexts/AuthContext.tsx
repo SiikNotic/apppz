@@ -34,6 +34,14 @@ interface AuthContextValue {
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: string | null }>
   refreshProfile: () => Promise<void>
+  /** Actualiza profile.avatar_url en el estado local sin volver a pedirlo
+   *  al servidor — AvatarUpload (ui/avatar-upload.tsx) ya conoce la URL
+   *  exacta que acaba de guardar (o `null` tras quitar la foto), así que
+   *  pedirla de nuevo por red sería un viaje redondo innecesario para un
+   *  dato que ya se tiene. El resto de la app lee `profile` de este mismo
+   *  contexto (HomeTopBar, el sidebar de company), así que un solo cambio
+   *  acá se refleja en todos lados al toque, sin recargar nada. */
+  setAvatarUrl: (url: string | null) => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -145,6 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session?.user) await loadProfile(session.user.id)
   }
 
+  function setAvatarUrl(url: string | null) {
+    setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))
+  }
+
   const can = useMemo(() => {
     return (permission: PermissionKey) => roleHasPermission(profile?.company_role ?? null, permission)
   }, [profile?.company_role])
@@ -163,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         resetPassword,
         refreshProfile,
+        setAvatarUrl,
       }}
     >
       {children}

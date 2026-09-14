@@ -64,10 +64,19 @@ export function HomeTopBar() {
         <button
           type="button"
           onClick={() => router.push(session ? '/account/profile' : '/login')}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-500 text-xs font-extrabold text-white"
+          className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-500 text-xs font-extrabold text-white"
           aria-label={session ? t('nav.account') : t('nav.login')}
         >
-          {session ? initialsFor(profile?.full_name || user?.email) : <User size={18} aria-hidden="true" />}
+          {session ? (
+            profile?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initialsFor(profile?.full_name || user?.email)
+            )
+          ) : (
+            <User size={18} aria-hidden="true" />
+          )}
         </button>
       </div>
     </div>
