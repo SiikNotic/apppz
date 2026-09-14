@@ -1,15 +1,25 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { reloadOnceIfChunkError } from '@/lib/chunk-error'
 
 export default function CustomerError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const [reloading, setReloading] = useState(false)
+
   useEffect(() => {
     // Observability: en un entorno con error tracking real (Sentry, etc.)
     // esto es donde se reportaría el error con su digest de correlación.
     console.error('[customer-error]', error.digest, error)
+    if (reloadOnceIfChunkError(error)) setReloading(true)
   }, [error])
+
+  // No mostramos la tarjeta roja para esto — un segundo después ya se
+  // fue a recargar. Verlo como error real solo confunde.
+  if (reloading) {
+    return <p className="py-24 text-center text-sm text-ink-400">Cargando la última versión…</p>
+  }
 
   return (
     <div className="flex flex-col items-center gap-3 py-24 text-center">

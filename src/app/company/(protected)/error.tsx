@@ -1,13 +1,23 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { reloadOnceIfChunkError } from '@/lib/chunk-error'
 
 export default function CompanyError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const [reloading, setReloading] = useState(false)
+
   useEffect(() => {
     console.error('[company-error]', error.digest, error)
+    if (reloadOnceIfChunkError(error)) setReloading(true)
   }, [error])
+
+  // No mostramos la tarjeta roja para esto — un segundo después ya se
+  // fue a recargar. Verlo como error real solo confunde.
+  if (reloading) {
+    return <p className="py-24 text-center text-sm text-muted-foreground">Cargando la última versión…</p>
+  }
 
   return (
     <div className="flex flex-col items-center gap-3 py-24 text-center">
