@@ -102,7 +102,25 @@ export default function DriverEarningsPage() {
     return allClosed.filter((a) => a.status === 'delivered' && a.delivered_at && new Date(a.delivered_at) >= since).length
   }
   const allTimeDeliveredCount = allClosed.filter((a) => a.status === 'delivered').length
-  const recent = allClosed.slice(0, RECENT_LIMIT)
+  // fetchAssignmentsWithOrders ordena por route_order (o si no hay,
+  // assigned_at ascendente) — correcto para la cola ACTIVA del conductor
+  // (FIFO), pero sin sentido para un historial: route_order es una
+  // posición de cola relativa que se reutiliza en cada tanda de entregas
+  // (varias entregas cerradas de días distintos pueden compartir el mismo
+  // route_order, p. ej. 0), así que ese orden no refleja para nada cuál
+  // se entregó más recientemente. Para el desglose "Recientes" de esta
+  // pantalla se reordena explícitamente por delivered_at (con
+  // assigned_at de respaldo si por lo que sea faltara) de más nueva a
+  // más vieja antes de recortar a RECENT_LIMIT — si no, con más de
+  // RECENT_LIMIT entregas cerradas en total, la lista mostraba las
+  // primeras entregas que el conductor hizo alguna vez, no las últimas.
+  const recent = [...allClosed]
+    .sort((a, b) => {
+      const aTime = new Date(a.delivered_at ?? a.assigned_at).getTime()
+      const bTime = new Date(b.delivered_at ?? b.assigned_at).getTime()
+      return bTime - aTime
+    })
+    .slice(0, RECENT_LIMIT)
 
   return (
     <div className="space-y-5">
