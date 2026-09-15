@@ -6,6 +6,7 @@ import { Trash2, ShoppingBag, Tag, Check, Truck, Store } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { calculateCartPrice, createOrder, type CartRpcItem } from '@/lib/data-access/orders'
+import { QUANTITY_LEVEL_I18N_KEY } from '@/lib/types'
 import { saveLastOrderId } from '@/lib/active-order'
 import { useStoreStatus } from '@/hooks/useStoreStatus'
 import { fetchUserAddresses } from '@/lib/data-access/addresses'
@@ -20,16 +21,25 @@ import { QuantityStepper } from '@/components/ui/quantity-stepper'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { CartLine, Address } from '@/lib/types'
+import type { CartLine, Address, ToppingQuantityLevel } from '@/lib/types'
 
 const NEW_ADDRESS = '__new__'
 
-function lineDescription(line: CartLine): string {
+/** "Pepperoni (Extra), Champiñones (Poco)" — el nivel solo se anota
+ *  cuando NO es 'normal' (el caso común), para no ensuciar la línea con
+ *  un "(Normal)" en cada topping. Misma regla para la salsa. */
+function nameWithLevel(name: string, level: ToppingQuantityLevel, translate: (key: string) => string): string {
+  return level === 'normal' ? name : `${name} (${translate(QUANTITY_LEVEL_I18N_KEY[level])})`
+}
+
+function lineDescription(line: CartLine, translate: (key: string) => string): string {
   const parts: string[] = []
   if (line.size) parts.push(line.size.name)
   if (line.crust) parts.push(line.crust.name)
-  if (line.sauce) parts.push(line.sauce.name)
-  if (line.toppings.length) parts.push(line.toppings.map((t) => t.name).join(', '))
+  if (line.sauce) parts.push(nameWithLevel(line.sauce.name, line.sauce.quantityLevel, translate))
+  if (line.toppings.length) {
+    parts.push(line.toppings.map((top) => nameWithLevel(top.name, top.quantityLevel, translate)).join(', '))
+  }
   return parts.join(' · ')
 }
 
@@ -39,7 +49,8 @@ function cartToRpcItems(lines: CartLine[]): CartRpcItem[] {
     size_id: line.size?.id ?? null,
     crust_id: line.crust?.id ?? null,
     sauce_id: line.sauce?.id ?? null,
-    topping_ids: line.toppings.map((t) => t.id),
+    sauce_quantity_level: line.sauce?.quantityLevel ?? 'normal',
+    topping_ids: line.toppings.map((top) => ({ id: top.id, quantity_level: top.quantityLevel })),
     quantity: line.quantity,
   }))
 }
@@ -355,8 +366,8 @@ export default function CheckoutPage() {
                   <ItemThumb name={line.name} imageUrl={line.imageUrl} size="sm" className="shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-foreground">{line.name}</p>
-                    {lineDescription(line) && (
-                      <p className="truncate text-xs text-muted-foreground">{lineDescription(line)}</p>
+                    {lineDescription(line, t) && (
+                      <p className="truncate text-xs text-muted-foreground">{lineDescription(line, t)}</p>
                     )}
                     <div className="mt-1.5 flex items-center justify-between gap-2">
                       <QuantityStepper

@@ -177,12 +177,20 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
         <div className="space-y-6">
           <SizePicker sizes={sizes} value={builder.sizeId} onChange={builder.setSizeId} />
           <CrustPicker crusts={crusts} value={builder.crustId} onChange={builder.setCrustId} />
-          <SaucePicker sauces={sauces} value={builder.sauceId} onChange={builder.setSauceId} />
+          <SaucePicker
+            sauces={sauces}
+            value={builder.sauceId}
+            quantityLevel={builder.sauceQuantityLevel}
+            onChange={builder.setSauceId}
+            onQuantityChange={builder.setSauceQuantityLevel}
+          />
           <ToppingPicker
             toppings={toppings}
             selectedIds={builder.toppingIds}
+            levels={builder.toppingLevels}
             freeRemaining={builder.freeRemaining}
             onToggle={builder.toggleTopping}
+            onLevelChange={builder.setToppingLevel}
           />
         </div>
       ) : (

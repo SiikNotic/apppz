@@ -79,6 +79,12 @@ export async function buildCartLinesFromOrder(
       (sauce?.extra_price ?? 0) +
       resolvedToppings.slice(4).reduce((sum, t) => sum + t.price, 0)
 
+    // Reordenar siempre reconstruye en nivel 'normal' — el pedido viejo
+    // pudo tener Poco/Extra en algún topping o en la salsa, pero
+    // reordenar es "arma esto de nuevo desde cero", no "copia
+    // exactamente los niveles de aquella vez"; el cliente puede volver a
+    // subir a Extra manualmente si quiere, igual que con cualquier otro
+    // ajuste (tamaño, masa) que tampoco se preserva letra por letra acá.
     lines.push({
       menuItemId: menuItem.id,
       name: menuItem.name,
@@ -87,8 +93,16 @@ export async function buildCartLinesFromOrder(
       unitPrice,
       size: { id: size.id, name: size.name, price: size.price },
       crust: crust ? { id: crust.id, name: crust.name, extraPrice: crust.extra_price } : undefined,
-      sauce: sauce ? { id: sauce.id, name: sauce.name, extraPrice: sauce.extra_price } : undefined,
-      toppings: resolvedToppings.map((t, i) => ({ id: t.id, name: t.name, price: t.price, free: i < 4 })),
+      sauce: sauce
+        ? { id: sauce.id, name: sauce.name, extraPrice: sauce.extra_price, quantityLevel: 'normal', price: sauce.extra_price }
+        : undefined,
+      toppings: resolvedToppings.map((t, i) => ({
+        id: t.id,
+        name: t.name,
+        price: t.price,
+        free: i < 4,
+        quantityLevel: 'normal',
+      })),
     })
   }
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { estimatePizzaPrice } from '@/lib/business-logic/pricing'
-import type { MenuItem, ItemSize, Crust, Sauce, Topping, CartLine } from '@/lib/types'
+import { estimatePizzaPrice, quantityLevelPrice } from '@/lib/business-logic/pricing'
+import type { MenuItem, ItemSize, Crust, Sauce, Topping, CartLine, ToppingQuantityLevel } from '@/lib/types'
 
 /**
  * Estado y cálculo de precio (estimado, no autoritativo) del configurador
@@ -10,6 +10,13 @@ import type { MenuItem, ItemSize, Crust, Sauce, Topping, CartLine } from '@/lib/
  * freeToppingsLimit viene SIEMPRE del producto (item.free_toppings_limit)
  * — única fuente de verdad, la misma que aplica calculate_cart_price() en
  * el servidor. Ya no existe un límite global.
+ *
+ * Sesión 21 — selector de cantidad (Poco/Normal/Extra): cada topping
+ * seleccionado tiene su propio nivel en `toppingLevels` (por id), y la
+ * salsa elegida tiene el suyo en `sauceQuantityLevel`. Seleccionar un
+ * topping (o cambiar de salsa) siempre arranca en 'normal' — nunca en
+ * 'extra' — tal como pide la tarea; quitar un topping borra también su
+ * nivel guardado (no sobrevive un re-agregado posterior).
  */
 export function usePizzaBuilder(
   sizes: ItemSize[],
@@ -20,8 +27,10 @@ export function usePizzaBuilder(
 ) {
   const [sizeId, setSizeId] = useState(sizes[0]?.id)
   const [crustId, setCrustId] = useState(crusts[0]?.id)
-  const [sauceId, setSauceId] = useState(sauces[0]?.id)
+  const [sauceId, setSauceIdState] = useState(sauces[0]?.id)
+  const [sauceQuantityLevel, setSauceQuantityLevel] = useState<ToppingQuantityLevel>('normal')
   const [toppingIds, setToppingIds] = useState<string[]>([])
+  const [toppingLevels, setToppingLevels] = useState<Record<string, ToppingQuantityLevel>>({})
 
   const selectedSize = sizes.find((s) => s.id === sizeId) ?? sizes[0]
   const selectedCrust = crusts.find((c) => c.id === crustId) ?? crusts[0]
@@ -32,14 +41,15 @@ export function usePizzaBuilder(
       toppingIds
         .map((id) => toppings.find((t) => t.id === id))
         .filter((t): t is Topping => !!t)
-        .map((t, i) => ({ ...t, free: i < freeToppingsLimit })),
-    [toppingIds, toppings, freeToppingsLimit]
+        .map((t, i) => ({ ...t, free: i < freeToppingsLimit, quantityLevel: toppingLevels[t.id] ?? 'normal' })),
+    [toppingIds, toppings, freeToppingsLimit, toppingLevels]
   )
 
   const total = estimatePizzaPrice({
     size: selectedSize,
     crust: selectedCrust,
     sauce: selectedSauce,
+    sauceQuantityLevel,
     selectedToppings,
     freeToppingsLimit,
   })
@@ -47,14 +57,35 @@ export function usePizzaBuilder(
   const freeRemaining = Math.max(0, freeToppingsLimit - toppingIds.length)
 
   function toggleTopping(id: string) {
-    setToppingIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]))
+    if (toppingIds.includes(id)) {
+      setToppingIds((prev) => prev.filter((t) => t !== id))
+      setToppingLevels((levels) => {
+        const next = { ...levels }
+        delete next[id] // se quita el topping → se quita también su selector de cantidad
+        return next
+      })
+    } else {
+      setToppingIds((prev) => [...prev, id])
+      setToppingLevels((levels) => ({ ...levels, [id]: 'normal' })) // nunca arranca en 'extra'
+    }
+  }
+
+  function setToppingLevel(id: string, level: ToppingQuantityLevel) {
+    setToppingLevels((prev) => ({ ...prev, [id]: level }))
+  }
+
+  function setSauceId(id: string) {
+    setSauceIdState(id)
+    setSauceQuantityLevel('normal') // otra salsa = otra selección, arranca en 'normal'
   }
 
   function reset() {
     setSizeId(sizes[0]?.id)
     setCrustId(crusts[0]?.id)
-    setSauceId(sauces[0]?.id)
+    setSauceIdState(sauces[0]?.id)
+    setSauceQuantityLevel('normal')
     setToppingIds([])
+    setToppingLevels({})
   }
 
   function buildCartLine(item: MenuItem): Omit<CartLine, 'lineId'> | null {
@@ -67,8 +98,20 @@ export function usePizzaBuilder(
       unitPrice: total,
       size: { id: selectedSize.id, name: selectedSize.name, price: selectedSize.price },
       crust: { id: selectedCrust.id, name: selectedCrust.name, extraPrice: selectedCrust.extra_price },
-      sauce: { id: selectedSauce.id, name: selectedSauce.name, extraPrice: selectedSauce.extra_price },
-      toppings: selectedToppings.map((t) => ({ id: t.id, name: t.name, price: t.price, free: t.free })),
+      sauce: {
+        id: selectedSauce.id,
+        name: selectedSauce.name,
+        extraPrice: selectedSauce.extra_price,
+        quantityLevel: sauceQuantityLevel,
+        price: quantityLevelPrice(selectedSauce.extra_price, selectedSauce.extra_charge, sauceQuantityLevel),
+      },
+      toppings: selectedToppings.map((t) => ({
+        id: t.id,
+        name: t.name,
+        price: quantityLevelPrice(t.free ? 0 : t.price, t.extra_charge, t.quantityLevel),
+        free: t.free,
+        quantityLevel: t.quantityLevel,
+      })),
     }
   }
 
@@ -79,8 +122,12 @@ export function usePizzaBuilder(
     setCrustId,
     sauceId,
     setSauceId,
+    sauceQuantityLevel,
+    setSauceQuantityLevel,
     toppingIds,
     toggleTopping,
+    toppingLevels,
+    setToppingLevel,
     selectedSize,
     selectedCrust,
     selectedSauce,

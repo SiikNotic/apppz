@@ -17,7 +17,7 @@ import { formatCurrency } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Topping, Ingredient } from '@/lib/types'
 
-const EMPTY = { name: '', price: '0.55', ingredient_id: '', imageUrl: '' }
+const EMPTY = { name: '', price: '0.55', extra_charge: '0', ingredient_id: '', imageUrl: '' }
 const NONE = '__none__'
 
 export function ToppingsTab() {
@@ -64,6 +64,7 @@ export function ToppingsTab() {
     setForm({
       name: topping.name,
       price: String(topping.price),
+      extra_charge: String(topping.extra_charge),
       ingredient_id: topping.ingredient_id ?? '',
       imageUrl: topping.image_url ?? '',
     })
@@ -96,6 +97,7 @@ export function ToppingsTab() {
     const payload = {
       name: form.name.trim(),
       price: Number(form.price) || 0,
+      extra_charge: Number(form.extra_charge) || 0,
       ingredient_id: form.ingredient_id || null,
       image_url: form.imageUrl.trim() || null,
     }
@@ -149,7 +151,9 @@ export function ToppingsTab() {
                       </button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      +{formatCurrency(topping.price)} ·{' '}
+                      +{formatCurrency(topping.price)}
+                      {topping.extra_charge > 0 && ` · ${t('menuMgmt.extraCharge')} +${formatCurrency(topping.extra_charge)}`}
+                      {' · '}
                       {t('menuMgmt.consumesIngredient', { ingredient: ingredientName(topping.ingredient_id) })}
                     </p>
                   </div>
@@ -177,6 +181,7 @@ export function ToppingsTab() {
                 <TableRow>
                   <TableHead>{t('menuMgmt.name')}</TableHead>
                   <TableHead>{t('menuMgmt.extraPrice')}</TableHead>
+                  <TableHead>{t('menuMgmt.extraCharge')}</TableHead>
                   <TableHead>{t('menuMgmt.ingredientOptional')}</TableHead>
                   <TableHead>{t('ordersAdmin.status')}</TableHead>
                   <TableHead className="text-right">{t('ordersAdmin.actions')}</TableHead>
@@ -192,6 +197,9 @@ export function ToppingsTab() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">+{formatCurrency(topping.price)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {topping.extra_charge > 0 ? `+${formatCurrency(topping.extra_charge)}` : '—'}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{ingredientName(topping.ingredient_id)}</TableCell>
                     <TableCell>
                       <button onClick={() => toggleActive(topping)}>
@@ -244,6 +252,20 @@ export function ToppingsTab() {
                   step="0.01"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
+                />
+              </div>
+              <div>
+                {/* Cargo ADICIONAL para el nivel "Extra" del selector de
+                    cantidad del cliente (Sesión 21) — se suma al precio
+                    normal de arriba, nunca lo reemplaza. En $0 el cliente
+                    puede igual elegir "Extra" (sin costo de más), solo
+                    que el botón no muestra un "+$0.00" de más. */}
+                <Label>{t('menuMgmt.extraCharge')}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.extra_charge}
+                  onChange={(e) => setForm({ ...form, extra_charge: e.target.value })}
                 />
               </div>
               <div>

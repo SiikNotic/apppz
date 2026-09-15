@@ -4,7 +4,7 @@ import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/config'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
-import type { Order, OrderItem, OrderItemTopping } from '@/lib/types'
+import { QUANTITY_LEVEL_I18N_KEY, type Order, type OrderItem, type OrderItemTopping, type ToppingQuantityLevel } from '@/lib/types'
 
 // Los valores de payment_method se guardan tal cual salen del <Select> del
 // checkout (en español, ver checkout/page.tsx) sin importar el idioma de
@@ -43,6 +43,17 @@ const ORDER_STATUS_I18N_KEYS = new Set([
 ])
 
 type ReceiptItem = OrderItem & { order_item_toppings?: OrderItemTopping[] }
+
+/** "Pepperoni (Extra)" — el nivel solo se anota cuando NO es 'normal' (el
+ *  caso común), para no ensuciar cada línea del recibo con un "(Normal)"
+ *  repetido. `level` llega como string suelto de la DB (quantity_level es
+ *  `text`, no un enum en Postgres) — se valida contra el mapa de
+ *  traducción antes de anotar nada, así un valor inesperado no rompe el
+ *  recibo, solo se omite la anotación. */
+function withQuantityLabel(name: string, level: string, t: (key: string) => string): string {
+  if (level === 'normal' || !(level in QUANTITY_LEVEL_I18N_KEY)) return name
+  return `${name} (${t(QUANTITY_LEVEL_I18N_KEY[level as ToppingQuantityLevel])})`
+}
 
 interface OrderReceiptProps {
   order: Order
@@ -150,12 +161,17 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
                   </p>
                   {(item.crust_name || item.sauce_name) && (
                     <p className="text-sm text-neutral-500">
-                      {[item.crust_name, item.sauce_name].filter(Boolean).join(' · ')}
+                      {[item.crust_name, item.sauce_name && withQuantityLabel(item.sauce_name, item.sauce_quantity_level, t)]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   )}
                   {item.order_item_toppings && item.order_item_toppings.length > 0 && (
                     <p className="text-sm text-neutral-500">
-                      {t('ordersAdmin.toppingsPrefix')} {item.order_item_toppings.map((tp) => tp.topping_name).join(', ')}
+                      {t('ordersAdmin.toppingsPrefix')}{' '}
+                      {item.order_item_toppings
+                        .map((tp) => withQuantityLabel(tp.topping_name, tp.quantity_level, t))
+                        .join(', ')}
                     </p>
                   )}
                 </div>
@@ -266,12 +282,17 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
             </div>
             {(item.crust_name || item.sauce_name) && (
               <p className="text-[11px] text-neutral-500">
-                {[item.crust_name, item.sauce_name].filter(Boolean).join(' · ')}
+                {[item.crust_name, item.sauce_name && withQuantityLabel(item.sauce_name, item.sauce_quantity_level, t)]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             )}
             {item.order_item_toppings && item.order_item_toppings.length > 0 && (
               <p className="text-[11px] text-neutral-500">
-                {t('ordersAdmin.toppingsPrefix')} {item.order_item_toppings.map((tp) => tp.topping_name).join(', ')}
+                {t('ordersAdmin.toppingsPrefix')}{' '}
+                {item.order_item_toppings
+                  .map((tp) => withQuantityLabel(tp.topping_name, tp.quantity_level, t))
+                  .join(', ')}
               </p>
             )}
           </div>

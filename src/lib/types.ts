@@ -106,6 +106,20 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   failed: 'Fallido',
 }
 
+/**
+ * Nivel de cantidad para un topping o la salsa — Sesión 21. "little" es el
+ * valor de DB para "Poco" (así lo guarda order_item_toppings.quantity_level
+ * y order_items.sauce_quantity_level); "Poco"/"Little" es solo la etiqueta
+ * visible, traducida vía QUANTITY_LEVEL_I18N_KEY más abajo.
+ */
+export type ToppingQuantityLevel = 'little' | 'normal' | 'extra'
+
+export const QUANTITY_LEVEL_I18N_KEY: Record<ToppingQuantityLevel, string> = {
+  little: 'product.quantityLittle',
+  normal: 'product.quantityNormal',
+  extra: 'product.quantityExtra',
+}
+
 /** Un item dentro del carrito del cliente, antes de convertirse en order_items */
 export interface CartLine {
   lineId: string
@@ -116,8 +130,14 @@ export interface CartLine {
   unitPrice: number
   size?: { id: string; name: string; price: number }
   crust?: { id: string; name: string; extraPrice: number }
-  sauce?: { id: string; name: string; extraPrice: number }
-  toppings: { id: string; name: string; price: number; free: boolean }[]
+  /** price = precio FINAL ya con el nivel de cantidad aplicado (lo que de
+   *  verdad se cobra) — igual que en toppings, ver abajo. */
+  sauce?: { id: string; name: string; extraPrice: number; quantityLevel: ToppingQuantityLevel; price: number }
+  /** price = precio FINAL ya con el nivel de cantidad aplicado — no el
+   *  precio normal de catálogo (ese vive en `Topping.price`, aparte). El
+   *  servidor (calculate_cart_price) recalcula esto de cero con el mismo
+   *  criterio; este valor es solo la estimación visual del cliente. */
+  toppings: { id: string; name: string; price: number; free: boolean; quantityLevel: ToppingQuantityLevel }[]
   note?: string
 }
 

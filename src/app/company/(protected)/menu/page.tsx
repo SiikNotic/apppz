@@ -39,7 +39,7 @@ export default function MenuManagementPage() {
           <SimpleOptionsManager table="crusts" title={t('menuMgmt.tabCrusts')} itemLabel={t('menuMgmt.crustItemLabel')} />
         </TabsContent>
         <TabsContent value="salsas">
-          <SimpleOptionsManager table="sauces" title={t('menuMgmt.tabSauces')} itemLabel={t('menuMgmt.sauceItemLabel')} />
+          <SimpleOptionsManager table="sauces" title={t('menuMgmt.tabSauces')} itemLabel={t('menuMgmt.sauceItemLabel')} hasExtraCharge />
         </TabsContent>
       </Tabs>
     </div>

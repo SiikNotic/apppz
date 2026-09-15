@@ -16,7 +16,15 @@ import { formatCurrency } from '@/lib/format'
 import { OrderReceipt } from '@/components/customer/order-receipt'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { PageHeader } from '@/components/company/page-header'
-import type { Order, OrderItem, OrderItemTopping, OrderStatus, Profile } from '@/lib/types'
+import { QUANTITY_LEVEL_I18N_KEY, type Order, type OrderItem, type OrderItemTopping, type OrderStatus, type Profile, type ToppingQuantityLevel } from '@/lib/types'
+
+/** "Pepperoni (Extra)" — mismo criterio que en el recibo (order-receipt.tsx):
+ *  el nivel solo se anota cuando NO es 'normal', para no repetir "(Normal)"
+ *  en cada topping de cada pedido. */
+function withQuantityLabel(name: string, level: string, t: (key: string) => string): string {
+  if (level === 'normal' || !(level in QUANTITY_LEVEL_I18N_KEY)) return name
+  return `${name} (${t(QUANTITY_LEVEL_I18N_KEY[level as ToppingQuantityLevel])})`
+}
 
 type KitchenOrder = Order & { order_items: (OrderItem & { order_item_toppings: OrderItemTopping[] })[] }
 type AvailableDriver = { user_id: string; full_name: string; active_count: number }
@@ -402,12 +410,17 @@ export default function KitchenViewPage() {
                             </p>
                             {(item.crust_name || item.sauce_name) && (
                               <p className="text-xs text-muted-foreground">
-                                {[item.crust_name, item.sauce_name].filter(Boolean).join(' · ')}
+                                {[item.crust_name, item.sauce_name && withQuantityLabel(item.sauce_name, item.sauce_quantity_level, t)]
+                                  .filter(Boolean)
+                                  .join(' · ')}
                               </p>
                             )}
                             {item.order_item_toppings.length > 0 && (
                               <p className="text-xs text-muted-foreground">
-                                + {item.order_item_toppings.map((t) => t.topping_name).join(', ')}
+                                +{' '}
+                                {item.order_item_toppings
+                                  .map((top) => withQuantityLabel(top.topping_name, top.quantity_level, t))
+                                  .join(', ')}
                               </p>
                             )}
                           </li>

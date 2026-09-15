@@ -132,12 +132,20 @@ export function PizzaBuilderModal({
               </>
             ) : (
               <>
-                <SaucePicker sauces={sauces} value={builder.sauceId} onChange={builder.setSauceId} />
+                <SaucePicker
+                  sauces={sauces}
+                  value={builder.sauceId}
+                  quantityLevel={builder.sauceQuantityLevel}
+                  onChange={builder.setSauceId}
+                  onQuantityChange={builder.setSauceQuantityLevel}
+                />
                 <ToppingPicker
                   toppings={toppings}
                   selectedIds={builder.toppingIds}
+                  levels={builder.toppingLevels}
                   freeRemaining={builder.freeRemaining}
                   onToggle={builder.toggleTopping}
+                  onLevelChange={builder.setToppingLevel}
                 />
               </>
             )}

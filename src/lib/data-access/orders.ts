@@ -1,13 +1,25 @@
 import { supabase } from '@/lib/supabase'
-import type { Order, OrderItem, OrderItemTopping } from '@/lib/types'
+import type { Order, OrderItem, OrderItemTopping, ToppingQuantityLevel } from '@/lib/types'
 import type { Json } from '@/lib/database.types'
+
+/** Un topping del carrito enviado al RPC — id + el nivel de cantidad
+ *  elegido (Sesión 21). El servidor (calculate_cart_price) es quien
+ *  resuelve precio/nombre/"gratis" reales; acá solo se manda la
+ *  selección, nunca un precio calculado en el cliente. */
+export interface CartToppingRef {
+  id: string
+  quantity_level: ToppingQuantityLevel
+}
 
 export interface CartRpcItem {
   menu_item_id: string
   size_id?: string | null
   crust_id?: string | null
   sauce_id?: string | null
-  topping_ids?: string[]
+  /** Nivel de cantidad para la salsa elegida (sauce_id) — 'normal' si se
+   *  omite, igual que antes de que existiera este concepto. */
+  sauce_quantity_level?: ToppingQuantityLevel
+  topping_ids?: CartToppingRef[]
   quantity: number
 }
 
@@ -18,7 +30,11 @@ export interface CartPricingResult {
     size_name: string | null
     crust_name: string | null
     sauce_name: string | null
-    toppings: { id: string; name: string; price: number; free: boolean }[]
+    sauce_quantity_level: ToppingQuantityLevel
+    sauce_base_price: number
+    sauce_extra_charge: number
+    sauce_final_price: number
+    toppings: { id: string; name: string; price: number; free: boolean; quantity_level: ToppingQuantityLevel; base_price: number; extra_charge: number }[]
     quantity: number
     unit_price: number
     subtotal: number

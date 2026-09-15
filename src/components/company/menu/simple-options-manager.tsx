@@ -17,6 +17,9 @@ interface SimpleOption {
   id: string
   name: string
   extra_price: number
+  /** Solo existe en `sauces` (ver hasExtraCharge) — crusts no tiene este
+   *  concepto, así que queda opcional para no forzarlo en esa tabla. */
+  extra_charge?: number
   active: boolean
   image_url: string | null
 }
@@ -25,11 +28,17 @@ interface SimpleOptionsManagerProps {
   table: 'crusts' | 'sauces'
   title: string
   itemLabel: string
+  /** Sesión 21: cargo extra para el nivel "Extra" del selector de
+   *  cantidad del cliente — solo aplica a salsas (`table="sauces"`), las
+   *  masas no tienen ese concepto. Cuando es false/omitido, el campo ni
+   *  se muestra ni se envía al guardar (crusts no gana una columna que
+   *  no usa). */
+  hasExtraCharge?: boolean
 }
 
-const EMPTY = { name: '', extra_price: '0', imageUrl: '' }
+const EMPTY = { name: '', extra_price: '0', extra_charge: '0', imageUrl: '' }
 
-export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsManagerProps) {
+export function SimpleOptionsManager({ table, title, itemLabel, hasExtraCharge = false }: SimpleOptionsManagerProps) {
   const { t } = useLanguage()
   const [items, setItems] = useState<SimpleOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +71,12 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
 
   function openEdit(item: SimpleOption) {
     setEditingId(item.id)
-    setForm({ name: item.name, extra_price: String(item.extra_price), imageUrl: item.image_url ?? '' })
+    setForm({
+      name: item.name,
+      extra_price: String(item.extra_price),
+      extra_charge: String(item.extra_charge ?? 0),
+      imageUrl: item.image_url ?? '',
+    })
     setError(null)
     setFormOpen(true)
   }
@@ -89,14 +103,24 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
   async function handleSave() {
     if (!form.name.trim()) return setError(t('menuMgmt.nameRequired'))
     setSaving(true)
-    const payload = {
+    const base = {
       name: form.name.trim(),
       extra_price: Number(form.extra_price) || 0,
       image_url: form.imageUrl.trim() || null,
     }
-    const { error } = editingId
-      ? await supabase.from(table).update(payload).eq('id', editingId)
-      : await supabase.from(table).insert(payload)
+    // `table` decide qué columnas existen de verdad (crusts no tiene
+    // extra_charge) — se narra el literal en cada rama a propósito: un
+    // solo `supabase.from(table)` con `table: 'crusts' | 'sauces'` obliga
+    // al payload a calzar con la INTERSECCIÓN de ambos esquemas, y desde
+    // que sauces ganó extra_charge esa intersección ya no existe.
+    const { error } =
+      table === 'sauces'
+        ? editingId
+          ? await supabase.from('sauces').update({ ...base, extra_charge: Number(form.extra_charge) || 0 }).eq('id', editingId)
+          : await supabase.from('sauces').insert({ ...base, extra_charge: Number(form.extra_charge) || 0 })
+        : editingId
+          ? await supabase.from('crusts').update(base).eq('id', editingId)
+          : await supabase.from('crusts').insert(base)
     setSaving(false)
     if (error) return setError(error.message)
     setFormOpen(false)
@@ -137,6 +161,11 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
                 {item.extra_price > 0 && (
                   <span className="text-xs font-semibold text-muted-foreground">
                     +{formatCurrency(item.extra_price)}
+                  </span>
+                )}
+                {hasExtraCharge && (item.extra_charge ?? 0) > 0 && (
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {t('menuMgmt.extraCharge')} +{formatCurrency(item.extra_charge ?? 0)}
                   </span>
                 )}
                 <button onClick={() => toggleActive(item)}>
@@ -186,6 +215,21 @@ export function SimpleOptionsManager({ table, title, itemLabel }: SimpleOptionsM
                   onChange={(e) => setForm({ ...form, extra_price: e.target.value })}
                 />
               </div>
+              {hasExtraCharge && (
+                <div>
+                  {/* Cargo ADICIONAL para el nivel "Extra" del selector de
+                      cantidad del cliente (Sesión 21) — se suma al precio
+                      normal de arriba, nunca lo reemplaza. Solo aplica a
+                      salsas (ver hasExtraCharge en el caller). */}
+                  <Label>{t('menuMgmt.extraCharge')}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.extra_charge}
+                    onChange={(e) => setForm({ ...form, extra_charge: e.target.value })}
+                  />
+                </div>
+              )}
               <div>
                 <Label>{t('menuMgmt.imageOptional')}</Label>
                 <div className="flex items-center gap-3">

@@ -785,21 +785,30 @@ export type Database = {
       }
       order_item_toppings: {
         Row: {
+          base_price: number
+          extra_charge: number
           id: string
           order_item_id: string
           price: number
+          quantity_level: string
           topping_name: string
         }
         Insert: {
+          base_price?: number
+          extra_charge?: number
           id?: string
           order_item_id: string
           price?: number
+          quantity_level?: string
           topping_name: string
         }
         Update: {
+          base_price?: number
+          extra_charge?: number
           id?: string
           order_item_id?: string
           price?: number
+          quantity_level?: string
           topping_name?: string
         }
         Relationships: [
@@ -820,7 +829,11 @@ export type Database = {
           menu_item_id: string | null
           order_id: string
           quantity: number
+          sauce_base_price: number
+          sauce_extra_charge: number
+          sauce_final_price: number
           sauce_name: string | null
+          sauce_quantity_level: string
           size_name: string | null
           subtotal: number
           unit_price: number
@@ -832,7 +845,11 @@ export type Database = {
           menu_item_id?: string | null
           order_id: string
           quantity?: number
+          sauce_base_price?: number
+          sauce_extra_charge?: number
+          sauce_final_price?: number
           sauce_name?: string | null
+          sauce_quantity_level?: string
           size_name?: string | null
           subtotal: number
           unit_price: number
@@ -844,7 +861,11 @@ export type Database = {
           menu_item_id?: string | null
           order_id?: string
           quantity?: number
+          sauce_base_price?: number
+          sauce_extra_charge?: number
+          sauce_final_price?: number
           sauce_name?: string | null
+          sauce_quantity_level?: string
           size_name?: string | null
           subtotal?: number
           unit_price?: number
@@ -1590,6 +1611,7 @@ export type Database = {
       sauces: {
         Row: {
           active: boolean
+          extra_charge: number
           extra_price: number
           id: string
           image_url: string | null
@@ -1597,6 +1619,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          extra_charge?: number
           extra_price?: number
           id?: string
           image_url?: string | null
@@ -1604,6 +1627,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          extra_charge?: number
           extra_price?: number
           id?: string
           image_url?: string | null
@@ -1759,6 +1783,7 @@ export type Database = {
       toppings: {
         Row: {
           active: boolean
+          extra_charge: number
           id: string
           image_url: string | null
           ingredient_id: string | null
@@ -1767,6 +1792,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          extra_charge?: number
           id?: string
           image_url?: string | null
           ingredient_id?: string | null
@@ -1775,6 +1801,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          extra_charge?: number
           id?: string
           image_url?: string | null
           ingredient_id?: string | null
