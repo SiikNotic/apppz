@@ -7,6 +7,7 @@ export type ItemSize = Tables<'item_sizes'>
 export type Crust = Tables<'crusts'>
 export type Sauce = Tables<'sauces'>
 export type Topping = Tables<'toppings'>
+export type MenuItemVariant = Tables<'menu_item_variants'>
 export type Ingredient = Tables<'ingredients'>
 export type InventoryMovement = Tables<'inventory_movements'>
 export type RecipeIngredient = Tables<'recipe_ingredients'>
@@ -138,6 +139,10 @@ export interface CartLine {
    *  servidor (calculate_cart_price) recalcula esto de cero con el mismo
    *  criterio; este valor es solo la estimación visual del cliente. */
   toppings: { id: string; name: string; price: number; free: boolean; quantityLevel: ToppingQuantityLevel }[]
+  /** Variante elegida (marca/sabor) — Sesión 22. Solo presente en
+   *  productos con `menu_items.has_variants`; `price` es el precio propio
+   *  de la variante (reemplaza el precio del producto, nunca se le suma). */
+  variant?: { id: string; name: string; price: number }
   note?: string
 }
 

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Category, MenuItem, ItemSize, Crust, Sauce, Topping, ProductImage } from '@/lib/types'
+import type { Category, MenuItem, ItemSize, Crust, Sauce, Topping, ProductImage, MenuItemVariant } from '@/lib/types'
 
 /**
  * Capa de acceso a datos: solo lectura/escritura cruda contra Supabase.
@@ -45,6 +45,18 @@ export async function fetchActiveSauces(): Promise<Sauce[]> {
 
 export async function fetchActiveToppings(): Promise<Topping[]> {
   const { data, error } = await supabase.from('toppings').select('*').eq('active', true).order('name')
+  if (error) throw error
+  return data ?? []
+}
+
+/** Sin menuItemId: todas las variantes activas de todos los productos
+ *  (para useMenuData, que las agrupa por item). Con menuItemId: solo las
+ *  de ese producto — usado en Menu Management, que además necesita ver
+ *  las inactivas (por eso ahí se consulta la tabla directo, no vía esta
+ *  función). */
+export async function fetchActiveVariants(menuItemId?: string): Promise<MenuItemVariant[]> {
+  const query = supabase.from('menu_item_variants').select('*').eq('active', true).order('sort_order')
+  const { data, error } = await (menuItemId ? query.eq('menu_item_id', menuItemId) : query)
   if (error) throw error
   return data ?? []
 }

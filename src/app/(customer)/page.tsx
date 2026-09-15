@@ -11,6 +11,7 @@ import { toast } from '@/components/ui/toast'
 import { MenuGrid } from '@/components/customer/menu-grid'
 import { ProductCard } from '@/components/customer/product-card'
 import { PizzaBuilderModal } from '@/components/customer/pizza-builder-modal'
+import { VariantPickerModal } from '@/components/customer/variant-picker-modal'
 import { MenuSkeleton } from '@/components/customer/menu-skeleton'
 import { PromoBannerCarousel } from '@/components/customer/promo-banner-carousel'
 import { Input } from '@/components/ui/input'
@@ -21,7 +22,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import type { MenuItem } from '@/lib/types'
 
 export default function HomePage() {
-  const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
+  const { categories, itemsByCategory, sizesByItem, variantsByItem, crusts, sauces, toppings, loading, error } = useMenuData()
   const { banners } = usePromoBanner()
   const { addLine } = useCart()
   const { t } = useLanguage()
@@ -31,8 +32,9 @@ export default function HomePage() {
   // navegaba a /menu y sacaba al cliente de donde estaba.
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   // Solo para el carril "Recomendados" (usa ProductCard directo, no
-  // MenuGrid) — el feed de abajo maneja el suyo propio internamente.
+  // MenuGrid) — el feed de abajo maneja los suyos propios internamente.
   const [builderItem, setBuilderItem] = useState<MenuItem | null>(null)
+  const [variantItem, setVariantItem] = useState<MenuItem | null>(null)
 
   const allItems = useMemo(() => Array.from(itemsByCategory.values()).flat(), [itemsByCategory])
 
@@ -113,6 +115,7 @@ export default function HomePage() {
           <MenuGrid
             items={searchResults ?? []}
             sizesByItem={sizesByItem}
+            variantsByItem={variantsByItem}
             crusts={crusts}
             sauces={sauces}
             toppings={toppings}
@@ -223,8 +226,10 @@ export default function HomePage() {
                     key={item.id}
                     item={item}
                     sizes={sizesByItem.get(item.id) ?? []}
+                    variants={variantsByItem.get(item.id) ?? []}
                     onQuickAdd={quickAdd}
                     onOpenBuilder={setBuilderItem}
+                    onOpenVariantPicker={setVariantItem}
                     className="w-40 shrink-0 sm:w-48"
                   />
                 ))}
@@ -255,6 +260,7 @@ export default function HomePage() {
             <MenuGrid
               items={activeCategory ? itemsByCategory.get(activeCategory) ?? [] : allItems}
               sizesByItem={sizesByItem}
+              variantsByItem={variantsByItem}
               crusts={crusts}
               sauces={sauces}
               toppings={toppings}
@@ -272,6 +278,16 @@ export default function HomePage() {
           crusts={crusts}
           sauces={sauces}
           toppings={toppings}
+          onAdd={addLine}
+        />
+      )}
+
+      {variantItem && (
+        <VariantPickerModal
+          open={!!variantItem}
+          onClose={() => setVariantItem(null)}
+          item={variantItem}
+          variants={variantsByItem.get(variantItem.id) ?? []}
           onAdd={addLine}
         />
       )}

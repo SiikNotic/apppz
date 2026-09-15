@@ -5,22 +5,25 @@ import { useCart } from '@/contexts/CartContext'
 import { toast } from '@/components/ui/toast'
 import { ProductCard } from './product-card'
 import { PizzaBuilderModal } from './pizza-builder-modal'
+import { VariantPickerModal } from './variant-picker-modal'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { MenuItem, ItemSize, Crust, Sauce, Topping } from '@/lib/types'
+import type { MenuItem, ItemSize, Crust, Sauce, Topping, MenuItemVariant } from '@/lib/types'
 
 interface MenuGridProps {
   items: MenuItem[]
   sizesByItem: Map<string, ItemSize[]>
+  variantsByItem: Map<string, MenuItemVariant[]>
   crusts: Crust[]
   sauces: Sauce[]
   toppings: Topping[]
   emptyMessage?: string
 }
 
-export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMessage }: MenuGridProps) {
+export function MenuGrid({ items, sizesByItem, variantsByItem, crusts, sauces, toppings, emptyMessage }: MenuGridProps) {
   const { addLine } = useCart()
   const { t } = useLanguage()
   const [builderItem, setBuilderItem] = useState<MenuItem | null>(null)
+  const [variantItem, setVariantItem] = useState<MenuItem | null>(null)
 
   if (items.length === 0) {
     return <p className="py-10 text-center text-sm text-muted-foreground">{emptyMessage ?? t('product.noProductsInCategory')}</p>
@@ -45,8 +48,10 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
           key={item.id}
           item={item}
           sizes={sizesByItem.get(item.id) ?? []}
+          variants={variantsByItem.get(item.id) ?? []}
           onQuickAdd={quickAdd}
           onOpenBuilder={setBuilderItem}
+          onOpenVariantPicker={setVariantItem}
         />
       ))}
 
@@ -59,6 +64,16 @@ export function MenuGrid({ items, sizesByItem, crusts, sauces, toppings, emptyMe
           crusts={crusts}
           sauces={sauces}
           toppings={toppings}
+          onAdd={addLine}
+        />
+      )}
+
+      {variantItem && (
+        <VariantPickerModal
+          open={!!variantItem}
+          onClose={() => setVariantItem(null)}
+          item={variantItem}
+          variants={variantsByItem.get(variantItem.id) ?? []}
           onAdd={addLine}
         />
       )}

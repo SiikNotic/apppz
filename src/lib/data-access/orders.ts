@@ -20,6 +20,10 @@ export interface CartRpcItem {
    *  omite, igual que antes de que existiera este concepto. */
   sauce_quantity_level?: ToppingQuantityLevel
   topping_ids?: CartToppingRef[]
+  /** Variante elegida (marca/sabor) — Sesión 22. Solo aplica a productos
+   *  con `menu_items.has_variants`; el servidor exige elegir una si el
+   *  producto tiene variantes activas configuradas. */
+  variant_id?: string | null
   quantity: number
 }
 
@@ -35,6 +39,8 @@ export interface CartPricingResult {
     sauce_extra_charge: number
     sauce_final_price: number
     toppings: { id: string; name: string; price: number; free: boolean; quantity_level: ToppingQuantityLevel; base_price: number; extra_charge: number }[]
+    variant_name: string | null
+    variant_price: number | null
     quantity: number
     unit_price: number
     subtotal: number

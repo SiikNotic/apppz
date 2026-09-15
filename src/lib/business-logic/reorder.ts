@@ -35,6 +35,35 @@ export async function buildCartLinesFromOrder(
     }
 
     if (!menuItem.is_customizable_pizza) {
+      // Producto con variante (marca/sabor) — Sesión 22. Se re-resuelve
+      // por nombre contra las variantes activas de HOY, igual criterio
+      // que tamaño/masa/salsa/toppings de pizza más abajo: si la variante
+      // ya no existe (renombrada o borrada), se omite la línea entera en
+      // vez de adivinar un precio — el cliente puede agregarlo de nuevo
+      // manualmente si el producto sigue disponible.
+      if (menuItem.has_variants && oi.variant_name) {
+        const { data: variants } = await supabase
+          .from('menu_item_variants')
+          .select('*')
+          .eq('menu_item_id', menuItem.id)
+          .eq('active', true)
+        const variant = variants?.find((v) => v.name === oi.variant_name)
+        if (!variant) {
+          warnings.push(`La variante de "${oi.item_name}" ya no está disponible y se omitió.`)
+          continue
+        }
+        lines.push({
+          menuItemId: menuItem.id,
+          name: menuItem.name,
+          imageUrl: menuItem.image_url,
+          quantity: oi.quantity,
+          unitPrice: variant.price, // precio ACTUAL de la variante, no el guardado en el pedido viejo
+          toppings: [],
+          variant: { id: variant.id, name: variant.name, price: variant.price },
+        })
+        continue
+      }
+
       lines.push({
         menuItemId: menuItem.id,
         name: menuItem.name,

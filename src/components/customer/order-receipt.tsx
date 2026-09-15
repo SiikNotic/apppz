@@ -126,6 +126,12 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
                     {item.quantity}× {item.item_name}
                     {item.size_name ? ` (${item.size_name})` : ''}
                   </p>
+                  {/* Variante (marca/sabor, Sesión 22) en su propia línea,
+                      no mezclada con masa/salsa — "Soda en lata" solo
+                      tiene variante, nunca las tres cosas a la vez, pero
+                      una pizza con salsa nunca tiene variante, así que no
+                      hay caso real donde deban competir por espacio. */}
+                  {item.variant_name && <p className="text-sm font-semibold text-black">{item.variant_name}</p>}
                   {(item.crust_name || item.sauce_name) && (
                     <p className="text-sm text-neutral-500">
                       {[item.crust_name, item.sauce_name && withQuantityLabel(item.sauce_name, item.sauce_quantity_level, t)]
@@ -237,6 +243,7 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
               </span>
               <span className="shrink-0">{formatCurrency(item.subtotal)}</span>
             </div>
+            {item.variant_name && <p className="text-[11px] font-bold">{item.variant_name}</p>}
             {(item.crust_name || item.sauce_name) && (
               <p className="text-[11px] text-neutral-500">
                 {[item.crust_name, item.sauce_name && withQuantityLabel(item.sauce_name, item.sauce_quantity_level, t)]

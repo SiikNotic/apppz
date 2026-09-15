@@ -40,6 +40,10 @@ function lineDescription(line: CartLine, translate: (key: string) => string): st
   if (line.toppings.length) {
     parts.push(line.toppings.map((top) => nameWithLevel(top.name, top.quantityLevel, translate)).join(', '))
   }
+  // Variante elegida (marca/sabor) — Sesión 22. Nunca se muestra solo
+  // "Soda en lata / $3.50": el cliente y la cocina necesitan saber qué
+  // sabor se eligió, igual que ya pasa con tamaño/masa/salsa arriba.
+  if (line.variant) parts.push(line.variant.name)
   return parts.join(' · ')
 }
 
@@ -51,6 +55,7 @@ function cartToRpcItems(lines: CartLine[]): CartRpcItem[] {
     sauce_id: line.sauce?.id ?? null,
     sauce_quantity_level: line.sauce?.quantityLevel ?? 'normal',
     topping_ids: line.toppings.map((top) => ({ id: top.id, quantity_level: top.quantityLevel })),
+    variant_id: line.variant?.id ?? null,
     quantity: line.quantity,
   }))
 }

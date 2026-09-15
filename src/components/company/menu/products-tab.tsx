@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Pencil, Trash2, X, Upload, Loader2, Sparkles, Copy } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Upload, Loader2, Sparkles, Copy, ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { EmptyState } from '@/components/ui/empty-state'
 import { formatCurrency } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { Category, MenuItem, ItemSize } from '@/lib/types'
+import type { Category, MenuItem, ItemSize, MenuItemVariant } from '@/lib/types'
 
 const NONE = '__none__'
 
@@ -29,6 +29,7 @@ interface ProductFormState {
   base_price: string
   image_url: string
   is_customizable_pizza: boolean
+  has_variants: boolean
   active: boolean
   free_toppings_limit: string
 }
@@ -40,9 +41,23 @@ const EMPTY_FORM: ProductFormState = {
   base_price: '0',
   image_url: '',
   is_customizable_pizza: false,
+  has_variants: false,
   active: true,
   free_toppings_limit: '0',
 }
+
+/** Fila de variante en el formulario — mismo patrón que `sizes` (abajo):
+ *  el form maneja strings de <input>, se convierten a número recién al
+ *  guardar. `id` solo existe editando un producto ya guardado; se
+ *  descarta en el "reemplazar todo" de handleSave (ver ahí por qué). */
+interface VariantFormRow {
+  id?: string
+  name: string
+  price: string
+  active: boolean
+}
+
+const EMPTY_VARIANT_ROW: VariantFormRow = { name: '', price: '0', active: true }
 
 export function ProductsTab() {
   const { t } = useLanguage()
@@ -54,6 +69,7 @@ export function ProductsTab() {
   const [sizes, setSizes] = useState<
     { id?: string; name: string; price: string; sizeInches: string; sizeCm: string }[]
   >([])
+  const [variants, setVariants] = useState<VariantFormRow[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
@@ -96,6 +112,7 @@ export function ProductsTab() {
   function openCreate() {
     setForm({ ...EMPTY_FORM, category_id: categories[0]?.id ?? '' })
     setSizes([])
+    setVariants([])
     setError(null)
     setUploadError(null)
     resetAiPanel()
@@ -111,6 +128,7 @@ export function ProductsTab() {
       base_price: String(item.base_price),
       image_url: item.image_url ?? '',
       is_customizable_pizza: item.is_customizable_pizza,
+      has_variants: item.has_variants,
       active: item.active,
       free_toppings_limit: String(item.free_toppings_limit),
     })
@@ -135,6 +153,21 @@ export function ProductsTab() {
     } else {
       setSizes([])
     }
+    if (item.has_variants) {
+      // A diferencia del menú de clientes (fetchActiveVariants, solo
+      // activas), acá se traen TODAS — el admin necesita ver/editar
+      // también las que desactivó, no solo las visibles al cliente.
+      const { data } = await supabase
+        .from('menu_item_variants')
+        .select('*')
+        .eq('menu_item_id', item.id)
+        .order('sort_order')
+      setVariants(
+        (data ?? []).map((v: MenuItemVariant) => ({ id: v.id, name: v.name, price: String(v.price), active: v.active }))
+      )
+    } else {
+      setVariants([])
+    }
     setFormOpen(true)
   }
 
@@ -151,6 +184,32 @@ export function ProductsTab() {
 
   function removeSizeRow(index: number) {
     setSizes((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function addVariantRow() {
+    setVariants((prev) => [...prev, { ...EMPTY_VARIANT_ROW }])
+  }
+
+  function updateVariantRow(index: number, patch: Partial<VariantFormRow>) {
+    setVariants((prev) => prev.map((v, i) => (i === index ? { ...v, ...patch } : v)))
+  }
+
+  function removeVariantRow(index: number) {
+    setVariants((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  /** "Reordenar variantes" (pedido explícito) — mueve la fila un lugar
+   *  arriba/abajo en el array; el orden final se guarda como sort_order =
+   *  índice al hacer submit, igual que sizes (que no tiene UI de
+   *  reordenar porque ahí el orden nunca importó de cara al cliente). */
+  function moveVariantRow(index: number, direction: -1 | 1) {
+    setVariants((prev) => {
+      const next = [...prev]
+      const target = index + direction
+      if (target < 0 || target >= next.length) return prev
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return next
+    })
   }
 
   async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -233,6 +292,7 @@ export function ProductsTab() {
       base_price: Number(form.base_price) || 0,
       image_url: form.image_url.trim() || null,
       is_customizable_pizza: form.is_customizable_pizza,
+      has_variants: form.has_variants,
       active: form.active,
       free_toppings_limit: form.is_customizable_pizza ? Math.max(0, Number(form.free_toppings_limit) || 0) : 0,
     }
@@ -258,6 +318,25 @@ export function ProductsTab() {
             price: Number(s.price) || 0,
             size_inches: s.sizeInches.trim() ? Number(s.sizeInches) : null,
             size_cm: s.sizeCm.trim() ? Number(s.sizeCm) : null,
+            sort_order: i,
+          }))
+        )
+      }
+    }
+
+    if (form.has_variants) {
+      // Mismo "reemplazar todo" que item_sizes arriba — order_items ya
+      // guarda variant_name/variant_price como copia directa (sin FK), así
+      // que reasignar ids nuevos acá nunca afecta pedidos ya hechos.
+      await supabase.from('menu_item_variants').delete().eq('menu_item_id', saved.id)
+      const validVariants = variants.filter((v) => v.name.trim())
+      if (validVariants.length > 0) {
+        await supabase.from('menu_item_variants').insert(
+          validVariants.map((v, i) => ({
+            menu_item_id: saved.id,
+            name: v.name.trim(),
+            price: Number(v.price) || 0,
+            active: v.active,
             sort_order: i,
           }))
         )
@@ -300,6 +379,7 @@ export function ProductsTab() {
         base_price: item.base_price,
         image_url: item.image_url,
         is_customizable_pizza: item.is_customizable_pizza,
+        has_variants: item.has_variants,
         free_toppings_limit: item.free_toppings_limit,
         active: false,
       })
@@ -327,6 +407,25 @@ export function ProductsTab() {
             size_inches: s.size_inches,
             size_cm: s.size_cm,
             sort_order: s.sort_order,
+          }))
+        )
+      }
+    }
+
+    if (item.has_variants) {
+      const { data: originalVariants } = await supabase
+        .from('menu_item_variants')
+        .select('*')
+        .eq('menu_item_id', item.id)
+        .order('sort_order')
+      if (originalVariants && originalVariants.length > 0) {
+        await supabase.from('menu_item_variants').insert(
+          originalVariants.map((v) => ({
+            menu_item_id: copy.id,
+            name: v.name,
+            price: v.price,
+            active: v.active,
+            sort_order: v.sort_order,
           }))
         )
       }
@@ -361,6 +460,7 @@ export function ProductsTab() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-semibold text-foreground">{item.name}</span>
                       {item.is_customizable_pizza && <Badge variant="brand">{t('productForm.customizableBadge')}</Badge>}
+                      {item.has_variants && <Badge variant="brand">{t('productForm.beverageBadge')}</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {categoryName(item.category_id)} · {formatCurrency(item.base_price)}
@@ -426,6 +526,7 @@ export function ProductsTab() {
                             {item.is_customizable_pizza && (
                               <Badge variant="brand">{t('productForm.customizableBadge')}</Badge>
                             )}
+                            {item.has_variants && <Badge variant="brand">{t('productForm.beverageBadge')}</Badge>}
                           </div>
                         </div>
                       </div>
@@ -650,7 +751,11 @@ export function ProductsTab() {
                 <Checkbox
                   checked={form.is_customizable_pizza}
                   onCheckedChange={(checked) =>
-                    setForm({ ...form, is_customizable_pizza: checked === true })
+                    // Mutuamente excluyente con "Bebida" (has_variants) —
+                    // el armador de pizza y el selector de variante son
+                    // dos flujos de cliente distintos, un producto usa uno
+                    // u otro, nunca los dos a la vez.
+                    setForm({ ...form, is_customizable_pizza: checked === true, has_variants: checked === true ? false : form.has_variants })
                   }
                 />
                 {t('productForm.isCustomizablePizza')}
@@ -668,6 +773,24 @@ export function ProductsTab() {
                   <p className="mt-1 text-[11px] text-muted-foreground">{t('productForm.freeToppingsHint')}</p>
                 </div>
               )}
+
+              {/* "Bebida" — Sesión 22. El nombre visible es literalmente
+                  "Bebida" (fue pensado primero para bebidas), pero la
+                  columna que activa (has_variants) y la tabla que arma
+                  (menu_item_variants) son genéricas a propósito: el mismo
+                  mecanismo sirve para cualquier producto con
+                  marcas/sabores, no solo bebidas — ver comentario en la
+                  migración de Supabase. */}
+              {!form.is_customizable_pizza && (
+                <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Checkbox
+                    checked={form.has_variants}
+                    onCheckedChange={(checked) => setForm({ ...form, has_variants: checked === true })}
+                  />
+                  {t('productForm.isBeverage')}
+                </label>
+              )}
+
               <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Checkbox
                   checked={form.active}
@@ -734,6 +857,79 @@ export function ProductsTab() {
                     ))}
                     {sizes.length === 0 && (
                       <p className="text-xs text-muted-foreground">{t('productForm.addAtLeastOneSize')}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Variantes/sabores/marcas — Sesión 22. Cada fila tiene su
+                  propio precio absoluto (nunca forzado a igualar a las
+                  demás) y su propio interruptor de disponibilidad; las
+                  flechas reordenan (se guarda como sort_order al hacer
+                  submit, igual que sizes). */}
+              {form.has_variants && (
+                <div className="rounded-2xl bg-muted p-3.5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('productForm.variantsHeading')}</p>
+                    <button onClick={addVariantRow} className="text-xs font-bold text-brand-400 hover:underline">
+                      {t('productForm.addVariant')}
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {variants.map((variant, i) => (
+                      <div key={i} className="flex items-center gap-2 rounded-xl bg-card p-2.5">
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => moveVariantRow(i, -1)}
+                            disabled={i === 0}
+                            aria-label={t('productForm.moveVariantUp')}
+                            className="grid h-4 w-6 place-items-center text-muted-foreground hover:text-foreground disabled:opacity-25"
+                          >
+                            <ChevronUp size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveVariantRow(i, 1)}
+                            disabled={i === variants.length - 1}
+                            aria-label={t('productForm.moveVariantDown')}
+                            className="grid h-4 w-6 place-items-center text-muted-foreground hover:text-foreground disabled:opacity-25"
+                          >
+                            <ChevronDown size={12} />
+                          </button>
+                        </div>
+                        <Input
+                          placeholder={t('productForm.variantNamePlaceholder')}
+                          value={variant.name}
+                          onChange={(e) => updateVariantRow(i, { name: e.target.value })}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder={t('productForm.pricePlaceholder')}
+                          value={variant.price}
+                          onChange={(e) => updateVariantRow(i, { price: e.target.value })}
+                          className="w-24"
+                        />
+                        <label className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                          <Checkbox
+                            checked={variant.active}
+                            onCheckedChange={(checked) => updateVariantRow(i, { active: checked === true })}
+                          />
+                          {t('menuMgmt.activeM')}
+                        </label>
+                        <button
+                          onClick={() => removeVariantRow(i)}
+                          aria-label={t('productForm.removeVariant')}
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-muted-foreground hover:text-danger-500"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    {variants.length === 0 && (
+                      <p className="text-xs text-muted-foreground">{t('productForm.noVariantsYet')}</p>
                     )}
                   </div>
                 </div>

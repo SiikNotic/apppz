@@ -408,6 +408,13 @@ export default function KitchenViewPage() {
                               {item.quantity}× {item.item_name}
                               {item.size_name ? ` (${item.size_name})` : ''}
                             </p>
+                            {/* Variante (marca/sabor, Sesión 22) bien
+                                visible arriba de todo lo demás — cocina no
+                                debería tener que abrir otra pantalla para
+                                saber qué sabor preparar/servir. */}
+                            {item.variant_name && (
+                              <p className="text-sm font-bold text-brand-400">→ {item.variant_name}</p>
+                            )}
                             {(item.crust_name || item.sauce_name) && (
                               <p className="text-xs text-muted-foreground">
                                 {[item.crust_name, item.sauce_name && withQuantityLabel(item.sauce_name, item.sauce_quantity_level, t)]

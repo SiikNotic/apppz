@@ -12,14 +12,16 @@ import {
   fetchActiveCrusts,
   fetchActiveSauces,
   fetchActiveToppings,
+  fetchActiveVariants,
 } from '@/lib/data-access/menu'
 import { usePizzaBuilder } from '@/components/customer/use-pizza-builder'
 import { SizePicker, CrustPicker, SaucePicker, ToppingPicker } from '@/components/customer/pizza-option-pickers'
+import { VariantOptionList } from '@/components/customer/variant-option-list'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { MenuItem, ItemSize, Crust, Sauce, Topping } from '@/lib/types'
+import type { MenuItem, ItemSize, Crust, Sauce, Topping, MenuItemVariant } from '@/lib/types'
 
 export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
   const router = useRouter()
@@ -32,6 +34,8 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
   const [crusts, setCrusts] = useState<Crust[]>([])
   const [sauces, setSauces] = useState<Sauce[]>([])
   const [toppings, setToppings] = useState<Topping[]>([])
+  const [variants, setVariants] = useState<MenuItemVariant[]>([])
+  const [variantId, setVariantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
@@ -58,6 +62,10 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
         setCrusts(c)
         setSauces(sa)
         setToppings(t)
+      } else if (menuItem?.has_variants) {
+        const v = await fetchActiveVariants(menuItem.id)
+        if (!active) return
+        setVariants(v)
       }
       setLoading(false)
     }
@@ -107,15 +115,26 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
     }
   }
 
+  // Con variantes activas cargadas, el cliente DEBE elegir una antes de
+  // poder agregar al carrito (mismo criterio que un tamaño de pizza); sin
+  // ninguna todavía, el producto se vende normal — igual regla que ya
+  // aplica en el servidor (calculate_cart_price) y en ProductCard.
+  const hasVariantChoice = Boolean(item?.has_variants) && variants.length > 0
+  const selectedVariant = variants.find((v) => v.id === variantId) ?? null
+
   function handleAddSimple() {
     if (!item) return
+    // Resguardo adicional — el botón de abajo ya queda deshabilitado
+    // mientras falte elegir, esto no es la única barrera.
+    if (hasVariantChoice && !selectedVariant) return
     addLine({
       menuItemId: item.id,
       name: item.name,
       imageUrl: item.image_url,
       quantity,
-      unitPrice: item.base_price,
+      unitPrice: selectedVariant ? selectedVariant.price : item.base_price,
       toppings: [],
+      variant: selectedVariant ? { id: selectedVariant.id, name: selectedVariant.name, price: selectedVariant.price } : undefined,
     })
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
@@ -141,7 +160,11 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
     )
   }
 
-  const displayPrice = item.is_customizable_pizza ? builder.total : item.base_price
+  const displayPrice = item.is_customizable_pizza
+    ? builder.total
+    : hasVariantChoice
+      ? (selectedVariant?.price ?? variants[0].price)
+      : item.base_price
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -168,9 +191,13 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
         <h1 className="text-2xl font-extrabold text-foreground">{item.name}</h1>
         {item.description && <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>}
         <p className="mt-2 text-lg font-extrabold text-brand-400">
-          {item.is_customizable_pizza ? t('product.from') : ''}
+          {item.is_customizable_pizza || (hasVariantChoice && !selectedVariant) ? t('product.from') : ''}
           {formatCurrency(displayPrice)}
         </p>
+        {/* Variante elegida, bien visible junto al precio — igual que
+            pide la tarea ("Soda en lata / Coca-Cola / $1.75"), no solo
+            marcada dentro de la lista de abajo. */}
+        {selectedVariant && <p className="mt-0.5 text-sm font-semibold text-foreground">{selectedVariant.name}</p>}
       </div>
 
       {item.is_customizable_pizza ? (
@@ -193,6 +220,11 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
             onLevelChange={builder.setToppingLevel}
           />
         </div>
+      ) : hasVariantChoice ? (
+        <section>
+          <h3 className="mb-2.5 text-sm font-bold text-foreground">{t('product.chooseFlavor')}</h3>
+          <VariantOptionList variants={variants} value={variantId} onChange={setVariantId} ariaLabel={t('product.chooseFlavor')} />
+        </section>
       ) : (
         <div className="flex items-center gap-2 rounded-2xl bg-card p-3">
           <PizzaIcon size={18} className="text-muted-foreground" aria-hidden="true" />
@@ -226,8 +258,13 @@ export function ProductDetailClient({ menuItemId }: { menuItemId: string }) {
             variant="dark"
             className="bg-transparent hover:bg-white/10"
             onClick={item.is_customizable_pizza ? handleAddPizza : handleAddSimple}
+            disabled={hasVariantChoice && !selectedVariant}
           >
-            {added ? t('product.added') : `${t('product.addButton')} · ${formatCurrency(displayPrice * quantity)}`}
+            {added
+              ? t('product.added')
+              : hasVariantChoice && !selectedVariant
+                ? t('product.chooseFlavorPrompt')
+                : `${t('product.addButton')} · ${formatCurrency(displayPrice * quantity)}`}
           </Button>
         </div>
       </div>

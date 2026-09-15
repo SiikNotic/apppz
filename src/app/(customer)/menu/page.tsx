@@ -15,7 +15,7 @@ import { CategoryPillIcon } from '@/components/customer/category-pill-icon'
 import { BRAND_NAME } from '@/lib/config'
 
 function MenuPageContent() {
-  const { categories, itemsByCategory, sizesByItem, crusts, sauces, toppings, loading, error } = useMenuData()
+  const { categories, itemsByCategory, sizesByItem, variantsByItem, crusts, sauces, toppings, loading, error } = useMenuData()
   const { t } = useLanguage()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -96,6 +96,7 @@ function MenuPageContent() {
           <MenuGrid
             items={searchResults ?? []}
             sizesByItem={sizesByItem}
+            variantsByItem={variantsByItem}
             crusts={crusts}
             sauces={sauces}
             toppings={toppings}
@@ -136,6 +137,7 @@ function MenuPageContent() {
           <MenuGrid
             items={itemsByCategory.get(currentCategory ?? '') ?? []}
             sizesByItem={sizesByItem}
+            variantsByItem={variantsByItem}
             crusts={crusts}
             sauces={sauces}
             toppings={toppings}

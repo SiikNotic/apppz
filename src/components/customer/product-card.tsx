@@ -7,13 +7,20 @@ import { cn } from '@/lib/utils'
 import { ItemThumb } from '@/components/ui/item-thumb'
 import { PriceDisplay } from '@/components/ui/price'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { MenuItem, ItemSize } from '@/lib/types'
+import type { MenuItem, ItemSize, MenuItemVariant } from '@/lib/types'
 
 interface ProductCardProps {
   item: MenuItem
   sizes: ItemSize[]
+  /** Variantes ACTIVAS del producto (marca/sabor) — Sesión 22. Vacío para
+   *  un producto sin `has_variants` o sin ninguna variante cargada. */
+  variants: MenuItemVariant[]
   onQuickAdd: (item: MenuItem) => void
   onOpenBuilder: (item: MenuItem) => void
+  /** Abre el selector de variante (Poco/Normal/Extra no aplica acá — es
+   *  "elige sabor/marca") en vez de agregar directo, cuando el producto
+   *  tiene al menos una variante activa. */
+  onOpenVariantPicker: (item: MenuItem) => void
   /** Ancho/comportamiento de layout — grilla (por defecto, w-full) vs.
    *  carril horizontal (el que llama pasa algo como "w-40 shrink-0"). */
   className?: string
@@ -25,10 +32,16 @@ interface ProductCardProps {
  * del mismo marcado + lógica de agregar al carrito. Antes vivía inline
  * dentro de menu-grid.tsx.
  */
-export function ProductCard({ item, sizes, onQuickAdd, onOpenBuilder, className }: ProductCardProps) {
+export function ProductCard({ item, sizes, variants, onQuickAdd, onOpenBuilder, onOpenVariantPicker, className }: ProductCardProps) {
   const { t } = useLanguage()
   const isBuilder = item.is_customizable_pizza
-  const displayPrice = isBuilder ? (sizes[0]?.price ?? item.base_price) : item.base_price
+  // Con variantes activas cargadas, el botón "+" abre el selector en vez
+  // de agregar directo (el cliente DEBE elegir sabor/marca primero); sin
+  // ninguna todavía (aunque el producto esté marcado "con variantes"), se
+  // vende al precio normal como cualquier producto simple — igual
+  // criterio que el servidor (calculate_cart_price).
+  const hasVariantChoice = item.has_variants && variants.length > 0
+  const displayPrice = isBuilder ? (sizes[0]?.price ?? item.base_price) : hasVariantChoice ? variants[0].price : item.base_price
 
   return (
     <div
@@ -97,7 +110,7 @@ export function ProductCard({ item, sizes, onQuickAdd, onOpenBuilder, className 
             </button>
           ) : (
             <button
-              onClick={() => onQuickAdd(item)}
+              onClick={() => (hasVariantChoice ? onOpenVariantPicker(item) : onQuickAdd(item))}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-500 text-white transition active:scale-90 hover:bg-brand-600"
               aria-label={t('product.addToCartAria', { name: item.name })}
             >

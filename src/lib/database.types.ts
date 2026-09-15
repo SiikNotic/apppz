@@ -700,6 +700,44 @@ export type Database = {
           },
         ]
       }
+      menu_item_variants: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          menu_item_id: string
+          name: string
+          price: number
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          menu_item_id: string
+          name: string
+          price?: number
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+          name?: string
+          price?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_variants_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           active: boolean
@@ -708,6 +746,7 @@ export type Database = {
           created_at: string
           description: string | null
           free_toppings_limit: number
+          has_variants: boolean
           id: string
           image_url: string | null
           is_customizable_pizza: boolean
@@ -720,6 +759,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           free_toppings_limit?: number
+          has_variants?: boolean
           id?: string
           image_url?: string | null
           is_customizable_pizza?: boolean
@@ -732,6 +772,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           free_toppings_limit?: number
+          has_variants?: boolean
           id?: string
           image_url?: string | null
           is_customizable_pizza?: boolean
@@ -837,6 +878,8 @@ export type Database = {
           size_name: string | null
           subtotal: number
           unit_price: number
+          variant_name: string | null
+          variant_price: number | null
         }
         Insert: {
           crust_name?: string | null
@@ -853,6 +896,8 @@ export type Database = {
           size_name?: string | null
           subtotal: number
           unit_price: number
+          variant_name?: string | null
+          variant_price?: number | null
         }
         Update: {
           crust_name?: string | null
@@ -869,6 +914,8 @@ export type Database = {
           size_name?: string | null
           subtotal?: number
           unit_price?: number
+          variant_name?: string | null
+          variant_price?: number | null
         }
         Relationships: [
           {
