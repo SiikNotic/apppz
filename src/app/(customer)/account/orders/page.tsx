@@ -6,6 +6,7 @@ import { ChevronRight, ClipboardList, Receipt, RotateCcw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCart } from '@/contexts/CartContext'
 import { fetchCustomerOrders, fetchOrderThumbnails } from '@/lib/data-access/orders'
+import { fetchOrderCancellationsByOrderIds } from '@/lib/data-access/cancellations'
 import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ReceiptDialog } from '@/components/customer/receipt-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { BRAND_NAME } from '@/lib/config'
-import { ORDER_TERMINAL_STATUSES, type Order, type OrderStatus } from '@/lib/types'
+import { ORDER_TERMINAL_STATUSES, REFUND_METHOD_I18N_KEY, REFUND_STATUS_I18N_KEY, type Order, type OrderCancellation, type OrderStatus } from '@/lib/types'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 type OrderThumb = { name: string; imageUrl: string | null } | undefined
@@ -40,6 +41,7 @@ export default function OrdersHistoryPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [thumbnails, setThumbnails] = useState<Map<string, { name: string; imageUrl: string | null }>>(new Map())
+  const [cancellations, setCancellations] = useState<Map<string, OrderCancellation>>(new Map())
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'active' | 'past'>('active')
   const [reorderingId, setReorderingId] = useState<string | null>(null)
@@ -56,6 +58,8 @@ export default function OrdersHistoryPage() {
       setOrders(list)
       setLoading(false)
       fetchOrderThumbnails(list.map((o) => o.id)).then(setThumbnails)
+      const cancelledIds = list.filter((o) => o.status === 'cancelled').map((o) => o.id)
+      fetchOrderCancellationsByOrderIds(cancelledIds).then(setCancellations)
     })
   }, [user, authLoading, router])
 
@@ -141,6 +145,7 @@ export default function OrdersHistoryPage() {
                     key={order.id}
                     order={order}
                     thumb={thumbnails.get(order.id)}
+                    cancellation={cancellations.get(order.id) ?? null}
                     router={router}
                     onReorder={handleReorder}
                     onViewReceipt={setReceiptOrder}
@@ -201,6 +206,7 @@ function ActiveOrderCard({
 function PastOrderCard({
   order,
   thumb,
+  cancellation,
   router,
   onReorder,
   onViewReceipt,
@@ -208,6 +214,7 @@ function PastOrderCard({
 }: {
   order: Order
   thumb: OrderThumb
+  cancellation: OrderCancellation | null
   router: ReturnType<typeof useRouter>
   onReorder: (o: Order) => void
   onViewReceipt: (o: Order) => void
@@ -229,6 +236,17 @@ function PastOrderCard({
         <span className="shrink-0 text-sm font-extrabold text-foreground">{formatCurrency(order.total)}</span>
         <ChevronRight size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
       </button>
+      {/* "Order #28 / Cancelled / Refund: $24.50 / Refund method: Pizzeria
+          Credit" (o "Refund: Processing" mientras sigue pendiente) — el
+          historial nunca esconde que un pedido se canceló ni finge que el
+          reembolso ya terminó si todavía no. */}
+      {status === 'cancelled' && cancellation && cancellation.refund_amount > 0 && (
+        <p className="mt-1.5 pl-[52px] text-xs text-danger-400">
+          {t('cancellation.refundLabel')}: {formatCurrency(cancellation.refund_amount)} ·{' '}
+          {t(REFUND_METHOD_I18N_KEY[cancellation.refund_method as keyof typeof REFUND_METHOD_I18N_KEY])} ·{' '}
+          {t(REFUND_STATUS_I18N_KEY[cancellation.refund_status as keyof typeof REFUND_STATUS_I18N_KEY])}
+        </p>
+      )}
       <div className="mt-2 flex items-center gap-2 border-t border-border pt-2">
         <Button size="sm" variant="ghost" onClick={() => onViewReceipt(order)}>
           <Receipt size={14} aria-hidden="true" />

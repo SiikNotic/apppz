@@ -3,10 +3,11 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Check, Receipt, RotateCcw, MessageCircleWarning, XCircle } from 'lucide-react'
+import { Check, Receipt, RotateCcw, MessageCircleWarning, XCircle, Ban } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useCart } from '@/contexts/CartContext'
 import { fetchOrderById } from '@/lib/data-access/orders'
+import { fetchOrderCancellation } from '@/lib/data-access/cancellations'
 import { buildCartLinesFromOrder } from '@/lib/business-logic/reorder'
 import { saveLastOrderId, clearLastOrderId, getLastOrderId } from '@/lib/active-order'
 import { resolveDeliveryLocation } from '@/lib/geo'
@@ -15,10 +16,11 @@ import { Button } from '@/components/ui/button'
 import { DriverCard, type DriverVehicle } from '@/components/customer/driver-card'
 import { ReportProblemDialog } from '@/components/customer/report-problem-dialog'
 import { ReceiptDialog } from '@/components/customer/receipt-dialog'
+import { CancelOrderDialog } from '@/components/customer/cancel-order-dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { ORDER_STATUS_FLOW, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES } from '@/lib/types'
-import type { DeliveryAssignment, Order, OrderItem, OrderStatus, Profile } from '@/lib/types'
+import { ORDER_STATUS_FLOW, ORDER_TERMINAL_STATUSES, ORDER_CLOSED_STATUSES, REFUND_METHOD_I18N_KEY, REFUND_STATUS_I18N_KEY } from '@/lib/types'
+import type { DeliveryAssignment, Order, OrderCancellation, OrderItem, OrderStatus, Profile } from '@/lib/types'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 // mapbox-gl necesita `window` — con export estático, evaluarlo durante el
@@ -52,6 +54,8 @@ function OrderStatusContent() {
   const [reorderNotice, setReorderNotice] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [cancellation, setCancellation] = useState<OrderCancellation | null>(null)
 
   useEffect(() => {
     if (!orderId) {
@@ -107,6 +111,11 @@ function OrderStatusContent() {
       }
     }
 
+    async function loadCancellation() {
+      const row = await fetchOrderCancellation(id).catch(() => null)
+      if (active) setCancellation(row)
+    }
+
     async function load() {
       const [orderData, itemsRes] = await Promise.all([
         fetchOrderById(id),
@@ -118,6 +127,7 @@ function OrderStatusContent() {
       setItems(itemsRes.data ?? [])
       setLoading(false)
       if (orderData?.order_type === 'delivery') loadAssignment()
+      if (orderData?.status === 'cancelled') loadCancellation()
     }
     load()
 
@@ -131,6 +141,7 @@ function OrderStatusContent() {
           setOrder(updated)
           syncLastOrder(updated)
           if (updated.order_type === 'delivery') loadAssignment()
+          if (updated.status === 'cancelled') loadCancellation()
         }
       )
       .on(
@@ -199,6 +210,15 @@ function OrderStatusContent() {
   const currentIndex = visibleFlow.indexOf(status)
   const hasLiveDelivery = !!(assignment && (assignment.status === 'assigned' || assignment.status === 'en_route') && assignment.driver_id)
 
+  async function handleCancelled() {
+    const [orderData, cancellationRow] = await Promise.all([
+      fetchOrderById(order!.id),
+      fetchOrderCancellation(order!.id).catch(() => null),
+    ])
+    setOrder(orderData)
+    setCancellation(cancellationRow)
+  }
+
   async function handleReorder() {
     if (!order) return
     setReordering(true)
@@ -230,9 +250,24 @@ function OrderStatusContent() {
       </div>
 
       {isOffPath ? (
-        <Card className="flex items-center gap-3 border-danger-500/30 bg-danger-500/10 p-4">
-          <XCircle size={20} className="shrink-0 text-danger-500" aria-hidden="true" />
-          <p className="text-sm font-semibold text-danger-300">{t(`orderStatus.${status}`)}</p>
+        <Card className="space-y-2 border-danger-500/30 bg-danger-500/10 p-4">
+          <div className="flex items-center gap-3">
+            <XCircle size={20} className="shrink-0 text-danger-500" aria-hidden="true" />
+            <p className="text-sm font-semibold text-danger-300">{t(`orderStatus.${status}`)}</p>
+          </div>
+          {status === 'cancelled' && cancellation && (
+            <div className="ml-8 space-y-0.5 text-xs text-danger-200">
+              {cancellation.refund_amount > 0 ? (
+                <p>
+                  {t('cancellation.refundLabel')}: {formatCurrency(cancellation.refund_amount)} ·{' '}
+                  {t(REFUND_METHOD_I18N_KEY[cancellation.refund_method as keyof typeof REFUND_METHOD_I18N_KEY])} ·{' '}
+                  {t(REFUND_STATUS_I18N_KEY[cancellation.refund_status as keyof typeof REFUND_STATUS_I18N_KEY])}
+                </p>
+              ) : (
+                <p>{t('cancellation.noChargeYet')}</p>
+              )}
+            </div>
+          )}
         </Card>
       ) : (
         <Card className="p-5">
@@ -351,6 +386,18 @@ function OrderStatusContent() {
         {t('receipt.viewReceipt')}
       </Button>
 
+      {/* Solo se muestra en estados donde tiene sentido intentarlo
+          (pending/confirmed) — la elegibilidad REAL (incluida la ventana
+          de tiempo para 'confirmed') la decide siempre el servidor dentro
+          del diálogo, esto es solo para no ofrecer el botón cuando ya es
+          obvio que no aplica (preparing en adelante). */}
+      {(status === 'pending' || status === 'confirmed') && !cancellation && (
+        <Button fullWidth variant="ghost" className="text-danger-500 hover:text-danger-600" onClick={() => setCancelOpen(true)}>
+          <Ban size={16} aria-hidden="true" />
+          {t('cancellation.cancelOrder')}
+        </Button>
+      )}
+
       <ReportProblemDialog
         open={reportOpen}
         onOpenChange={setReportOpen}
@@ -359,6 +406,14 @@ function OrderStatusContent() {
       />
 
       <ReceiptDialog order={receiptOpen ? order : null} onOpenChange={(open) => setReceiptOpen(open)} />
+
+      <CancelOrderDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        orderId={order.id}
+        orderNumber={order.order_number}
+        onCancelled={handleCancelled}
+      />
 
       <Button fullWidth variant="ghost" onClick={() => router.push('/menu')}>
         {t('deliveryTracking.backToMenu')}

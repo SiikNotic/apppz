@@ -49,6 +49,14 @@ export interface CartPricingResult {
   discount: number
   delivery_fee: number
   tax: number
+  /** Pizzeria Credit aplicado — Sesión 23. Siempre recortado en el
+   *  servidor a min(lo pedido, saldo disponible, total antes de crédito);
+   *  nunca lo que mande el cliente. 0 si no hay sesión o no se pidió. */
+  credit_applied: number
+  /** Saldo de crédito disponible del cliente en este momento — solo
+   *  informativo para la UI (cuánto podría aplicar), no una promesa de
+   *  cuánto se aplicará si el carrito cambia. */
+  available_credit: number
   total: number
   promotion_id: string | null
   promotion_code: string | null
@@ -63,13 +71,15 @@ export async function calculateCartPrice(
   cart: CartRpcItem[],
   orderType: 'delivery' | 'pickup',
   promoCode?: string,
-  customerId?: string
+  customerId?: string,
+  creditApplied?: number
 ): Promise<CartPricingResult> {
   const { data, error } = await supabase.rpc('calculate_cart_price', {
     p_cart: cart as unknown as Json,
     p_order_type: orderType,
     p_promo_code: promoCode || undefined,
     p_customer_id: customerId,
+    p_credit_applied: creditApplied ?? 0,
   })
   if (error) throw error
   return data as unknown as CartPricingResult
@@ -90,6 +100,10 @@ export interface CreateOrderInput {
    *  columna orders.tip_amount). Solo aplica a domicilio; no se envía
    *  (o se envía 0) en pickup, donde no hay conductor. */
   tipAmount?: number
+  /** Pizzeria Credit a aplicar — Sesión 23. El servidor (create_order via
+   *  calculate_cart_price) es quien recorta esto a lo realmente
+   *  disponible; este valor es solo lo que el cliente pide usar. */
+  creditApplied?: number
 }
 
 /**
@@ -109,6 +123,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     p_idempotency_key: input.idempotencyKey,
     p_promo_code: input.promoCode || undefined,
     p_tip_amount: input.tipAmount ?? 0,
+    p_credit_applied: input.creditApplied ?? 0,
   })
   if (error) throw error
   return data as unknown as Order

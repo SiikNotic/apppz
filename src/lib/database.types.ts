@@ -161,6 +161,71 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_accounts: {
+        Row: {
+          balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          order_id: string | null
+          reason: string
+          reference: string | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          reason: string
+          reference?: string | null
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string
+          reference?: string | null
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crusts: {
         Row: {
           active: boolean
@@ -824,6 +889,75 @@ export type Database = {
         }
         Relationships: []
       }
+      order_cancellations: {
+        Row: {
+          cancelled_at: string
+          cancelled_by: string
+          cancelled_by_role: string
+          created_at: string
+          credit_transaction_id: string | null
+          id: string
+          order_id: string
+          payment_refund_reference: string | null
+          reason: string
+          reason_detail: string | null
+          refund_amount: number
+          refund_method: string
+          refund_status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          cancelled_at?: string
+          cancelled_by: string
+          cancelled_by_role: string
+          created_at?: string
+          credit_transaction_id?: string | null
+          id?: string
+          order_id: string
+          payment_refund_reference?: string | null
+          reason: string
+          reason_detail?: string | null
+          refund_amount?: number
+          refund_method: string
+          refund_status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          cancelled_at?: string
+          cancelled_by?: string
+          cancelled_by_role?: string
+          created_at?: string
+          credit_transaction_id?: string | null
+          id?: string
+          order_id?: string
+          payment_refund_reference?: string | null
+          reason?: string
+          reason_detail?: string | null
+          refund_amount?: number
+          refund_method?: string
+          refund_status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_cancellations_credit_transaction_id_fkey"
+            columns: ["credit_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "credit_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_cancellations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_item_toppings: {
         Row: {
           base_price: number
@@ -954,6 +1088,7 @@ export type Database = {
           address: string | null
           address_id: string | null
           created_at: string
+          credit_applied: number
           customer_id: string | null
           customer_name: string
           delivery_fee: number
@@ -979,6 +1114,7 @@ export type Database = {
           address?: string | null
           address_id?: string | null
           created_at?: string
+          credit_applied?: number
           customer_id?: string | null
           customer_name: string
           delivery_fee?: number
@@ -1004,6 +1140,7 @@ export type Database = {
           address?: string | null
           address_id?: string | null
           created_at?: string
+          credit_applied?: number
           customer_id?: string | null
           customer_name?: string
           delivery_fee?: number
@@ -1958,15 +2095,120 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      calculate_cart_price: {
+      calculate_cart_price:
+        | {
+            Args: {
+              p_cart: Json
+              p_customer_id?: string
+              p_order_type?: string
+              p_promo_code?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_cart: Json
+              p_credit_applied?: number
+              p_customer_id?: string
+              p_order_type?: string
+              p_promo_code?: string
+            }
+            Returns: Json
+          }
+      cancel_order_self: {
         Args: {
-          p_cart: Json
-          p_customer_id?: string
-          p_order_type?: string
-          p_promo_code?: string
+          p_order_id: string
+          p_reason: string
+          p_reason_detail?: string
+          p_refund_method?: string
         }
-        Returns: Json
+        Returns: {
+          cancelled_at: string
+          cancelled_by: string
+          cancelled_by_role: string
+          created_at: string
+          credit_transaction_id: string | null
+          id: string
+          order_id: string
+          payment_refund_reference: string | null
+          reason: string
+          reason_detail: string | null
+          refund_amount: number
+          refund_method: string
+          refund_status: string
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "order_cancellations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
+      cancel_order_staff: {
+        Args: {
+          p_order_id: string
+          p_reason: string
+          p_reason_detail: string
+          p_refund_amount?: number
+          p_refund_method: string
+        }
+        Returns: {
+          cancelled_at: string
+          cancelled_by: string
+          cancelled_by_role: string
+          created_at: string
+          credit_transaction_id: string | null
+          id: string
+          order_id: string
+          payment_refund_reference: string | null
+          reason: string
+          reason_detail: string | null
+          refund_amount: number
+          refund_method: string
+          refund_status: string
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "order_cancellations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_payment_refund: {
+        Args: {
+          p_cancellation_id: string
+          p_reference?: string
+          p_status: string
+        }
+        Returns: {
+          cancelled_at: string
+          cancelled_by: string
+          cancelled_by_role: string
+          created_at: string
+          credit_transaction_id: string | null
+          id: string
+          order_id: string
+          payment_refund_reference: string | null
+          reason: string
+          reason_detail: string | null
+          refund_amount: number
+          refund_method: string
+          refund_status: string
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "order_cancellations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_cancellation_preview: { Args: { p_order_id: string }; Returns: Json }
       create_order:
         | {
             Args: {
@@ -1985,6 +2227,7 @@ export type Database = {
               address: string | null
               address_id: string | null
               created_at: string
+              credit_applied: number
               customer_id: string | null
               customer_name: string
               delivery_fee: number
@@ -2031,6 +2274,55 @@ export type Database = {
               address: string | null
               address_id: string | null
               created_at: string
+              credit_applied: number
+              customer_id: string | null
+              customer_name: string
+              delivery_fee: number
+              discount: number
+              id: string
+              idempotency_key: string | null
+              label_printed_at: string | null
+              notes: string | null
+              order_number: number
+              order_type: string
+              payment_method: string | null
+              payment_status: Database["public"]["Enums"]["payment_status"]
+              phone: string | null
+              promotion_id: string | null
+              status: string
+              subtotal: number
+              tax: number
+              tip_amount: number
+              total: number
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "orders"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_address_id: string
+              p_address_text: string
+              p_cart: Json
+              p_credit_applied?: number
+              p_customer_name: string
+              p_idempotency_key: string
+              p_notes: string
+              p_order_type: string
+              p_payment_method: string
+              p_phone: string
+              p_promo_code?: string
+              p_tip_amount?: number
+            }
+            Returns: {
+              address: string | null
+              address_id: string | null
+              created_at: string
+              credit_applied: number
               customer_id: string | null
               customer_name: string
               delivery_fee: number

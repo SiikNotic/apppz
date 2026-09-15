@@ -27,10 +27,12 @@ import {
   ChevronRight,
   LogOut,
   Trash2,
+  Wallet,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { fetchRewardsAccount, fetchRewardTiers } from '@/lib/data-access/rewards'
+import { fetchCreditBalance } from '@/lib/data-access/cancellations'
 import { calculateTierProgress } from '@/lib/business-logic/rewards'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -40,7 +42,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { AvatarUpload } from '@/components/ui/avatar-upload'
-import { formatMonthYear } from '@/lib/format'
+import { formatMonthYear, formatCurrency } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { RewardsAccount, RewardTier } from '@/lib/types'
 
@@ -86,6 +88,7 @@ export default function ProfilePage() {
   const [favoritesCount, setFavoritesCount] = useState<number | null>(null)
   const [rewardsAccount, setRewardsAccount] = useState<RewardsAccount | null>(null)
   const [tiers, setTiers] = useState<RewardTier[]>([])
+  const [creditBalance, setCreditBalance] = useState(0)
 
   const [editOpen, setEditOpen] = useState(false)
   const [fullName, setFullName] = useState('')
@@ -114,12 +117,14 @@ export default function ProfilePage() {
       supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('target_type', 'product'),
       fetchRewardsAccount(user.id),
       fetchRewardTiers(),
-    ]).then(([orders, favorites, account, tierList]) => {
+      fetchCreditBalance(user.id),
+    ]).then(([orders, favorites, account, tierList, balance]) => {
       if (!active) return
       setOrdersCount(orders.count ?? 0)
       setFavoritesCount(favorites.count ?? 0)
       setRewardsAccount(account)
       setTiers(tierList)
+      setCreditBalance(balance)
     })
     return () => {
       active = false
@@ -242,6 +247,21 @@ export default function ProfilePage() {
             )}
           </Card>
         </Link>
+      )}
+
+      {/* Pizzeria Credit — Sesión 23. Solo se muestra con saldo > 0: la
+          inmensa mayoría de clientes nunca tuvo una cancelación
+          reembolsada, y una tarjeta en $0.00 sería ruido sin sentido. */}
+      {creditBalance > 0 && (
+        <Card className="flex items-center gap-3 border-success-500/25 bg-success-500/[0.06] p-5">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-success-500/15 text-success-500">
+            <Wallet size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">{t('account.pizzeriaCredit')}</p>
+            <p className="text-xl font-extrabold leading-none text-foreground">{formatCurrency(creditBalance)}</p>
+          </div>
+        </Card>
       )}
 
       <Card className="divide-y divide-border overflow-hidden p-0">

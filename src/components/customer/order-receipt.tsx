@@ -4,7 +4,16 @@ import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/config'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
-import { QUANTITY_LEVEL_I18N_KEY, type Order, type OrderItem, type OrderItemTopping, type ToppingQuantityLevel } from '@/lib/types'
+import {
+  QUANTITY_LEVEL_I18N_KEY,
+  REFUND_METHOD_I18N_KEY,
+  REFUND_STATUS_I18N_KEY,
+  type Order,
+  type OrderCancellation,
+  type OrderItem,
+  type OrderItemTopping,
+  type ToppingQuantityLevel,
+} from '@/lib/types'
 
 // Los valores de payment_method se guardan tal cual salen del <Select> del
 // checkout (en español, ver checkout/page.tsx) sin importar el idioma de
@@ -44,6 +53,10 @@ interface OrderReceiptProps {
    * angosto (que se vería vacío y descentrado estirado a tamaño carta).
    */
   variant?: 'ticket' | 'sheet'
+  /** Solo presente cuando el pedido está cancelado — Sesión 23. El recibo
+   *  nunca dice solo "Cancelado": siempre aclara si el reembolso (si lo
+   *  hay) ya se completó o sigue en curso, nunca lo contrario. */
+  cancellation?: OrderCancellation | null
 }
 
 /**
@@ -65,7 +78,7 @@ interface OrderReceiptProps {
  * (tip_amount) sí es un dato real y se muestra aparte del total del
  * pedido, nunca sumada a él.
  */
-export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptProps) {
+export function OrderReceipt({ order, items, variant = 'ticket', cancellation }: OrderReceiptProps) {
   const { t } = useLanguage()
   const sheet = variant === 'sheet'
 
@@ -73,6 +86,7 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
     ? t(PAYMENT_METHOD_KEY[order.payment_method] ?? '') || order.payment_method
     : null
   const isDelivery = order.order_type === 'delivery'
+  const isCancelled = order.status === 'cancelled'
 
   if (sheet) {
     return (
@@ -90,6 +104,24 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
           </p>
           <p className="text-sm text-neutral-500">{formatDate(order.created_at)}</p>
         </div>
+
+        {isCancelled && (
+          <>
+            <SheetDivider />
+            <div className="rounded-xl border border-neutral-300 bg-neutral-100 p-3">
+              <p className="font-bold uppercase tracking-wide text-neutral-700">{t('orderStatus.cancelled')}</p>
+              {cancellation && cancellation.refund_amount > 0 ? (
+                <p className="text-sm text-neutral-600">
+                  {t('cancellation.refundLabel')}: {formatCurrency(cancellation.refund_amount)} ·{' '}
+                  {t(REFUND_METHOD_I18N_KEY[cancellation.refund_method as keyof typeof REFUND_METHOD_I18N_KEY])} ·{' '}
+                  {t(REFUND_STATUS_I18N_KEY[cancellation.refund_status as keyof typeof REFUND_STATUS_I18N_KEY])}
+                </p>
+              ) : (
+                <p className="text-sm text-neutral-600">{t('cancellation.noChargeYet')}</p>
+              )}
+            </div>
+          </>
+        )}
 
         <SheetDivider />
 
@@ -212,6 +244,24 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
         </p>
         <p className="text-[11px] text-neutral-500">{formatDate(order.created_at)}</p>
       </div>
+
+      {isCancelled && (
+        <>
+          <Divider />
+          <div className="text-center">
+            <p className="font-bold uppercase tracking-wide">{t('orderStatus.cancelled')}</p>
+            {cancellation && cancellation.refund_amount > 0 ? (
+              <p className="text-[11px] text-neutral-600">
+                {t('cancellation.refundLabel')}: {formatCurrency(cancellation.refund_amount)} ·{' '}
+                {t(REFUND_METHOD_I18N_KEY[cancellation.refund_method as keyof typeof REFUND_METHOD_I18N_KEY])} ·{' '}
+                {t(REFUND_STATUS_I18N_KEY[cancellation.refund_status as keyof typeof REFUND_STATUS_I18N_KEY])}
+              </p>
+            ) : (
+              <p className="text-[11px] text-neutral-600">{t('cancellation.noChargeYet')}</p>
+            )}
+          </div>
+        </>
+      )}
 
       <Divider />
 

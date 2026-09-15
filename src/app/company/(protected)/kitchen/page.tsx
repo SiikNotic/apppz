@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast, dismissToast } from '@/components/ui/toast'
 import { formatCurrency } from '@/lib/format'
 import { OrderReceipt } from '@/components/customer/order-receipt'
+import { StaffCancelOrderDialog } from '@/components/company/staff-cancel-order-dialog'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { PageHeader } from '@/components/company/page-header'
 import { QUANTITY_LEVEL_I18N_KEY, type Order, type OrderItem, type OrderItemTopping, type OrderStatus, type Profile, type ToppingQuantityLevel } from '@/lib/types'
@@ -61,6 +62,7 @@ export default function KitchenViewPage() {
   const [, forceTick] = useState(0)
 
   const [labelOrder, setLabelOrder] = useState<KitchenOrder | null>(null)
+  const [cancelOrderTarget, setCancelOrderTarget] = useState<KitchenOrder | null>(null)
   // Resalta brevemente la tarjeta a la que "Ver pedido" (del toast de
   // pedido nuevo) hizo scroll, para que quede claro cuál es sin tener que
   // adivinar entre varias tarjetas nuevas a la vez.
@@ -255,17 +257,13 @@ export default function KitchenViewPage() {
 
   // Con la sección de Pedidos fuera del dashboard (ver nota arriba),
   // cancelar un pedido nuevo o en preparación solo se puede hacer desde
-  // acá — antes vivía en esa pantalla aparte.
-  async function cancelOrder(order: KitchenOrder) {
-    if (!confirm(t('ordersAdmin.confirmCancel', { number: order.order_number }))) return
+  // acá. Sesión 23: ya no es un confirm() + update crudo — abre el
+  // diálogo completo (motivo, reembolso, confirmación) sobre el RPC
+  // cancel_order_staff, que es quien de verdad decide qué se puede y
+  // registra el reembolso real.
+  function openCancelDialog(order: KitchenOrder) {
     dismissOrderToast(order.id)
-    setBusyId(order.id)
-    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
-    setBusyId(null)
-    if (error) {
-      alert(t('kitchen.actionFailed'))
-      load()
-    }
+    setCancelOrderTarget(order)
   }
 
   function printLabel(order: KitchenOrder) {
@@ -391,7 +389,7 @@ export default function KitchenViewPage() {
                           </button>
                           {canCancel && col.status !== 'ready' && (
                             <button
-                              onClick={() => cancelOrder(order)}
+                              onClick={() => openCancelDialog(order)}
                               disabled={busyId === order.id}
                               aria-label={t('common.cancel')}
                               className="grid h-7 w-7 place-items-center rounded-full bg-danger-500/15 text-danger-500 hover:bg-danger-500/25 disabled:opacity-50"
@@ -569,6 +567,19 @@ export default function KitchenViewPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {cancelOrderTarget && (
+        <StaffCancelOrderDialog
+          open={!!cancelOrderTarget}
+          onOpenChange={(open) => !open && setCancelOrderTarget(null)}
+          orderId={cancelOrderTarget.id}
+          orderNumber={cancelOrderTarget.order_number}
+          onCancelled={() => {
+            setCancelOrderTarget(null)
+            load()
+          }}
+        />
+      )}
     </div>
   )
 }

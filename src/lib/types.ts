@@ -33,6 +33,9 @@ export type VehicleMake = Tables<'vehicle_makes'>
 export type VehicleModel = Tables<'vehicle_models'>
 export type StoreHours = Tables<'store_hours'>
 export type StoreClosure = Tables<'store_closures'>
+export type OrderCancellation = Tables<'order_cancellations'>
+export type CreditAccount = Tables<'credit_accounts'>
+export type CreditTransaction = Tables<'credit_transactions'>
 
 export interface StoreStatus {
   is_open: boolean
@@ -148,4 +151,73 @@ export interface CartLine {
 
 export function cartLineSubtotal(line: CartLine): number {
   return line.unitPrice * line.quantity
+}
+
+/** Motivo de cancelación — Sesión 23. Mismo set fijo para cliente y
+ *  staff; "other" exige `reason_detail` (lo valida el servidor, nunca
+ *  solo el formulario). */
+export type CancellationReason =
+  | 'changed_mind'
+  | 'ordered_by_mistake'
+  | 'taking_too_long'
+  | 'restaurant_too_long'
+  | 'delivery_issue'
+  | 'payment_issue'
+  | 'other'
+
+export const CANCELLATION_REASON_I18N_KEY: Record<CancellationReason, string> = {
+  changed_mind: 'cancellation.reasonChangedMind',
+  ordered_by_mistake: 'cancellation.reasonOrderedByMistake',
+  taking_too_long: 'cancellation.reasonTakingTooLong',
+  restaurant_too_long: 'cancellation.reasonRestaurantTooLong',
+  delivery_issue: 'cancellation.reasonDeliveryIssue',
+  payment_issue: 'cancellation.reasonPaymentIssue',
+  other: 'cancellation.reasonOther',
+}
+
+export const CANCELLATION_REASONS: CancellationReason[] = [
+  'changed_mind',
+  'ordered_by_mistake',
+  'taking_too_long',
+  'restaurant_too_long',
+  'delivery_issue',
+  'payment_issue',
+  'other',
+]
+
+/** 'none' es EXCLUSIVO de soporte/staff — nunca se ofrece al cliente
+ *  (ver cancel_order_self / cancel_order_staff en el servidor, que lo
+ *  reafirma independientemente de lo que mande el formulario). */
+export type RefundMethod = 'credit' | 'original_payment' | 'none'
+
+export type RefundStatus = 'not_applicable' | 'pending' | 'processing' | 'completed' | 'failed'
+
+export const REFUND_METHOD_I18N_KEY: Record<RefundMethod, string> = {
+  credit: 'cancellation.refundMethodCredit',
+  original_payment: 'cancellation.refundMethodOriginalPayment',
+  none: 'cancellation.refundMethodNone',
+}
+
+export const REFUND_STATUS_I18N_KEY: Record<RefundStatus, string> = {
+  not_applicable: 'cancellation.refundStatusNotApplicable',
+  pending: 'cancellation.refundStatusPending',
+  processing: 'cancellation.refundStatusProcessing',
+  completed: 'cancellation.refundStatusCompleted',
+  failed: 'cancellation.refundStatusFailed',
+}
+
+/** Vista previa server-side de elegibilidad de cancelación — devuelta por
+ *  el RPC get_cancellation_preview(). El monto reembolsable SIEMPRE sale
+ *  de aquí; nunca se calcula en el cliente. */
+export interface CancellationPreview {
+  order_id: string
+  order_number: number
+  status: OrderStatus
+  payment_status: string
+  already_cancelled: boolean
+  can_customer_cancel: boolean
+  can_staff_cancel: boolean
+  block_reason: 'already_cancelled' | 'window_expired' | 'requires_support' | 'not_cancellable_status' | null
+  refundable_amount: number
+  customer_window_expires_at: string | null
 }

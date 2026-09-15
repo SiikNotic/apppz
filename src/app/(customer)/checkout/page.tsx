@@ -6,6 +6,7 @@ import { Trash2, ShoppingBag, Tag, Check, Truck, Store } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { calculateCartPrice, createOrder, type CartRpcItem } from '@/lib/data-access/orders'
+import { fetchCreditBalance } from '@/lib/data-access/cancellations'
 import { QUANTITY_LEVEL_I18N_KEY } from '@/lib/types'
 import { saveLastOrderId } from '@/lib/active-order'
 import { useStoreStatus } from '@/hooks/useStoreStatus'
@@ -88,11 +89,24 @@ export default function CheckoutPage() {
     discount: number
     delivery_fee: number
     tax: number
+    credit_applied: number
+    available_credit: number
     total: number
     promotion_code: string | null
   } | null>(null)
   const [pricingLoading, setPricingLoading] = useState(true)
   const [pricingError, setPricingError] = useState<string | null>(null)
+
+  // Pizzeria Credit — Sesión 23. Nunca se aplica solo porque existe: el
+  // cliente decide con este toggle, y el servidor (calculate_cart_price)
+  // es quien recorta lo pedido a lo realmente disponible.
+  const [useCredit, setUseCredit] = useState(false)
+  const [creditBalance, setCreditBalance] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    fetchCreditBalance(user.id).then(setCreditBalance)
+  }, [user])
 
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -128,7 +142,7 @@ export default function CheckoutPage() {
     let active = true
     setPricingLoading(true)
     const timeout = setTimeout(() => {
-      calculateCartPrice(cartItems, orderType, promoCode || undefined, user?.id)
+      calculateCartPrice(cartItems, orderType, promoCode || undefined, user?.id, useCredit ? creditBalance : 0)
         .then((result) => {
           if (!active) return
           setPricing(result)
@@ -148,7 +162,7 @@ export default function CheckoutPage() {
       clearTimeout(timeout)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(cartItems), orderType, promoCode, user?.id])
+  }, [JSON.stringify(cartItems), orderType, promoCode, user?.id, useCredit, creditBalance])
 
   async function handleSubmit() {
     setFormError(null)
@@ -179,6 +193,7 @@ export default function CheckoutPage() {
         idempotencyKey: idempotencyKeyRef.current,
         promoCode: promoCode || undefined,
         tipAmount,
+        creditApplied: useCredit ? creditBalance : 0,
       })
 
       clear()
@@ -323,6 +338,33 @@ export default function CheckoutPage() {
               </div>
             </div>
           </Card>
+
+          {creditBalance > 0 && (
+            <Card className="space-y-2 p-5">
+              <button
+                type="button"
+                onClick={() => setUseCredit((v) => !v)}
+                aria-pressed={useCredit}
+                className={cn(
+                  'flex w-full items-center justify-between gap-3 rounded-2xl border-2 p-3 text-left transition active:scale-[0.99]',
+                  useCredit ? 'border-brand-500 bg-brand-500/10' : 'border-border bg-card hover:border-border-strong'
+                )}
+              >
+                <div>
+                  <p className="text-sm font-bold text-foreground">{t('checkout.useCredit')}</p>
+                  <p className="text-xs text-muted-foreground">{t('checkout.availableCredit', { amount: formatCurrency(creditBalance) })}</p>
+                </div>
+                <div
+                  className={cn(
+                    'grid h-5 w-5 shrink-0 place-items-center rounded-md border-2',
+                    useCredit ? 'border-brand-500 bg-brand-500' : 'border-border'
+                  )}
+                >
+                  {useCredit && <Check size={12} className="text-white" aria-hidden="true" />}
+                </div>
+              </button>
+            </Card>
+          )}
 
           <Card className="space-y-3 p-5">
             <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
@@ -509,6 +551,12 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-white/80">
                     <span>{t('checkout.tipLineLabel')}</span>
                     <span>{formatCurrency(tipAmount)}</span>
+                  </div>
+                )}
+                {pricing.credit_applied > 0 && (
+                  <div className="flex justify-between text-white">
+                    <span>{t('checkout.creditApplied')}</span>
+                    <span>-{formatCurrency(pricing.credit_applied)}</span>
                   </div>
                 )}
                 {/* El total: el número más dominante de toda la pantalla —

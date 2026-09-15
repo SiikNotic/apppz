@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { OrderReceipt } from './order-receipt'
+import { fetchOrderCancellation } from '@/lib/data-access/cancellations'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { Order, OrderItem, OrderItemTopping } from '@/lib/types'
+import type { Order, OrderCancellation, OrderItem, OrderItemTopping } from '@/lib/types'
 
 interface ReceiptDialogProps {
   order: Order | null
@@ -20,21 +21,22 @@ interface ReceiptDialogProps {
 export function ReceiptDialog({ order, onOpenChange }: ReceiptDialogProps) {
   const { t } = useLanguage()
   const [items, setItems] = useState<(OrderItem & { order_item_toppings: OrderItemTopping[] })[]>([])
+  const [cancellation, setCancellation] = useState<OrderCancellation | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!order) return
     let active = true
     setLoading(true)
-    supabase
-      .from('order_items')
-      .select('*, order_item_toppings(*)')
-      .eq('order_id', order.id)
-      .then(({ data }) => {
-        if (!active) return
-        setItems(data ?? [])
-        setLoading(false)
-      })
+    Promise.all([
+      supabase.from('order_items').select('*, order_item_toppings(*)').eq('order_id', order.id),
+      order.status === 'cancelled' ? fetchOrderCancellation(order.id).catch(() => null) : Promise.resolve(null),
+    ]).then(([itemsRes, cancellationRow]) => {
+      if (!active) return
+      setItems(itemsRes.data ?? [])
+      setCancellation(cancellationRow)
+      setLoading(false)
+    })
     return () => {
       active = false
     }
@@ -49,7 +51,7 @@ export function ReceiptDialog({ order, onOpenChange }: ReceiptDialogProps) {
             <p className="text-center text-sm text-neutral-500">{t('common.loading')}</p>
           </div>
         ) : (
-          <OrderReceipt order={order} items={items} />
+          <OrderReceipt order={order} items={items} cancellation={cancellation} />
         )}
       </DialogContent>
     </Dialog>
