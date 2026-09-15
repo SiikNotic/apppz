@@ -17,31 +17,6 @@ const PAYMENT_METHOD_KEY: Record<string, string> = {
   Transferencia: 'checkout.transfer',
 }
 
-const PAYMENT_STATUS_KEY: Record<string, string> = {
-  pending: 'receipt.statusPending',
-  authorized: 'receipt.statusAuthorized',
-  paid: 'receipt.statusPaid',
-  failed: 'receipt.statusFailed',
-  refunded: 'receipt.statusRefunded',
-  partially_refunded: 'receipt.statusPartiallyRefunded',
-}
-
-// orderStatus.* (translations.ts) cubre todo OrderStatus real (ver
-// lib/types.ts) — un valor futuro que no esté aquí se muestra tal cual
-// llegó de la base de datos en vez de una ruta de traducción rota
-// ("orderStatus.algo_nuevo") en el papel impreso.
-const ORDER_STATUS_I18N_KEYS = new Set([
-  'pending',
-  'confirmed',
-  'preparing',
-  'ready',
-  'out_for_delivery',
-  'delivered',
-  'cancelled',
-  'refunded',
-  'failed',
-])
-
 type ReceiptItem = OrderItem & { order_item_toppings?: OrderItemTopping[] }
 
 /** "Pepperoni (Extra)" — el nivel solo se anota cuando NO es 'normal' (el
@@ -97,9 +72,7 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
   const paymentMethodLabel = order.payment_method
     ? t(PAYMENT_METHOD_KEY[order.payment_method] ?? '') || order.payment_method
     : null
-  const paymentStatusKey = PAYMENT_STATUS_KEY[order.payment_status]
   const isDelivery = order.order_type === 'delivery'
-  const orderStatusLabel = ORDER_STATUS_I18N_KEYS.has(order.status) ? t(`orderStatus.${order.status}`) : order.status
 
   if (sheet) {
     return (
@@ -111,17 +84,11 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
 
         <SheetDivider />
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-lg font-extrabold">
-              {t('ordersAdmin.orderLabel')} #{order.order_number}
-            </p>
-            <p className="text-sm text-neutral-500">{formatDate(order.created_at)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{t('receipt.orderStatusLabel')}</p>
-            <p className="text-sm font-bold">{orderStatusLabel}</p>
-          </div>
+        <div>
+          <p className="text-lg font-extrabold">
+            {t('ordersAdmin.orderLabel')} #{order.order_number}
+          </p>
+          <p className="text-sm text-neutral-500">{formatDate(order.created_at)}</p>
         </div>
 
         <SheetDivider />
@@ -208,21 +175,12 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
           )}
         </div>
 
-        {(paymentMethodLabel || paymentStatusKey) && (
+        {paymentMethodLabel && (
           <>
             <SheetDivider />
-            <div className="flex justify-between gap-4 text-sm">
-              {paymentMethodLabel && (
-                <p>
-                  <span className="font-bold">{t('receipt.paymentMethod')}:</span> {paymentMethodLabel}
-                </p>
-              )}
-              {paymentStatusKey && (
-                <p>
-                  <span className="font-bold">{t('receipt.paymentStatus')}:</span> {t(paymentStatusKey)}
-                </p>
-              )}
-            </div>
+            <p className="text-sm">
+              <span className="font-bold">{t('receipt.paymentMethod')}:</span> {paymentMethodLabel}
+            </p>
           </>
         )}
 
@@ -247,7 +205,6 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
           {t('ordersAdmin.orderLabel')} #{order.order_number}
         </p>
         <p className="text-[11px] text-neutral-500">{formatDate(order.created_at)}</p>
-        <p className="text-[11px] font-bold uppercase">{orderStatusLabel}</p>
       </div>
 
       <Divider />
@@ -320,13 +277,10 @@ export function OrderReceipt({ order, items, variant = 'ticket' }: OrderReceiptP
         </>
       )}
 
-      {(paymentMethodLabel || paymentStatusKey) && (
+      {paymentMethodLabel && (
         <>
           <Divider />
-          <div className="space-y-0.5">
-            {paymentMethodLabel && <Row label={t('receipt.paymentMethod')} value={paymentMethodLabel} />}
-            {paymentStatusKey && <Row label={t('receipt.paymentStatus')} value={t(paymentStatusKey)} />}
-          </div>
+          <Row label={t('receipt.paymentMethod')} value={paymentMethodLabel} />
         </>
       )}
 
